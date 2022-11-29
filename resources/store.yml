@@ -1,0 +1,35 @@
+#
+# This file is an object with two properties: variables and directories. Variables at the top-level scope
+# are available within any script: replacing {{ name }} within SQL scripts and available as an associative
+# array to PHP scripts. The directories property is an array of directory objects. The array defines the
+# deployment order of directories. Within each directory, a 'sort' policy defines the order of script files.
+#
+# When a store directory is configured recursively, the order is still defined by the sort policy,
+# with the addition that processing is depth first: a/a/a.sql is processed before a/a.sql. Subdirectories
+# are sorted separately from files and are always processed first: ex. z1/, z2/, a1.sql, a2.sql
+#
+# For ENV/variable replacements within SQL scripts, cinch uses the Twig template engine. Thus: conditionals,
+# loops, filters, etc. can also be used. Please see https://twig.symfony.com/.
+#
+# An example store.yml with default values: excluding 'path' which is required.
+# -----------------------------------------------------------------------------------------------------------
+# variables: {}
+# directories:             # array of Directory objects
+#   - path: v1.2.4         # must be a relative directory path (relative to store directory)
+#     sort: natural        # sort policy: natural and alpha with -ci (case-insensitive) variants
+#     recursive: false     # search recursively within directory, applying rules declared here
+#     errorIfEmpty: false  # raise an error if directory is empty (after applying any filtering)
+#     followLinks: false   # follow symlinks (local filesystem only) -- warning: files outside store
+#                          # are harder to track
+#     environment: false   # enable ENV variables within SQL scripts: {{ MY_ENV_VAR }}. ENV variables
+#                          # take precedence over 'variables' when there is a conflict.
+#     exclude: []          # path patterns to exclude: PHP regular expressions - must use '/' delimiters
+#     variables: {}        # available to this directory only, merged into top-level variables
+#   - path: v1.3.0         # next directory of change scripts...
+#
+
+# This configures the current directory (store dir) non-recursively. It is a typical setup found in framework
+# migration tools: like Laravel. However, it is recommended to use directories: maybe by release or functionality.
+variables: { }
+directories:
+    - path: .

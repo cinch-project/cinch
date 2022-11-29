@@ -1,0 +1,29 @@
+<?php
+
+use Cinch\MigrationStore\Script\Committable;
+use Cinch\MigrationStore\Script\Revertable;
+use Cinch\MigrationStore\Script\Script;
+use Cinch\Common\Author;
+use Cinch\Common\CommitPolicy;
+use Cinch\Common\Description;
+use Cinch\Database\Session;
+
+return new class extends Script implements Committable, Revertable {
+    public function __construct()
+    {
+        parent::__construct(
+            CommitPolicy::from('{{ commit_colicy }}'),
+            new Author('{{ author }}'),
+            new DateTimeImmutable('{{ authored_at }}'),
+            new Description('{{ description }}')
+        );
+    }}
+
+    public function commit(Session $session): void
+    {
+    }
+
+    public function revert(Session $session): void
+    {
+    }
+};

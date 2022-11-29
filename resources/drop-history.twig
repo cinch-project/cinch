@@ -1,0 +1,11 @@
+drop table if exists {{ change }};
+drop table if exists {{ deployment }};
+drop table if exists {{ cinch }};
+
+{% if db.name == 'pgsql' %}
+    drop collation if exists {{ utf8_ci_ai }};
+{% endif %}
+
+{% if schema.is_creator %}
+    drop schema {{ schema.name }};
+{% endif %}

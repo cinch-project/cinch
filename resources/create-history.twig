@@ -1,0 +1,127 @@
+{% if schema.is_creator %}
+    {% if db.name == 'mssql' %}
+        exec ('create schema {{ schema.name }}');
+    {% else %}
+        create schema {{ schema.name }};
+    {% endif %}
+{% endif %}
+
+{% set location_type = 'text' %}
+{% set length = 'length' %}
+{% set restrict = 'restrict' %}
+{% set bigint = 'bigint' %}
+{% set release_date_type = 'date not null' %}
+
+{% if db.name == 'pgsql' %}
+    {% set table_options = '' %}
+    {% set collate_ascii = 'collate "C"' %}
+    {% set collate_utf8ci = 'collate ' ~ utf8_ci_ai %}
+    {% set json = 'jsonb' %}
+    {% set bool = 'smallint' %}
+    {% set datetime = 'timestamptz(6)' %}
+    {% set deployment_id_seq = 'bigserial' %}
+    create collation {{ utf8_ci_ai }} (provider = 'icu', locale = '@colStrength=primary', deterministic = false);
+{% elseif db.name in ['mysql', 'mariadb'] %}
+    {% set legacy = db.name == 'mysql' and db.version == 5.7 %}
+    {% set utf8bin = legacy ? 'utf8mb4_bin' : 'utf8mb4_0900_bin' %}
+    {% set table_options = 'engine=InnoDB row_format=dynamic charset=utf8mb4 collate=' ~ utf8bin %}
+    {% set collate_ascii = 'charset ascii collate ascii_bin' %}
+    {% set collate_utf8ci = legacy ? 'collate utf8_unicode_520_ci' : 'collate utf8mb4_0900_ai_ci' %}
+    {% set json = 'json' %}
+    {% set bool = 'tinyint(1)' %}
+    {% set datetime = 'datetime(6)' %}
+    {% set deployment_id_seq = 'bigint auto_increment' %}
+{% elseif db.name == 'sqlite' %}
+    {% set table_options = 'strict' %}
+    {% set bigint = 'integer' %}
+    {% set release_date_type = 'text not null constraint "invalid release_date: YYYY-MM-DD format" ' ~
+        "check (strftime('%Y-%m-%d', release_date) is not null)" %}
+    {% set collate_ascii = 'collate binary' %}
+    {% set collate_utf8ci = 'collate nocase' %}
+    {% set json = 'text' %}
+    {% set bool = 'integer' %}
+    {% set datetime = 'text' %} {# stored in ISO 8601 format #}
+    {% set deployment_id_seq = 'integer' %}
+{% elseif db.name == 'mssql' %}
+    {% set table_options = '' %}
+    {% set location_type = 'nvarchar(max)' %}
+    {% set length = 'len' %}
+    {% set restrict = 'no action' %}
+    {% set collate_ascii = 'collate Latin1_General_100_BIN' %}
+    {% set collate_utf8ci = 'collate Latin1_General_100_CI_AI' %}
+    {% set json = 'nvarchar' %}
+    {% set bool = 'tinyint' %}
+    {% set datetime = 'datetimeoffset(7)' %} {# precision is 100ns #}
+    {% set deployment_id_seq = 'bigint identity(1,1)' %}
+{% endif %}
+
+create table {{ cinch }}
+(
+    {{ 'schema_version'|varchar(32) }} {{ collate_ascii }} primary key not null,
+    schema_creator {{ bool }} not null,
+    {{ 'description'|nvarchar(255) }} {{ collate_utf8ci }} not null,
+    release_date {{ release_date_type }},
+    created_at {{ datetime }} not null unique,
+    constraint {{ 'invalid semantic cinch schema_version number'|quote }} check (schema_version <> ''),
+    constraint {{ 'schema_creator must be 0 or 1'|quote }} check (schema_creator in (0, 1)),
+    constraint {{ 'cinch description cannot be empty'|quote }} check (description <> '')
+) {{ table_options }};
+
+insert into {{ cinch }} values (
+    {{ schema.version }},
+    {{ schema.is_creator ? 1 : 0 }},
+    {{ schema.description }},
+    {{ schema.release_date }},
+    {{ schema.created_at }}
+);
+
+create table {{ deployment }}
+(
+    deployment_id {{ deployment_id_seq }} primary key not null,
+    {{ 'deployer'|nvarchar(64) }} {{ collate_utf8ci }} not null,
+    {{ 'tag'|nvarchar(64) }} {{ collate_utf8ci }} unique null default null,
+    {{ 'command'|varchar(16) }} {{ collate_ascii }} not null,
+    error {{ json }} null default null,
+    {{ 'application'|nvarchar(128) }} {{ collate_utf8ci }} not null,
+    {{ 'schema_version'|varchar(32) }} {{ collate_ascii }} not null
+        references {{ cinch }} (schema_version) on delete {{ restrict }},
+    started_at {{ datetime }} not null,
+    ended_at {{ datetime }} null default null,
+    constraint {{ 'tag cannot be empty'|quote }} check (tag is null or tag <> ''),
+    constraint {{ 'command must be revert or commit'|quote }} check (command in ('revert', 'commit')),
+    constraint {{ 'deployer cannot be empty'|quote }} check (deployer <> ''),
+    constraint {{ 'application cannot be empty'|quote }} check (application <> '')
+) {{ table_options }};
+
+create index deployment_deployer_idx on {{ deployment }} (deployer);
+create index deployment_tag_idx on {{ deployment }} (tag);
+create index deployment_command_idx on {{ deployment }} (command);
+
+create table {{ change }}
+(
+    {{ 'change_id'|varchar(64) }} {{ collate_ascii }} not null,
+    deployment_id {{ bigint }} not null references {{ deployment }} (deployment_id) on delete {{ restrict }},
+    location {{ location_type }} not null,
+    {{ 'commit_policy'|varchar(16) }} {{ collate_ascii }} not null,
+    {{ 'status'|varchar(16) }} {{ collate_ascii }} not null,
+    {{ 'author'|nvarchar(64) }} {{ collate_utf8ci }} not null,
+    {{ 'checksum'|varchar(64) }} {{ collate_ascii }} not null,
+    {{ 'description'|nvarchar(255) }} {{ collate_utf8ci }} not null,
+    revertable {{ bool }} not null,
+    is_sql {{ bool }} not null,
+    authored_at {{ datetime }} not null,
+    deployed_at {{ datetime }} not null,
+    primary key (change_id, deployment_id),
+    constraint {{ 'change_id cannot be empty'|quote }} check (change_id <> ''),
+    constraint {{ 'location cannot be empty'|quote }} check ({{ length }}(location) between 1 and 8192),
+    constraint {{ 'checksum must be between 32 and 64 lowercase hex'|quote }} check ({{ length }}(checksum) >= 32),
+    constraint {{ 'unknown status'|quote }} check (status in ('committed', 'recommitted', 'reverted', 'skipped')),
+    constraint {{ 'author cannot be empty'|quote }} check (author <> ''),
+    constraint {{ 'change description cannot be empty'|quote }} check (description <> ''),
+    constraint {{ 'revertable must be 0 or 1'|quote }} check (revertable in (0, 1)),
+    constraint {{ 'is_sql must be 0 or 1'|quote }} check (is_sql in (0, 1)),
+    constraint {{ 'unknown run policy'|quote }} check (commit_policy in ({{ "'" ~ commit_policies|join("','") ~ "'" }}))
+) {{ table_options }};
+
+create index change_deployment_id_idx on {{ change }} (deployment_id);
+create index change_deployed_at_idx on {{ change }} (deployed_at);

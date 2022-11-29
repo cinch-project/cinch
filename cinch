@@ -1,0 +1,15 @@
+#!/usr/bin/env php
+<?php
+
+use Cinch\Console\Application;
+use Symfony\Component\Console\CommandLoader\ContainerCommandLoader;
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+if (PHP_SAPI !== 'cli')
+    throw new RuntimeException("cinch CLI only supports 'cli' SAPI");
+
+$container = require_once __DIR__ . '/bootstrap/container.php';
+$app = $container->get(Application::class);
+$app->setCommandLoader(new ContainerCommandLoader($container, $container->getParameter('commands')));
+$app->run();
