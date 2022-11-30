@@ -65,8 +65,8 @@ services:
 
     Psr\Log\LoggerInterface: '@logger'
 
-    Cinch\Project\ProjectRepository:
-        class: Cinch\Console\ConsoleProjectRepository
+    Cinch\Console\ConsoleProjectRepository: ~
+    Cinch\Project\ProjectRepository: '@Cinch\Console\ConsoleProjectRepository'
 
     Cinch\History\SchemaVersion:
         arguments:
@@ -77,6 +77,9 @@ services:
     Cinch\Services\DataStoreFactory:
         arguments:
             $application: 'Cinch CLI %cinch.version%'
+
+    Cinch\MigrationStore\XXH128MigrationFactory: ~
+    Cinch\MigrationStore\MigrationFactory: '@Cinch\MigrationStore\XXH128MigrationFactory'
 
     Cinch\MigrationStore\MigrationStoreFactory:
         arguments:
