@@ -58,10 +58,10 @@ class ScriptLoader
 
     private function assertScript(mixed $script, Location $location): Script
     {
-        if (($script instanceof Committable || $script instanceof Revertable) && $script instanceof Script)
+        if (($script instanceof CanMigrate || $script instanceof CanRollback) && $script instanceof Script)
             return $script;
 
         throw new AssertException("$location must be a " . Script::class .
-            " that implements " . Committable::class . ' and/or ' . Revertable::class);
+            " that implements " . CanMigrate::class . ' and/or ' . CanRollback::class);
     }
 }

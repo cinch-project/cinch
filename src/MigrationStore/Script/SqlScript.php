@@ -3,38 +3,38 @@
 namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
-use Cinch\Common\CommitPolicy;
+use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
 use DateTimeInterface;
 use Cinch\Database\Session;
 use Exception;
 
-class SqlScript extends Script implements Committable, Revertable
+class SqlScript extends Script implements CanMigrate, CanRollback
 {
     public function __construct(
-        private readonly string $commitSql,
-        private readonly string $revertSql,
-        CommitPolicy $commitPolicy,
+        private readonly string $migrateSql,
+        private readonly string $rollbackSql,
+        MigratePolicy $migratePolicy,
         Author $author,
         DateTimeInterface $authoredAt,
         Description $description)
     {
-        parent::__construct($commitPolicy, $author, $authoredAt, $description);
+        parent::__construct($migratePolicy, $author, $authoredAt, $description);
     }
 
     /**
      * @throws Exception
      */
-    public function commit(Session $session): void
+    public function migrate(Session $session): void
     {
-        $session->executeStatement($this->commitSql);
+        $session->executeStatement($this->migrateSql);
     }
 
     /**
      * @throws Exception
      */
-    public function revert(Session $session): void
+    public function rollback(Session $session): void
     {
-        $session->executeStatement($this->revertSql);
+        $session->executeStatement($this->rollbackSql);
     }
 }

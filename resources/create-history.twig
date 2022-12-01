@@ -1,4 +1,4 @@
-{% if schema.is_creator %}
+{% if schema.creator %}
     {% if db.name == 'mssql' %}
         exec ('create schema {{ schema.name }}');
     {% else %}
@@ -69,7 +69,7 @@ create table {{ cinch }}
 
 insert into {{ cinch }} values (
     {{ schema.version }},
-    {{ schema.is_creator ? 1 : 0 }},
+    {{ schema.creator ? 1 : 0 }},
     {{ schema.description }},
     {{ schema.release_date }},
     {{ schema.created_at }}
@@ -88,7 +88,7 @@ create table {{ deployment }}
     started_at {{ datetime }} not null,
     ended_at {{ datetime }} null default null,
     constraint {{ 'tag cannot be empty'|quote }} check (tag is null or tag <> ''),
-    constraint {{ 'command must be revert or commit'|quote }} check (command in ('revert', 'commit')),
+    constraint {{ 'unknown command'|quote }} check (command in ({{ "'" ~ commands|join("','") ~ "'" }})),
     constraint {{ 'deployer cannot be empty'|quote }} check (deployer <> ''),
     constraint {{ 'application cannot be empty'|quote }} check (application <> '')
 ) {{ table_options }};
@@ -102,12 +102,12 @@ create table {{ change }}
     {{ 'change_id'|varchar(64) }} {{ collate_ascii }} not null,
     deployment_id {{ bigint }} not null references {{ deployment }} (deployment_id) on delete {{ restrict }},
     location {{ location_type }} not null,
-    {{ 'commit_policy'|varchar(16) }} {{ collate_ascii }} not null,
+    {{ 'migrate_policy'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'status'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'author'|nvarchar(64) }} {{ collate_utf8ci }} not null,
     {{ 'checksum'|varchar(64) }} {{ collate_ascii }} not null,
     {{ 'description'|nvarchar(255) }} {{ collate_utf8ci }} not null,
-    revertable {{ bool }} not null,
+    can_rollback {{ bool }} not null,
     is_sql {{ bool }} not null,
     authored_at {{ datetime }} not null,
     deployed_at {{ datetime }} not null,
@@ -115,12 +115,13 @@ create table {{ change }}
     constraint {{ 'change_id cannot be empty'|quote }} check (change_id <> ''),
     constraint {{ 'location cannot be empty'|quote }} check ({{ length }}(location) between 1 and 8192),
     constraint {{ 'checksum must be between 32 and 64 lowercase hex'|quote }} check ({{ length }}(checksum) >= 32),
-    constraint {{ 'unknown status'|quote }} check (status in ('committed', 'recommitted', 'reverted', 'skipped')),
+    constraint {{ 'unknown status'|quote }} check (status in ({{ "'" ~ statuses|join("','") ~ "'" }})),
     constraint {{ 'author cannot be empty'|quote }} check (author <> ''),
     constraint {{ 'change description cannot be empty'|quote }} check (description <> ''),
-    constraint {{ 'revertable must be 0 or 1'|quote }} check (revertable in (0, 1)),
+    constraint {{ 'can_rollback must be 0 or 1'|quote }} check (can_rollback in (0, 1)),
     constraint {{ 'is_sql must be 0 or 1'|quote }} check (is_sql in (0, 1)),
-    constraint {{ 'unknown run policy'|quote }} check (commit_policy in ({{ "'" ~ commit_policies|join("','") ~ "'" }}))
+    constraint {{ 'unknown migrate policy'|quote }}
+        check (migrate_policy in ({{ "'" ~ migrate_policies|join("','") ~ "'" }}))
 ) {{ table_options }};
 
 create index change_deployment_id_idx on {{ change }} (deployment_id);

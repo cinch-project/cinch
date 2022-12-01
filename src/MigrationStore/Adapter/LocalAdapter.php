@@ -2,11 +2,12 @@
 
 namespace Cinch\MigrationStore\Adapter;
 
-use Cinch\MigrationStore\Directory;
 use Cinch\Common\Dsn;
 use Cinch\Common\Location;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
+use Cinch\LastErrorException;
+use Cinch\MigrationStore\Directory;
 use Exception;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Filesystem;
@@ -71,7 +72,7 @@ class LocalAdapter extends MigrationStoreAdapter
             throw new Exception("$path already exists: message=$message");
 
         if (@file_put_contents($path, $content) === false)
-            throw_last_error();
+            throw new LastErrorException();
 
         return new FileId;
     }

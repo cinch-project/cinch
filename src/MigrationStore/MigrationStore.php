@@ -26,8 +26,6 @@ class MigrationStore
         private readonly string $resourceDir,
         private readonly MigrationFactory $migrationFactory)
     {
-        if (!is_a($this->migrationClass, Migration::class, true))
-            throw new \RuntimeException("migrationClass must extend " . Migration::class);
     }
 
     /**
@@ -57,10 +55,11 @@ class MigrationStore
             );
     }
 
-    /**
+    /** Gets the next migration.
+     * @return Generator<Migration>
      * @throws Exception
      */
-    public function migrations(): Generator
+    public function next(): Generator
     {
         if (!$this->exists())
             throw new Exception(MigrationStoreAdapter::FILENAME . ' does not exist');

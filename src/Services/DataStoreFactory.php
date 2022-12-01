@@ -2,16 +2,16 @@
 
 namespace Cinch\Services;
 
-use Cinch\MigrationStore\MigrationStore;
-use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Common\Dsn;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
 use Cinch\History\History;
 use Cinch\History\SchemaVersion;
+use Cinch\MigrationStore\MigrationStore;
+use Cinch\MigrationStore\MigrationStoreFactory;
+use Cinch\Project\Environment;
 use Exception;
 use Twig\Environment as TwigEnvironment;
-use Cinch\Project\Environment;
 
 class DataStoreFactory
 {
@@ -19,7 +19,6 @@ class DataStoreFactory
         private readonly SessionFactory $sessionFactory,
         private readonly MigrationStoreFactory $storeFactory,
         private readonly TwigEnvironment $twig,
-        private readonly string $application,
         private readonly SchemaVersion $schemaVersion)
     {
     }
@@ -49,12 +48,6 @@ class DataStoreFactory
      */
     public function createHistory(Environment $environment): History
     {
-        return new History(
-            $this->createSession($environment->history),
-            $this->schemaVersion,
-            $this->twig,
-            $this->application,
-            $environment
-        );
+        return new History($this->createSession($environment->history), $this->twig, $environment, $this->schemaVersion);
     }
 }

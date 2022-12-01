@@ -2,11 +2,11 @@
 
 namespace Cinch\History;
 
-use Cinch\MigrationStore\Migration;
-use Cinch\MigrationStore\Script\Revertable;
-use Cinch\Common\CommitPolicy;
+use Cinch\Common\MigratePolicy;
 use Cinch\Database\Identifier;
 use Cinch\Database\Session;
+use Cinch\MigrationStore\Migration;
+use Cinch\MigrationStore\Script\CanRollback;
 use Cinch\Project\Environment;
 use DateTime;
 use DateTimeInterface;
@@ -18,26 +18,27 @@ use Twig\TwigFilter;
 
 class History
 {
+    /* 'utf8_ci_ai' is a postgresql-only collation */
     private const SCHEMA_OBJECTS = ['cinch', 'deployment', 'change', 'utf8_ci_ai'];
 
     private readonly Identifier $schema;
-    private readonly array $schemaObjects;
+    private readonly array $objects;
     private bool $schemaExists;
+    private bool $schemaCreator = false;
+    private bool $objectsExist = false;
 
     /**
      * @param Session $session
-     * @param SchemaVersion $schemaVersion
      * @param TwigEnvironment $twig
-     * @param string $application
      * @param Environment $environment
+     * @param SchemaVersion $schemaVersion
      * @throws Exception
      */
     public function __construct(
         private readonly Session $session,
-        private readonly SchemaVersion $schemaVersion,
         private readonly TwigEnvironment $twig,
-        private readonly string $application,
-        private readonly Environment $environment)
+        private readonly Environment $environment,
+        private readonly SchemaVersion $schemaVersion)
     {
         $this->schema = $this->session->getPlatform()->createIdentifier($this->environment->schema);
 
@@ -46,25 +47,26 @@ class History
         foreach (self::SCHEMA_OBJECTS as $name)
             $objects[$name] = $this->session->quoteIdentifier("$this->schema.$tablePrefix$name");
 
-        $this->schemaObjects = $objects;
-        $this->schemaExists = $this->schemaExists();
-        $this->checkVersion();
+        $this->objects = $objects;
+        $this->verifySchema();
         $this->initTwigFilters();
     }
 
     /**
      * @throws Exception
      */
-    public function startDeployment(Command $command, string $deployer, string $tag = ''): DeploymentId
+    public function startDeployment(Command $command, string $deployer,
+        string $application, string $tag = ''): DeploymentId
     {
+        $this->assertSchema();
         $this->session->getPlatform()->lockSession($this->schema->value, $this->environment->deployLockTimeout);
 
         try {
-            $id = $this->session->insertFetchId($this->schemaObjects['deployment'], 'deployment_id', [
+            $id = $this->session->insertReturningId($this->objects['deployment'], 'deployment_id', [
                 'deployer' => $deployer,
                 'tag' => $tag ?: null,
                 'command' => $command->value,
-                'application' => $this->application,
+                'application' => $application,
                 'schema_version' => $this->schemaVersion->version,
                 'started_at' => $this->formatDateTime()
             ]);
@@ -72,7 +74,7 @@ class History
             return new DeploymentId($id);
         }
         catch (Exception $e) {
-            $this->session->getPlatform()->unlockSession($this->schema->value);
+            ignoreException(fn() => $this->session->getPlatform()->unlockSession($this->schema->value));
             throw $e;
         }
     }
@@ -80,18 +82,20 @@ class History
     /**
      * @throws Exception
      */
-    public function addChange(DeploymentId $id, Migration $migration, string $status): void
+    public function addChange(DeploymentId $id, Migration $migration, Status $status): void
     {
-        $this->session->insert($this->schemaObjects['change'], [
+        $this->assertSchema();
+
+        $this->session->insert($this->objects['change'], [
             'change_id' => $migration->id->value,
             'deployment_id' => $id->value,
             'location' => $migration->location->value,
-            'commit_policy' => $migration->script->getCommitPolicy()->value,
-            'status' => $status,
+            'migrate_policy' => $migration->script->getMigratePolicy()->value,
+            'status' => $status->value,
             'author' => $migration->script->getAuthor()->value,
             'checksum' => $migration->checksum->value,
             'description' => $migration->script->getDescription()->value,
-            'revertable' => (int) ($migration->script instanceof Revertable),
+            'can_rollback' => (int) ($migration->script instanceof CanRollback),
             'is_sql' => (int) (pathinfo($migration->location->value, PATHINFO_EXTENSION) == 'sql'),
             'authored_at' => $this->formatDateTime($migration->script->getAuthoredAt()),
             'deployed_at' => $this->formatDateTime()
@@ -104,51 +108,57 @@ class History
     public function endDeployment(DeploymentId $id, array $error = []): void
     {
         try {
-            $this->session->update($this->schemaObjects['deployment'], [
+            $this->assertSchema();
+            $this->session->update($this->objects['deployment'], [
                 'error' => $error ? json_encode($error, JSON_UNESCAPED_SLASHES) : null,
                 'ended_at' => $this->formatDateTime()
             ], ['deployment_id' => $id->value]);
         }
         finally {
-            $this->session->getPlatform()->unlockSession($this->schema->value);
+            ignoreException(fn() => $this->session->getPlatform()->unlockSession($this->schema->value));
         }
     }
 
     /**
      * @throws Exception
      */
-    public function create(): void
+    public function create(SchemaVersion $schemaVersion): void
     {
-        $isSchemaCreator = !$this->schemaExists; // track if cinch will be the schema creator
-        $Q = $this->session->quoteString(...);
+        if ($this->objectsExist)
+            throw new Exception("history schema '{$this->schema->value}' already exists");
 
-        if (!$this->environment->autoCreateSchema && $isSchemaCreator)
+        $schemaCreator = !$this->schemaExists;
+        if (!$this->environment->autoCreateSchema && $schemaCreator)
             throw new RuntimeException("auto_create_schema is disabled and schema '{$this->schema->value}' " .
                 "does not exist. Please create this schema or configure an existing one.");
 
+        $Q = $this->session->quoteString(...);
         $ddl = $this->twig->render('create-history.twig', [
             'db' => [
                 'name' => $this->session->getPlatform()->getName(),
                 'version' => $this->session->getPlatform()->getVersion()
             ],
             'schema' => [
-                'is_creator' => $isSchemaCreator,
+                'creator' => $schemaCreator,
                 'name' => $this->schema->quotedId,
-                'version' => $Q($this->schemaVersion->version),
-                'description' => $Q($this->schemaVersion->description),
-                'release_date' => $Q($this->schemaVersion->releaseDate->format('Y-m-d')),
+                'version' => $Q($schemaVersion->version),
+                'description' => $Q($schemaVersion->description),
+                'release_date' => $Q($schemaVersion->releaseDate->format('Y-m-d')),
                 'created_at' => $Q($this->formatDateTime())
             ],
-            'commit_policies' => array_map(fn($e) => $e->value, CommitPolicy::cases()),
-            ...$this->schemaObjects
+            'commands' => array_map(fn($e) => $e->value, Command::cases()),
+            'statuses' => array_map(fn($e) => $e->value, Status::cases()),
+            'migrate_policies' => array_map(fn($e) => $e->value, MigratePolicy::cases()),
+            ...$this->objects
         ]);
 
         try {
             $this->session->executeStatement($ddl);
             $this->schemaExists = true;
+            $this->schemaCreator = $schemaCreator;
         }
         catch (Exception $e) {
-            $this->deleteHistory($isSchemaCreator);
+            ignoreException(fn() => $this->deleteHistory($schemaCreator));
             throw $e;
         }
     }
@@ -158,28 +168,58 @@ class History
      */
     public function delete(): void
     {
-        $this->deleteHistory($this->isSchemaCreator());
+        $this->assertSchema();
+        $this->deleteHistory($this->schemaCreator);
     }
 
     /**
      * @throws Exception
      */
-    private function deleteHistory(bool $isSchemaCreator): void
+    private function deleteHistory(bool $schemaCreator): void
     {
         $ddl = $this->twig->render('drop-history.twig', [
-            'db' => [
-                'name' => $this->session->getPlatform()->getName(),
-                'version' => $this->session->getPlatform()->getVersion()
-            ],
+            'db' => ['name' => $this->session->getPlatform()->getName()],
             'schema' => [
-                'is_creator' => $isSchemaCreator,
+                'creator' => $schemaCreator,
                 'name' => $this->schema->quotedId,
             ],
-            ...$this->schemaObjects
+            ...$this->objects
         ]);
 
         $this->session->executeStatement($ddl);
         $this->schemaExists = false;
+    }
+    /**
+     * @throws Exception
+     */
+    private function formatDateTime(DateTimeInterface|null $dt = null): string
+    {
+        $tz = new DateTimeZone('UTC');
+        return $this->session->getPlatform()->formatDateTime($dt ?? new DateTime(timezone: $tz));
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function verifySchema(): void
+    {
+        if (!($this->schemaExists = $this->schemaExists()) || !($this->objectsExist = $this->objectsExist()))
+            return;
+
+        $row = $this->session->executeQuery("
+            select schema_creator, schema_version from $this->objects['cinch'] 
+                where created_at = (select max(created_at) from $this->objects['cinch'])"
+        )->fetchNumeric();
+
+        if ($row === false)
+            throw new CorruptSchemaException("{$this->objects['cinch']} is empty");
+
+        [$this->schemaCreator, $server] = $row;
+
+        if (($n = version_compare($this->schemaVersion->version, $server)) != 0) {
+            $dir = $n < 0 ? 'behind' : 'ahead of';
+            throw new RuntimeException("client '{$this->schemaVersion->version}' is $dir server '$server'");
+        }
     }
 
     /**
@@ -195,44 +235,49 @@ class History
         return $this->session->executeQuery($query, [$this->schema->value])->fetchNumeric() !== false;
     }
 
-    /**
-     * @return bool
-     * @throws Exception
+    /** Do we have cinch schema objects or not.
+     * @throws Exception if objects are found but not all of them, no exception if none are found
      */
-    private function isSchemaCreator(): bool
+    private function objectsExist(): bool
     {
-        $query = "select schema_creator from {$this->schemaObjects['cinch']} where schema_version = ?";
-        return $this->session->executeQuery($query, [$this->schemaVersion->version])->fetchOne() == 1;
-    }
+        $tables = self::SCHEMA_OBJECTS;
+        $collation = array_pop($tables);
 
-    /**
-     * @throws Exception
-     */
-    private function formatDateTime(DateTimeInterface|null $dt = null): string
-    {
-        $tz = new DateTimeZone('UTC');
-        return $this->session->getPlatform()->formatDateTime($dt ?? new DateTime(timezone: $tz));
-    }
+        $result = $this->session->executeQuery("
+            select lower(table_name) from information_schema.tables 
+                where table_schema = ? and table_name in (?, ?, ?)", [$this->schema->value, ...$tables]);
 
-    /**
-     * @throws Exception
-     */
-    private function checkVersion(): void
-    {
-        if (!$this->schemaExists)
-            return;
+        $found = [];
+        while (($t = $result->fetchOne()) !== false)
+            $found[] = $t;
 
-        $cinch = $this->schemaObjects['cinch'];
-        $client = $this->schemaVersion->version;
-
-        /* fetch active version (last applied). note: if downgraded, this might not be the newest version */
-        $server = $this->session->executeQuery("select schema_version from $cinch 
-            where created_at = (select max(created_at) from $cinch)")->fetchOne();
-
-        if (($n = version_compare($client, $server)) != 0) {
-            $dir = $n < 0 ? 'behind' : 'ahead of';
-            throw new RuntimeException("client '$client' is $dir server '$server'");
+        /* any cinch tables missing? */
+        if ($found && ($missing = array_diff($tables, $found))) {
+            $missing = implode(', ', $missing);
+            throw new CorruptSchemaException("'{$this->schema->value}' missing cinch table(s) $missing");
         }
+
+        /* postgresql also has a collation */
+        if ($this->session->getPlatform()->getName() == 'pgsql') {
+            $haveCollation = $this->collationExists($collation);
+
+            if ($found && !$haveCollation)
+                throw new CorruptSchemaException("'{$this->schema->value}' missing cinch collation $collation");
+
+            if (!$found && $haveCollation) {
+                $missing = implode(', ', $tables);
+                throw new CorruptSchemaException("'{$this->schema->value}' missing cinch table(s) $missing");
+            }
+        }
+
+        return !!$found;
+    }
+
+    /** @throws Exception */
+    private function collationExists(string $collation): bool
+    {
+        $query = "select 1 from information_schema.collations where collation_schema = ? collation_name in (?)";
+        return $this->session->executeQuery($query, [$this->schema->value, $collation])->fetchOne() !== false;
     }
 
     private function initTwigFilters(): void
@@ -268,5 +313,11 @@ class History
             'sqlite' => "$name text constraint \"$error\" check (length($name) between 0 and $len)",
             default => "$name $type($len)"
         };
+    }
+
+    private function assertSchema(): void
+    {
+        if (!$this->schemaExists)
+            throw new RuntimeException("cinch history '{$this->schema->value}' doesn't exist");
     }
 }

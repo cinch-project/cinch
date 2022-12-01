@@ -4,7 +4,7 @@ namespace Cinch\MigrationStore\Script;
 
 use Cinch\Database\Session;
 
-interface Committable
+interface CanMigrate
 {
-    public function commit(Session $session): void;
+    public function migrate(Session $session): void;
 }

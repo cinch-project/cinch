@@ -25,7 +25,7 @@ class Session extends Connection
         return $this->platform;
     }
 
-    /**
+    /** Testing.
      * @param string $value
      * @return string
      * @throws Exception
@@ -36,14 +36,14 @@ class Session extends Connection
         return $this->getDatabasePlatform()->quoteStringLiteral($value);
     }
 
-    /**
+    /** Inserts a record and returns the last insert identifier.
      * @param string $table should be schema qualified
      * @param string $idColumn sequence, auto_increment, identity column name
      * @param array $data assoc array of column_name => value.
      * @return int
      * @throws Exception
      */
-    public function insertFetchId(string $table, string $idColumn, array $data): int
+    public function insertReturningId(string $table, string $idColumn, array $data): int
     {
         $columns = '';
         $values = [];

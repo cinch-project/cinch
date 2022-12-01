@@ -6,6 +6,6 @@ drop table if exists {{ cinch }};
     drop collation if exists {{ utf8_ci_ai }};
 {% endif %}
 
-{% if schema.is_creator %}
+{% if schema.creator %}
     drop schema {{ schema.name }};
 {% endif %}

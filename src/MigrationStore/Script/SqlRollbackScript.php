@@ -3,29 +3,29 @@
 namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
-use Cinch\Common\CommitPolicy;
+use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
 use DateTimeInterface;
 use Cinch\Database\Session;
 use Exception;
 
-class SqlCommitScript extends Script implements Committable
+class SqlRollbackScript extends Script implements CanRollback
 {
     public function __construct(
-        private readonly string $commitSql,
-        CommitPolicy $commitPolicy,
+        private readonly string $rollbackSql,
+        MigratePolicy $migratePolicy,
         Author $author,
         DateTimeInterface $authoredAt,
         Description $description)
     {
-        parent::__construct($commitPolicy, $author, $authoredAt, $description);
+        parent::__construct($migratePolicy, $author, $authoredAt, $description);
     }
 
     /**
      * @throws Exception
      */
-    public function commit(Session $session): void
+    public function rollback(Session $session): void
     {
-        $session->executeStatement($this->commitSql);
+        $session->executeStatement($this->rollbackSql);
     }
 }

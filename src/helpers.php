@@ -3,12 +3,21 @@
 
 const DATETIME_FORMAT = 'Y-m-d H:i:s.uO';
 
+function ignoreException(callable $c): void
+{
+    try {
+        $c();
+    }
+    catch (\Throwable) {
+    }
+}
+
 /** Slurps a file into a string.
  */
 function slurp(string $path, string $exceptionClass = Exception::class): string
 {
     if (($content = @file_get_contents($path)) === false)
-        throw_last_error(exceptionClass: $exceptionClass);
+        throw new $exceptionClass(error_get_last()['message']);
     return $content;
 }
 
@@ -36,15 +45,6 @@ function nanosleep(int $nanoseconds): bool
         extract($r); // ['seconds' => 0, 'nanoseconds' => 0]
 
     return $r;
-}
-
-/** Throws an exception using PHP's last error as the message. This uses error_get_last().
- */
-function throw_last_error(string $message = '', string $exceptionClass = Exception::class): void
-{
-    if ($message)
-        $message .= ' - ';
-    throw new $exceptionClass($message . error_get_last()['message']);
 }
 
 /** Gets local system time zone, nothing to do with php or php.ini.

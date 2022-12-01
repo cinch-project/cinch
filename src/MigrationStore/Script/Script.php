@@ -3,7 +3,7 @@
 namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
-use Cinch\Common\CommitPolicy;
+use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
 use DateTimeInterface;
 
@@ -12,7 +12,7 @@ abstract class Script
     private readonly array $variables;
 
     public function __construct(
-        private readonly CommitPolicy $commitPolicy,
+        private readonly MigratePolicy $migratePolicy,
         private readonly Author $author,
         private readonly DateTimeInterface $authoredAt,
         private readonly Description $description)
@@ -24,9 +24,9 @@ abstract class Script
         return $this->variables ?? [];
     }
 
-    public function getCommitPolicy(): CommitPolicy
+    public function getMigratePolicy(): MigratePolicy
     {
-        return $this->commitPolicy;
+        return $this->migratePolicy;
     }
 
     public function getAuthor(): Author

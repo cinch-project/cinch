@@ -11,17 +11,11 @@ enum SortPolicy: string
 
     public function isNatural(): bool
     {
-        return match ($this) {
-            self::NATURAL, self::NATURAL_CI => true,
-            default => false
-        };
+        return $this == self::NATURAL || $this == self::NATURAL_CI;
     }
 
     public function isCaseInsensitive(): bool
     {
-        return match ($this) {
-            self::NATURAL_CI, self::ALPHA_CI, => true,
-            default => false
-        };
+        return $this == self::NATURAL_CI || $this == self::ALPHA_CI;
     }
 }

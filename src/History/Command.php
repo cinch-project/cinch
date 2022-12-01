@@ -4,6 +4,6 @@ namespace Cinch\History;
 
 enum Command: string
 {
-    case COMMIT = 'commit';
-    case REVERT = 'revert';
+    case MIGRATE = 'migrate';
+    case ROLLBACK = 'rollback';
 }

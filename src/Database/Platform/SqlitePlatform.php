@@ -8,6 +8,7 @@ use Cinch\Database\Identifier;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
+use Cinch\LastErrorException;
 use Exception;
 use PDO;
 
@@ -82,7 +83,7 @@ class SqlitePlatform implements Platform
         }
 
         if (($fp = @fopen("$this->lockPath.$name.lock", 'w+')) === false)
-            throw_last_error();
+            throw new LastErrorException();
 
         /* try to lock for $timeout milliseconds */
         $timeout = max(0, $timeout) * 1000;
@@ -131,8 +132,8 @@ class SqlitePlatform implements Platform
      */
     private function throwLockError($fp): void
     {
-        $message = error_get_last()['message']; // save it so fclose() don't overwrite it
+        $e = new LastErrorException();
         fclose($fp);
-        throw new Exception($message);
+        throw $e;
     }
 }

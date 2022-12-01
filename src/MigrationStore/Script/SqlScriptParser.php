@@ -3,7 +3,7 @@
 namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
-use Cinch\Common\CommitPolicy;
+use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
@@ -13,7 +13,7 @@ use Exception;
 
 class SqlScriptParser
 {
-    const TAGS = ['author', 'authored_at', 'description', 'commit_policy'];
+    const TAGS = ['author', 'authored_at', 'description', 'migrate_policy'];
 
     /**
      * @throws Exception
@@ -21,15 +21,15 @@ class SqlScriptParser
     public function parse(string $data): Script
     {
         $args = self::parseTags($data);
-        [$commitSql, $revertSql] = self::parseSql($data);
+        [$migrateSql, $rollbackSql] = self::parseSql($data);
 
-        if ($commitSql && $revertSql)
-            return new SqlScript($commitSql, $revertSql, ...$args);
+        if ($migrateSql && $rollbackSql)
+            return new SqlScript($migrateSql, $rollbackSql, ...$args);
 
-        if ($commitSql)
-            return new SqlCommitScript($commitSql, ...$args);
+        if ($migrateSql)
+            return new SqlMigrateScript($migrateSql, ...$args);
 
-        return new SqlRevertScript($revertSql, ...$args);
+        return new SqlRollbackScript($rollbackSql, ...$args);
     }
 
     /**
@@ -60,7 +60,7 @@ class SqlScriptParser
         Assert::keySet($tags, 'author', "@author");
         Assert::keySet($tags, 'authored_at', "@authored_at");
         Assert::keySet($tags, 'description', "@description");
-        Assert::keySet($tags, 'commit_policy', "@commit_policy");
+        Assert::keySet($tags, 'migrate_policy', "@migrate_policy");
 
         try {
             $authoredAt = new DateTimeImmutable($tags['authored_at'], new DateTimeZone('UTC'));
@@ -70,7 +70,7 @@ class SqlScriptParser
         }
 
         return [
-            CommitPolicy::from($tags['commit_policy']),
+            MigratePolicy::from($tags['migrate_policy']),
             new Author($tags['author']),
             $authoredAt,
             new Description($tags['description'])
@@ -82,46 +82,46 @@ class SqlScriptParser
      */
     private static function parseSql(string $data): array
     {
-        /* find "-- @commit" or "-- @revert", ignoring whitespace */
-        static $pattern = '~^[ \t]*--[ \t]+@(commit|revert)\b~Sm';
+        /* find "-- @migrate" or "-- @rollback", ignoring whitespace */
+        static $pattern = '~^[ \t]*--[ \t]+@(migrate|rollback)\b~Sm';
 
         $count = preg_match_all($pattern, $data, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
         if (!$count)
-            throw new AssertException("invalid entry: no commit or revert section found.");
+            throw new AssertException("invalid entry: no migrate or rollback section found.");
 
         if ($count > 2)
-            throw new AssertException("invalid entry: multiple commit and/or revert sections");
+            throw new AssertException("invalid entry: multiple migrate and/or rollback sections");
 
-        $commitOff = -1;
-        $revertOff = -1;
-        $commitSql = null;
-        $revertSql = null;
+        $migrateOff = -1;
+        $rollbackOff = -1;
+        $migrateSql = null;
+        $rollbackSql = null;
 
-        /* one or two sections: can only be 'commit' and 'revert' */
+        /* one or two sections: can only be 'migrate' and 'rollback' */
         foreach ($matches as $m) {
-            if ($m[1][0] == 'commit')
-                $commitOff = $m[0][1];
+            if ($m[1][0] == 'migrate')
+                $migrateOff = $m[0][1];
             else
-                $revertOff = $m[0][1];
+                $rollbackOff = $m[0][1];
         }
 
-        if ($revertOff == -1) {
-            $commitSql = substr($data, $commitOff);
+        if ($rollbackOff == -1) {
+            $migrateSql = substr($data, $migrateOff);
         }
-        else if ($commitOff == -1) {
-            $revertSql = substr($data, $revertOff);
+        else if ($migrateOff == -1) {
+            $rollbackSql = substr($data, $rollbackOff);
         }
-        /* revert section declared first */
-        else if ($revertOff < $commitOff) {
-            $revertSql = substr($data, $revertOff, $commitOff - $revertOff);
-            $commitSql = substr($data, $commitOff);
+        /* rollback section declared first */
+        else if ($rollbackOff < $migrateOff) {
+            $rollbackSql = substr($data, $rollbackOff, $migrateOff - $rollbackOff);
+            $migrateSql = substr($data, $migrateOff);
         }
-        /* commit section declared first */
+        /* migrate section declared first */
         else {
-            $commitSql = substr($data, $commitOff, $revertOff - $commitOff);
-            $revertSql = substr($data, $revertOff);
+            $migrateSql = substr($data, $migrateOff, $rollbackOff - $migrateOff);
+            $rollbackSql = substr($data, $rollbackOff);
         }
 
-        return [$commitSql, $revertSql];
+        return [$migrateSql, $rollbackSql];
     }
 }

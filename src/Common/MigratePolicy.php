@@ -2,7 +2,7 @@
 
 namespace Cinch\Common;
 
-enum CommitPolicy: string
+enum MigratePolicy: string
 {
     case ALWAYS = 'always';
     case ONCHANGE = 'onchange';

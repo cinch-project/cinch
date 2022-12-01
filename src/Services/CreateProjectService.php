@@ -2,6 +2,7 @@
 
 namespace Cinch\Services;
 
+use Cinch\History\SchemaVersion;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 use Exception;
@@ -10,7 +11,8 @@ class CreateProjectService
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,
-        private readonly ProjectRepository $projectRepository)
+        private readonly ProjectRepository $projectRepository,
+        private readonly SchemaVersion $schemaVersion)
     {
     }
 
@@ -32,12 +34,12 @@ class CreateProjectService
             $migrationStore->create();
             $rollback['store'] = $migrationStore->delete(...);
 
-            $this->dataStoreFactory->createHistory($environment)->create();
+            $this->dataStoreFactory->createHistory($environment)->create($this->schemaVersion);
         }
         catch (Exception $e) {
             foreach ($rollback as $name => $action) {
                 echo "rollback: $name\n";
-                $action();
+                ignoreException($action);
             }
 
             throw $e;

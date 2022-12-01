@@ -5,6 +5,7 @@ namespace Cinch\Console;
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
+use Cinch\LastErrorException;
 use Cinch\Project\Environment;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Hook;
@@ -64,8 +65,8 @@ class ConsoleProjectRepository implements ProjectRepository
         /* persist */
         $file = Path::join($projectDir, self::PROJECT_FILE);
         if (@file_put_contents($file, $state) === false) {
-            $e = new Exception(error_get_last()['message']);
-            $this->remove($project->getId());
+            $e = new LastErrorException();
+            ignoreException(fn() => $this->remove($project->getId()));
             throw $e;
         }
     }

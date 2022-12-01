@@ -4,7 +4,7 @@ namespace Cinch\MigrationStore\Script;
 
 use Cinch\Database\Session;
 
-interface Revertable
+interface CanRollback
 {
-    public function revert(Session $session): void;
+    public function rollback(Session $session): void;
 }

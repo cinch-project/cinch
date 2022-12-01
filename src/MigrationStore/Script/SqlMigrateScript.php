@@ -3,29 +3,29 @@
 namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
-use Cinch\Common\CommitPolicy;
+use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
 use DateTimeInterface;
 use Cinch\Database\Session;
 use Exception;
 
-class SqlRevertScript extends Script implements Revertable
+class SqlMigrateScript extends Script implements CanMigrate
 {
     public function __construct(
-        private readonly string $revertSql,
-        CommitPolicy $commitPolicy,
+        private readonly string $migrateSql,
+        MigratePolicy $migratePolicy,
         Author $author,
         DateTimeInterface $authoredAt,
         Description $description)
     {
-        parent::__construct($commitPolicy, $author, $authoredAt, $description);
+        parent::__construct($migratePolicy, $author, $authoredAt, $description);
     }
 
     /**
      * @throws Exception
      */
-    public function revert(Session $session): void
+    public function migrate(Session $session): void
     {
-        $session->executeStatement($this->revertSql);
+        $session->executeStatement($this->migrateSql);
     }
 }
