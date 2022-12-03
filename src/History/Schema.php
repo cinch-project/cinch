@@ -156,7 +156,9 @@ class Schema
      */
     private function objectsExist(): bool
     {
-        if ($this->session->getPlatform()->getName() == 'sqlite')
+        $name = $this->session->getPlatform()->getName();
+
+        if ($name == 'sqlite')
             $result = $this->session->executeQuery("select tbl_name from sqlite_master 
                 where type = 'table' and tbl_name in (?, ?, ?)", self::TABLES);
         else
@@ -174,7 +176,7 @@ class Schema
         }
 
         /* postgresql also has a collation */
-        if ($this->session->getPlatform()->getName() == 'pgsql') {
+        if ($name == 'pgsql') {
             $haveCollation = $this->collationExists();
 
             if ($found && !$haveCollation)

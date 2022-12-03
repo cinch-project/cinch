@@ -21,7 +21,7 @@ class CreateProjectService
     public function execute(Project $project, string $environmentName = ''): void
     {
         $rollback = [];
-        $environment = $project->getEnvironment($environmentName);
+        $environment = $project->getEnvironmentMap()->get($environmentName);
 
         $this->dataStoreFactory->createSession($environment->target)->close(); // test connection
 

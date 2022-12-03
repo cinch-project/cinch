@@ -24,6 +24,7 @@ class Application extends SymfonyApplication
             new InputOption('environment', 'e', InputOption::VALUE_REQUIRED, "Sets the environment [default: environments.default]"),
             new InputOption('working-dir', 'w', InputOption::VALUE_REQUIRED, 'Sets the working directory [default: pwd]'),
             new InputOption('time-zone', 'z', InputOption::VALUE_REQUIRED, 'Sets the time zone for logging and display [default: system]'),
+            new InputOption('dry-run', null, InputOption::VALUE_NONE, 'Performs all actions and logging without executing [default: off]'),
             new InputOption('help', 'h', InputOption::VALUE_NONE, 'Display help for the given command'),
             new InputOption('quiet', 'q', InputOption::VALUE_NONE, 'Do not output any message'),
             new InputOption('version', 'V', InputOption::VALUE_NONE, 'Display this application version'),

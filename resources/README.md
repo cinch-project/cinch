@@ -1,7 +1,7 @@
 # Cinch Schema
 
 The cinch schema is a set of tables that track deployed (committed or reverted) changes to the target database.
-The schema is always named `cinch_$PROJECT`. Although there are some differences in definition between
+The default schema is named `cinch_$PROJECT`. Although there are some differences in definition between
 mysql and postgres, they behave identically and have the same table layouts.
 
 > cinch always references its internal schema objects using schema qualified names: cinch_myproject.change.

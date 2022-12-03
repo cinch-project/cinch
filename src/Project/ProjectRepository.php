@@ -16,5 +16,7 @@ interface ProjectRepository
      */
     public function add(Project $project): void;
 
+    public function update(Project $project): void;
+
     public function remove(ProjectId $id): void;
 }

@@ -59,16 +59,24 @@ class ConsoleProjectRepository implements ProjectRepository
         $fs = new Filesystem();
         $fs->mkdir(Path::join($projectDir, 'log')); // creates all parents
 
-        /* serialize */
-        $state = Yaml::dump($project->normalize(), 100, flags: Yaml::DUMP_OBJECT_AS_MAP);
-
-        /* persist */
-        $file = Path::join($projectDir, self::PROJECT_FILE);
-        if (@file_put_contents($file, $state) === false) {
-            $e = new LastErrorException();
+        try {
+            $this->update($project);
+        }
+        catch (Exception $e) {
             ignoreException(fn() => $this->remove($project->getId()));
             throw $e;
         }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function update(Project $project): void
+    {
+        $state = Yaml::dump($project->normalize(), 100, flags: Yaml::DUMP_OBJECT_AS_MAP);
+        $file = Path::join($project->getId(), self::PROJECT_FILE);
+        if (@file_put_contents($file, $state) === false)
+            throw new LastErrorException();
     }
 
     public function remove(ProjectId $id): void
@@ -103,10 +111,10 @@ class ConsoleProjectRepository implements ProjectRepository
      */
     private function createEnvironment(mixed $value, ProjectName $projectName, string $path): Environment
     {
-        $deployLockTimeout = 10;
         $tablePrefix = '';
-        $schema = "cinch_$projectName";
-        $autoCreateSchema = true;
+        $schema = sprintf(Environment::DEFAULT_SCHEMA_FORMAT, $projectName);
+        $autoCreateSchema = Environment::DEFAULT_AUTO_CREATE_SCHEMA;
+        $deployLockTimeout = Environment::DEFAULT_DEPLOY_LOCK_TIMEOUT;
 
         /* 'env_name: dsn' */
         if (is_string($value)) {
@@ -116,7 +124,7 @@ class ConsoleProjectRepository implements ProjectRepository
         else if (is_object($value)) {
             if (property_exists($value, 'deploy_lock_timeout'))
                 $deployLockTimeout = Assert::that($value->deploy_lock_timeout, "$path.deploy_lock_timeout")
-                    ->int()->greaterThanEqualTo(0);
+                    ->int()->greaterThanEqualTo(0)->value();
 
             $target = Assert::thatProp($value, 'target', "$path.target")
                 ->string()->notEmpty()->value();

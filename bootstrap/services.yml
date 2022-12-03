@@ -1,6 +1,8 @@
 parameters:
     commands: # Application CommandLoader: lazy-load commands
         create: Cinch\Console\CreateProjectCommand
+        add-env: Cinch\Console\AddEnvironmentCommand
+        migrate: Cinch\Console\MigrateCommand
 
 services:
     _defaults:
@@ -73,10 +75,6 @@ services:
             - '%schema.version%'
             - '%schema.description%'
             - '%schema.release_date%'
-
-    Cinch\Services\DataStoreFactory:
-        arguments:
-            $application: 'Cinch CLI %cinch.version%'
 
     Cinch\MigrationStore\XXH128MigrationFactory: ~
     Cinch\MigrationStore\MigrationFactory: '@Cinch\MigrationStore\XXH128MigrationFactory'

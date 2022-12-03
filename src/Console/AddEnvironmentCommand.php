@@ -4,25 +4,21 @@ namespace Cinch\Console;
 
 use Cinch\Common\Dsn;
 use Cinch\Common\Environment;
-use Cinch\Project\EnvironmentMap;
-use Cinch\Project\Project;
-use Cinch\Project\ProjectName;
-use Cinch\Services\CreateProjectService;
+use Cinch\Project\ProjectRepository;
+use Cinch\Services\AddEnvironmentService;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Filesystem\Path;
 
-#[AsCommand('create', 'Creates a new project')]
-class CreateProjectCommand extends AbstractCommand
+#[AsCommand('add-env', 'Adds a new environment to a project')]
+class AddEnvironmentCommand extends AbstractCommand
 {
     public function __construct(
-        private readonly CreateProjectService $createProject,
-        private readonly string $tempLogFile)
+        private readonly AddEnvironmentService $addEnvService,
+        private readonly ProjectRepository $projectRepository)
     {
         parent::__construct();
     }
@@ -31,11 +27,10 @@ class CreateProjectCommand extends AbstractCommand
     {
         $this->setHelp('This does cool stuff')
             ->addProjectArgument()
+            ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
             ->addArgument('target', InputArgument::REQUIRED, 'Target (database) DSN')
             ->addOption('history', 'H', InputOption::VALUE_REQUIRED,
                 'History (database) DSN [default: target]')
-            ->addOption('migration-store', 'm', InputOption::VALUE_REQUIRED,
-                "Migration Store DSN", '.')
             ->addOption('schema', 's', InputOption::VALUE_REQUIRED,
                 "Schema name to use for history tables [default: cinch_{projectName}]")
             ->addOption('table-prefix', null, InputOption::VALUE_REQUIRED,
@@ -53,22 +48,12 @@ class CreateProjectCommand extends AbstractCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $projectName = new ProjectName($input->getArgument('project'));
-        $environment = $this->getEnvironmentFromInput($input, $projectName);
+        $project = $this->projectRepository->get($this->projectId);
+        $name = $input->getArgument('name');
+        $environment = $this->getEnvironmentFromInput($input, $project->getName());
 
-        $project = new Project(
-            $this->projectId,
-            $projectName,
-            new Dsn($input->getOption('migration-store')),
-            new EnvironmentMap($projectName->value, [$projectName->value => $environment])
-        );
-
-        $this->logger->info("creating project");
-        $this->createProject->execute($project, $this->environmentName);
-
-        /* move temp log to project log dir, now that project dir exists */
-        $logFile = Path::join($this->projectId, 'log', basename($this->tempLogFile));
-        (new Filesystem())->rename($this->tempLogFile, $logFile);
+        $this->logger->info("adding environment $name to project {$project->getName()}");
+        $this->addEnvService->execute($project, $name, $environment);
 
         return self::SUCCESS;
     }

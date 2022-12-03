@@ -4,6 +4,10 @@ namespace Cinch\Common;
 
 class Environment
 {
+    const DEFAULT_SCHEMA_FORMAT = 'cinch_%s';
+    const DEFAULT_DEPLOY_LOCK_TIMEOUT = 10;
+    const DEFAULT_AUTO_CREATE_SCHEMA = true;
+
     public readonly string $schema;
     public readonly bool $autoCreateSchema;
 

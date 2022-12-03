@@ -4,22 +4,46 @@ namespace Cinch\Project;
 
 use Cinch\Common\Dsn;
 use Cinch\Common\Environment;
+use Exception;
 
 class Project
 {
+    /**
+     * @throws Exception
+     */
     public function __construct(
         private readonly ProjectId $id,
         private readonly ProjectName $name,
         protected Dsn $migrationStore,
-        protected EnvironmentMap $environments,
+        protected EnvironmentMap $envMap,
         protected array $hooks = [])
     {
     }
 
-    public function getEnvironment(string $name = ''): Environment
+    /**
+     * @return EnvironmentMap
+     */
+    public function getEnvironmentMap(): EnvironmentMap
     {
-        return $this->environments->get($name ?: $this->environments->getDefaultName());
+        return $this->envMap;
     }
+
+    /**
+     * @throws Exception
+     */
+    public function addEnvironment(string $name, Environment $environment): void
+    {
+        $this->envMap = $this->envMap->add($name, $environment);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function removeEnvironment(string $name): void
+    {
+        $this->envMap = $this->envMap->remove($name);
+    }
+
 
     public function getId(): ProjectId
     {
@@ -52,7 +76,7 @@ class Project
 
         return [
             'migration_store' => (string) $this->migrationStore,
-            'environments' => $this->environments->normalize(),
+            'environments' => $this->envMap->normalize(),
             'hooks' => (object) $hooks
         ];
     }
