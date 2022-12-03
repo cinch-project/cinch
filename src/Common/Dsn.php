@@ -15,9 +15,8 @@ class Dsn extends Uri
 
     public function __construct(string $dsn)
     {
-        Assert::notEmpty($dsn, 'dsn');
+        $uri = new Uri(Assert::notEmpty($dsn, 'dsn'));
 
-        $uri = new Uri($dsn);
         if (!$uri->getScheme())
             $uri = $uri->withScheme('file');
         else
@@ -29,7 +28,7 @@ class Dsn extends Uri
         parse_str($this->getQuery(), $q);
         $this->options = $q;
 
-        $parts = explode(':', $this->getUserInfo());
+        $parts = explode(':', $this->getUserInfo(), 2);
         $this->user = array_shift($parts) ?? '';
         $this->password = array_shift($parts) ?? '';
     }
