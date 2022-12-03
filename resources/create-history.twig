@@ -11,6 +11,7 @@
 {% set restrict = 'restrict' %}
 {% set bigint = 'bigint' %}
 {% set release_date_type = 'date not null' %}
+{% set index_prefix = '' %}
 
 {% if db.name == 'pgsql' %}
     {% set table_options = '' %}
@@ -36,6 +37,7 @@
     {% set bigint = 'integer' %}
     {% set release_date_type = 'text not null constraint "invalid release_date: YYYY-MM-DD format" ' ~
         "check (strftime('%Y-%m-%d', release_date) is not null)" %}
+    {% set index_prefix = schema.name ~ '.' %}
     {% set collate_ascii = 'collate binary' %}
     {% set collate_utf8ci = 'collate nocase' %}
     {% set json = 'text' %}
@@ -84,7 +86,7 @@ create table {{ deployment }}
     error {{ json }} null default null,
     {{ 'application'|nvarchar(128) }} {{ collate_utf8ci }} not null,
     {{ 'schema_version'|varchar(32) }} {{ collate_ascii }} not null
-        references {{ cinch }} (schema_version) on delete {{ restrict }},
+        references {{ cinch|strip_schema }} (schema_version) on delete {{ restrict }},
     started_at {{ datetime }} not null,
     ended_at {{ datetime }} null default null,
     constraint {{ 'tag cannot be empty'|quote }} check (tag is null or tag <> ''),
@@ -93,9 +95,9 @@ create table {{ deployment }}
     constraint {{ 'application cannot be empty'|quote }} check (application <> '')
 ) {{ table_options }};
 
-create index deployment_deployer_idx on {{ deployment }} (deployer);
-create index deployment_tag_idx on {{ deployment }} (tag);
-create index deployment_command_idx on {{ deployment }} (command);
+create index {{ index_prefix }}deployment_deployer_idx on {{ deployment|strip_schema }} (deployer);
+create index {{ index_prefix }}deployment_tag_idx on {{ deployment|strip_schema }} (tag);
+create index {{ index_prefix }}deployment_command_idx on {{ deployment|strip_schema }} (command);
 
 {#
     never do `WHERE location = ?`, there is no index on location since it can be too wide for any db.
@@ -105,7 +107,7 @@ create index deployment_command_idx on {{ deployment }} (command);
 create table {{ change }}
 (
     {{ 'change_id'|varchar(64) }} {{ collate_ascii }} not null,
-    deployment_id {{ bigint }} not null references {{ deployment }} (deployment_id) on delete {{ restrict }},
+    deployment_id {{ bigint }} not null references {{ deployment|strip_schema }} (deployment_id) on delete {{ restrict }},
     location {{ location_type }} not null,
     {{ 'migrate_policy'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'status'|varchar(16) }} {{ collate_ascii }} not null,
@@ -129,5 +131,5 @@ create table {{ change }}
         check (migrate_policy in ({{ "'" ~ migrate_policies|join("','") ~ "'" }}))
 ) {{ table_options }};
 
-create index change_deployment_id_idx on {{ change }} (deployment_id);
-create index change_deployed_at_idx on {{ change }} (deployed_at);
+create index {{ index_prefix }}change_deployment_id_idx on {{ change|strip_schema }} (deployment_id);
+create index {{ index_prefix }}change_deployed_at_idx on {{ change|strip_schema }} (deployed_at);

@@ -42,6 +42,7 @@ class SqlitePlatform implements Platform
         if ($this->version < 3.0)
             throw new UnsupportedVersionException('SQLite', $this->version, 3.0);
 
+        $session->executeStatement('pragma foreign_keys = on');
         return $session;
     }
 

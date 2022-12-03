@@ -39,6 +39,7 @@ class MsSqlPlatform implements Platform
         /* cannot be passed to constructor according to PDO and Microsoft docs */
         $pdo->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
         $pdo->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, (int) ($dsn->getTimeout() / 1000));
+        $pdo->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
 
         $dbname = trim($dsn->getPath(), '/');
 

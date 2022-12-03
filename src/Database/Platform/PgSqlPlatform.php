@@ -106,11 +106,11 @@ class PgSqlPlatform implements Platform
      */
     private function tryLock(Session $session, int $key): bool
     {
-        return $session->executeQuery("select pg_try_advisory_lock(?)", [$key])->fetchOne() === 't';
+        return $session->executeQuery("select pg_try_advisory_lock(?)", [$key])->fetchOne();
     }
 
     private function computeKey(string $name): int
     {
-        return hexdec(hash('xxh64', $name));
+        return hexdec(hash('xxh32', $name));
     }
 }

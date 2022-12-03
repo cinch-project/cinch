@@ -105,7 +105,7 @@ class History
         $state = $this->schema->state();
 
         if ($state & Schema::OBJECTS)
-            throw new Exception("history schema '{$this->schema->name()}' already exists");
+            throw new Exception("history schema '{$this->schema->name()}' already contains cinch objects");
 
         /* cinch becomes the creator when the schema does not exist */
         $creator = $state & Schema::EXISTS ? 0 : Schema::CREATOR;
@@ -223,6 +223,20 @@ class History
 
     private function initTwigFilters(): void
     {
+        /* identifier quoting: {{ 'schema.table'|strip_schema }}
+         *     sqlite: table
+         *     others: schema.table
+         *
+         * sqlite doesn't allow schema-qualified tables for INDEX ON or REFERENCES clauses. It throws
+         * a syntax error on the ".". This only strips for sqlite [sighs]. It does allow schema-qualified
+         * index names: `CREATE INDEX schema.my_index_name ON my_table (column)`. Template handles that.
+         */
+        $this->twig->addFilter(new TwigFilter('strip_schema', function (string $string) {
+            if ($this->session->getPlatform()->getName() == 'sqlite')
+                $string = explode('.', $string, 2)[1];
+            return $string;
+        }));
+
         /* identifier quoting: {{ 'identifier_name'|quote }} */
         $this->twig->addFilter(new TwigFilter('quote', function (string $string) {
             return $this->session->quoteIdentifier($string);

@@ -156,8 +156,12 @@ class Schema
      */
     private function objectsExist(): bool
     {
-        $result = $this->session->executeQuery("select lower(table_name) from information_schema.tables 
-            where table_schema = ? and table_name in (?, ?, ?)", [$this->name, ...self::TABLES]);
+        if ($this->session->getPlatform()->getName() == 'sqlite')
+            $result = $this->session->executeQuery("select tbl_name from sqlite_master 
+                where type = 'table' and tbl_name in (?, ?, ?)", self::TABLES);
+        else
+            $result = $this->session->executeQuery("select lower(table_name) from information_schema.tables 
+                where table_schema = ? and table_name in (?, ?, ?)", [$this->name, ...self::TABLES]);
 
         $found = [];
         while (($t = $result->fetchOne()) !== false)
@@ -193,7 +197,7 @@ class Schema
     /** @throws Exception */
     private function collationExists(): bool
     {
-        $query = "select 1 from information_schema.collations where collation_schema = ? collation_name = ?";
+        $query = "select 1 from information_schema.collations where collation_schema = ? and collation_name = ?";
         return $this->session->executeQuery($query, [$this->name, self::COLLATION])->fetchOne() !== false;
     }
 }
