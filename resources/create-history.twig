@@ -15,7 +15,7 @@
 {% if db.name == 'pgsql' %}
     {% set table_options = '' %}
     {% set collate_ascii = 'collate "C"' %}
-    {% set collate_utf8ci = 'collate ' ~ utf8_ci_ai %}
+    {% set collate_utf8ci = 'collate ' ~ utf8_ci_ai %} {# utf8_ci_ai defined in php #}
     {% set json = 'jsonb' %}
     {% set bool = 'smallint' %}
     {% set datetime = 'timestamptz(6)' %}
@@ -41,7 +41,7 @@
     {% set json = 'text' %}
     {% set bool = 'integer' %}
     {% set datetime = 'text' %} {# stored in ISO 8601 format #}
-    {% set deployment_id_seq = 'integer' %}
+    {% set deployment_id_seq = 'integer' %} {# INTEGER PRIMARY KEY == auto increment in sqlite #}
 {% elseif db.name == 'mssql' %}
     {% set table_options = '' %}
     {% set location_type = 'nvarchar(max)' %}
@@ -97,6 +97,11 @@ create index deployment_deployer_idx on {{ deployment }} (deployer);
 create index deployment_tag_idx on {{ deployment }} (tag);
 create index deployment_command_idx on {{ deployment }} (command);
 
+{#
+    never do `WHERE location = ?`, there is no index on location since it can be too wide for any db.
+    instead, you need to query change_id, which is typically a HASH of location but doesn't have to be.
+    Each cinch app can use whatever they desire. Cinch CLI and portal do: change_id = HEX(xxh128(location))
+#}
 create table {{ change }}
 (
     {{ 'change_id'|varchar(64) }} {{ collate_ascii }} not null,
