@@ -3,6 +3,7 @@
 namespace Cinch\Database;
 
 use Cinch\Common\Dsn;
+use DateTimeInterface;
 use Exception;
 
 interface Platform
@@ -14,23 +15,24 @@ interface Platform
      */
     public function getName(): string;
 
-    /** Gets the driver name.
+    public function supportsTransactionalDDL(): bool;
+
+    /** Formats a platform-aware datetime.
+     * @param DateTimeInterface $dt
      * @return string
      */
-    public function getDriver(): string;
-
-    public function formatDateTime(\DateTimeInterface $dateTime): string;
+    public function formatDateTime(DateTimeInterface $dt): string;
 
     /** Gets the platform version: major.minor only.
      * @return float
      */
     public function getVersion(): float;
 
-    /** Creates a platform identifier: database, schema, table, column, etc.
+    /** Asserts a platform identifier: database, schema, table, column, etc.
      * @param string $value
-     * @return Identifier
+     * @return string
      */
-    public function createIdentifier(string $value): Identifier;
+    public function assertIdentifier(string $value): string;
 
     /** Adds platform-specific connection parameters.
      * @param Dsn $dsn
@@ -47,16 +49,18 @@ interface Platform
     public function initSession(Session $session, Dsn $dsn): Session;
 
     /** Locks a session. This is an application (advisory) lock, not a table lock.
-     * @param string $name
+     * @param Session $session
+     * @param string $name a good choice is the schema name history resides in
      * @param int $timeout seconds
      * @return bool true if lock was acquired and false if not
      * @throws Exception error occurred
      */
-    public function lockSession(string $name, int $timeout): bool;
+    public function lockSession(Session $session, string $name, int $timeout): bool;
 
     /** Unlocks a session.
+     * @param Session $session
      * @param string $name
      * @throws Exception
      */
-    public function unlockSession(string $name): void;
+    public function unlockSession(Session $session, string $name): void;
 }

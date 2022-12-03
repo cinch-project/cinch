@@ -4,7 +4,6 @@ namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
-use Cinch\Database\Identifier;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -14,8 +13,7 @@ use PDO;
 
 class SqlitePlatform implements Platform
 {
-    private readonly float $version;
-    private readonly Session $session;
+    use PlatformHelpers;
 
     /** use a file lock to lock session. concurrent deployments using a sqlite history are only
      * possible on the same machine. Also, there is no good mechanism within sqlite itself.
@@ -24,36 +22,9 @@ class SqlitePlatform implements Platform
     private $lockStream = null;
     private readonly string $lockPath; // sqlite db path from dsn
 
-    public function getName(): string
+    public function assertIdentifier(string $value): string
     {
-        return 'sqlite';
-    }
-
-    public function getDriver(): string
-    {
-        return 'sqlite';
-    }
-
-    public function getVersion(): float
-    {
-        return $this->version;
-    }
-
-    public function formatDateTime(\DateTimeInterface $dateTime): string
-    {
-        return $dateTime->format(self::DATETIME_FORMAT);
-    }
-
-    public function createIdentifier(string $value): Identifier
-    {
-        return new class($this->session, $value) extends Identifier {
-            public function __construct(Session $session, string $value)
-            {
-                // sqlite has no limit
-                Assert::regex($value, '~^[\x{0001}-\x{ffff}]+$~u', 'identifier');
-                parent::__construct($value, $session->quoteString($value), $session->quoteIdentifier($value));
-            }
-        };
+        return Assert::regex($value, '~^[\x{0001}-\x{ffff}]+$~u', 'identifier');
     }
 
     public function addParams(Dsn $dsn, array $params): array
@@ -71,10 +42,10 @@ class SqlitePlatform implements Platform
         if ($this->version < 3.0)
             throw new UnsupportedVersionException('SQLite', $this->version, 3.0);
 
-        return $this->session = $session;
+        return $session;
     }
 
-    public function lockSession(string $name, int $timeout): bool
+    public function lockSession(Session $session, string $name, int $timeout): bool
     {
         if ($this->lockStream) {
             // TODO: $this->logger->debug()
@@ -109,7 +80,7 @@ class SqlitePlatform implements Platform
         return false; // timeout
     }
 
-    public function unlockSession(string $name): void
+    public function unlockSession(Session $session, string $name): void
     {
         if (!$this->lockStream)
             return;

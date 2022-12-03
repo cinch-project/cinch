@@ -5,7 +5,6 @@ namespace Cinch\Database\Platform;
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
 use Cinch\Database\Platform;
-use Cinch\Database\Identifier;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
 use Exception;
@@ -14,38 +13,11 @@ use RuntimeException;
 
 class MsSqlPlatform implements Platform
 {
-    private readonly float $version;
-    private readonly Session $session;
+    use PlatformHelpers;
 
-    public function getName(): string
+    public function assertIdentifier(string $value): string
     {
-        return 'mssql';
-    }
-
-    public function getDriver(): string
-    {
-        return 'mssql';
-    }
-
-    public function getVersion(): float
-    {
-        return $this->version;
-    }
-
-    public function formatDateTime(\DateTimeInterface $dateTime): string
-    {
-        return $dateTime->format(self::DATETIME_FORMAT);
-    }
-
-    public function createIdentifier(string $value): Identifier
-    {
-        return new class($this->session, $value) extends Identifier {
-            public function __construct(Session $session, string $value)
-            {
-                Assert::regex($value, '~^[\x{0001}-\x{ffff}]{1,128}$~u', 'identifier');
-                parent::__construct($value, $session->quoteString($value), $session->quoteIdentifier($value));
-            }
-        };
+        return Assert::regex($value, '~^[\x{0001}-\x{ffff}]{1,128}$~u', 'identifier');
     }
 
     public function addParams(Dsn $dsn, array $params): array
@@ -89,19 +61,19 @@ class MsSqlPlatform implements Platform
             throw new UnsupportedVersionException($edition, $this->version, 12.0,
                 "compatibility_level $compatLevel < 110");
 
-        return $this->session = $session;
+        return $session;
     }
 
-    public function lockSession(string $name, int $timeout): bool
+    public function lockSession(Session $session, string $name, int $timeout): bool
     {
         $timeout = max(0, $timeout);
 
         /* there is no OUTPUT param for sp_getapplock, so we have to assign return value to a variable and then
          * select it. Can't use prepared statements because that only allows a single statement.
          */
-        $r = $this->session->executeQuery("
+        $r = $session->executeQuery("
             declare @r int; 
-            exec @r = sp_getapplock {$this->session->quoteString($name)}, 'Exclusive', 'Session', $timeout; 
+            exec @r = sp_getapplock {$session->quoteString($name)}, 'Exclusive', 'Session', $timeout; 
             select @r");
 
         return match ($r = $r->fetchOne()) {
@@ -113,12 +85,12 @@ class MsSqlPlatform implements Platform
         };
     }
 
-    public function unlockSession(string $name): void
+    public function unlockSession(Session $session, string $name): void
     {
         /* please see comments within lockSession */
-        $r = $this->session->executeQuery("
+        $r = $session->executeQuery("
             declare @r int; 
-            exec @r = sp_releaseapplock {$this->session->quoteString($name)}, 'Session'; 
+            exec @r = sp_releaseapplock {$session->quoteString($name)}, 'Session'; 
             select @r");
 
         if (($r = $r->fetchOne()) != 0)

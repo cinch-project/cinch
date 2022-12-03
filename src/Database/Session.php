@@ -25,6 +25,22 @@ class Session extends Connection
         return $this->platform;
     }
 
+    /**
+     * @throws Exception
+     */
+    public function lock(string $name, int $timeout): bool
+    {
+        return $this->platform->lockSession($this, $name, $timeout);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function unlock(string $name): void
+    {
+        $this->platform->unlockSession($this, $name);
+    }
+
     /** Testing.
      * @param string $value
      * @return string
@@ -48,7 +64,7 @@ class Session extends Connection
         $columns = '';
         $values = [];
         $placeholders = '';
-        $driver = $this->platform->getDriver();
+        $platformName = $this->platform->getName();
 
         foreach ($data as $column => $value) {
             $comma = $columns ? ',' : '';
@@ -62,15 +78,15 @@ class Session extends Connection
          */
         $insert = "insert into $table ($columns)";
 
-        if ($driver == 'mssql')
+        if ($platformName == 'mssql')
             $insert .= " output inserted.$idColumn"; // must come before VALUES()
 
         $insert .= " values ($placeholders)";
 
-        if ($driver == 'pgsql' || $driver == 'sqlite')
+        if ($platformName == 'pgsql' || $platformName == 'sqlite')
             $insert .= " returning $idColumn"; // must come after VALUES()
 
-        if ($driver == 'mysql') {
+        if ($platformName == 'mysql' || $platformName == 'mariadb') {
             $this->executeStatement($insert, $values);
             return $this->lastInsertId(); // from ok packet
         }

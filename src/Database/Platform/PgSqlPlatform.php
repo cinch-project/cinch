@@ -4,7 +4,6 @@ namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
-use Cinch\Database\Identifier;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -14,41 +13,14 @@ use PDO;
 
 class PgSqlPlatform implements Platform
 {
-    private readonly float $version;
-    private readonly Session $session;
+    use PlatformHelpers;
 
-    public function getName(): string
+    public function assertIdentifier(string $value): string
     {
-        return 'pgsql';
-    }
-
-    public function getDriver(): string
-    {
-        return 'pgsql';
-    }
-
-    public function getVersion(): float
-    {
-        return $this->version;
-    }
-
-    public function formatDateTime(DateTimeInterface $dateTime): string
-    {
-        return $dateTime->format(self::DATETIME_FORMAT);
-    }
-
-    public function createIdentifier(string $value): Identifier
-    {
-        return new class($this->session, $value) extends Identifier {
-            public function __construct(Session $session, string $value)
-            {
-                Assert::that($value, 'identifier')
-                    ->betweenLength(1, 64, 'ASCII') // max length in bytes, use ASCII
-                    ->regex('~^[\x{0001}-\x{ffff}]+$~u');
-
-                parent::__construct($value, $session->quoteString($value), $session->quoteIdentifier($value));
-            }
-        };
+        return Assert::that($value, 'identifier')
+            ->betweenLength(1, 63, 'ASCII') // max length in bytes, use ASCII
+            ->regex('~^[\x{0001}-\x{ffff}]+$~u')
+            ->value();
     }
 
     public function addParams(Dsn $dsn, array $params): array
@@ -99,10 +71,10 @@ class PgSqlPlatform implements Platform
             set statement_timeout={$dsn->getTimeout()}; 
             set time zone '+00:00';");
 
-        return $this->session = $session;
+        return $session;
     }
 
-    public function lockSession(string $name, int $timeout): bool
+    public function lockSession(Session $session, string $name, int $timeout): bool
     {
         $key = $this->computeKey($name);
 
@@ -110,7 +82,7 @@ class PgSqlPlatform implements Platform
         $timeout = max(0, $timeout) * 1000;
 
         do {
-            if ($this->tryLock($key))
+            if ($this->tryLock($session, $key))
                 return true;
 
             if ($timeout == 0)
@@ -124,17 +96,17 @@ class PgSqlPlatform implements Platform
         return false;
     }
 
-    public function unlockSession(string $name): void
+    public function unlockSession(Session $session, string $name): void
     {
-        $this->session->executeQuery('select pg_advisory_unlock(?)', [$this->computeKey($name)]);
+        $session->executeQuery('select pg_advisory_unlock(?)', [$this->computeKey($name)]);
     }
 
     /**
      * @throws Exception
      */
-    private function tryLock(string $key): bool
+    private function tryLock(Session $session, int $key): bool
     {
-        return $this->session->executeQuery("select pg_try_advisory_lock(?)", [$key])->fetchOne() === 't';
+        return $session->executeQuery("select pg_try_advisory_lock(?)", [$key])->fetchOne() === 't';
     }
 
     private function computeKey(string $name): int

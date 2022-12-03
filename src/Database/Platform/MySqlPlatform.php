@@ -5,49 +5,37 @@ namespace Cinch\Database\Platform;
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
 use Cinch\Database\Platform;
-use Cinch\Database\Identifier;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
 use DateTimeInterface;
 use Exception;
 use PDO;
+use RuntimeException;
 
 class MySqlPlatform implements Platform
 {
-    private readonly float $version;
-    private readonly Session $session;
-    private readonly string $platformName;
+    use PlatformHelpers;
+
     private readonly string $dateTimeFormat;
 
     public function getName(): string
     {
-        return $this->platformName;
+        return $this->name; // mysql or mariadb
     }
 
-    public function getDriver(): string
+    public function supportsTransactionalDDL(): bool
     {
-        return 'mysql';
+        return false; /* like oracle, mysql does not support this */
     }
 
-    public function getVersion(): float
+    public function formatDateTime(DateTimeInterface $dt): string
     {
-        return $this->version;
+        return $dt->format($this->dateTimeFormat); // mysql 5.7 excludes time zone offset
     }
 
-    public function formatDateTime(DateTimeInterface $dateTime): string
+    public function assertIdentifier(string $value): string
     {
-        return $dateTime->format($this->dateTimeFormat);
-    }
-
-    public function createIdentifier(string $value): Identifier
-    {
-        return new class($this->session, $value) extends Identifier {
-            public function __construct(Session $session, string $value)
-            {
-                Assert::regex($value, '~^[\x{0001}-\x{ffff}]{1,64}(?<!\s)$~u', 'identifier');
-                parent::__construct($value, $session->quoteString($value), $session->quoteIdentifier($value));
-            }
-        };
+        return Assert::regex($value, '~^[\x{0001}-\x{ffff}]{1,64}(?<!\s)$~u', 'identifier');
     }
 
     public function addParams(Dsn $dsn, array $params): array
@@ -76,17 +64,17 @@ class MySqlPlatform implements Platform
     public function initSession(Session $session, Dsn $dsn): Session
     {
         $version = $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
-        [$version, $minVersion, $this->platformName] = $this->parseVersion($version);
+        [$version, $minVersion, $this->name] = $this->parseVersion($version);
 
         $format = self::DATETIME_FORMAT;
         if (version_compare($version, '8.0.19', '<'))
-            $format = substr($format, 0, -1); // time zone support added in 8.0.19, remove 'P'
+            $format = substr($format, 0, -1); // time zone offset support added in 8.0.19, remove 'P'
 
         $this->dateTimeFormat = $format;
         $this->version = (float) $version;
 
         if ($this->version < $minVersion)
-            throw new UnsupportedVersionException($this->platformName, $version, $minVersion);
+            throw new UnsupportedVersionException($this->name, $version, $minVersion);
 
         $charset = $session->quoteString($dsn->getOption('charset', 'utf8mb4'));
         $session->executeStatement("
@@ -94,12 +82,12 @@ class MySqlPlatform implements Platform
             set session max_execution_time={$dsn->getTimeout()}; 
             set session time_zone = '+00:00';");
 
-        return $this->session = $session;
+        return $session;
     }
 
-    public function lockSession(string $name, int $timeout): bool
+    public function lockSession(Session $session, string $name, int $timeout): bool
     {
-        $result = $this->session->executeQuery("select get_lock(?, ?)", [$name, max(0, $timeout)]);
+        $result = $session->executeQuery("select get_lock(?, ?)", [$name, max(0, $timeout)]);
         $acquired = $result->fetchOne();
 
         if ($acquired !== null)
@@ -109,16 +97,16 @@ class MySqlPlatform implements Platform
         throw new Exception("an error occurred while trying to obtain lock '$name'");
     }
 
-    public function unlockSession(string $name): void
+    public function unlockSession(Session $session, string $name): void
     {
-        $this->session->executeQuery('select release_lock(?)', [$name]);
+        $session->executeQuery('select release_lock(?)', [$name]);
     }
 
     private function parseVersion(string $version): array
     {
         $version = strtolower($version);
 
-        /* 5.5.5-Mariadb-10.0.8-xenial */
+        /* Mariadb-10.0.8-xenial */
         if ($mariadb = str_contains($version, 'mariadb')) {
             if (str_starts_with($version, '5.5.5-'))
                 $version = substr($version, 6); /* some distros (incorrectly) prefix with '5.5.5-' */
@@ -130,7 +118,7 @@ class MySqlPlatform implements Platform
         $name = $mariadb ? 'mariadb' : 'mysql';
 
         if (!preg_match('~^(\d+\.\d+(?:\.\d+)?)~', $version, $match))
-            throw new \RuntimeException("Unknown $name version: $version");
+            throw new RuntimeException("Unknown $name version: $version");
 
         return [$match[1], $mariadb ? 10.2 : 5.7, $name];
     }
