@@ -3,6 +3,7 @@
 namespace Cinch\Project;
 
 use Cinch\Common\Dsn;
+use Cinch\Common\Environment;
 
 class Project
 {

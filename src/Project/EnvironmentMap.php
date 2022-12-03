@@ -2,6 +2,7 @@
 
 namespace Cinch\Project;
 
+use Cinch\Common\Environment;
 use Exception;
 
 class EnvironmentMap

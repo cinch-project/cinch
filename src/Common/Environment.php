@@ -1,8 +1,6 @@
 <?php
 
-namespace Cinch\Project;
-
-use Cinch\Common\Dsn;
+namespace Cinch\Common;
 
 class Environment
 {
@@ -33,7 +31,7 @@ class Environment
     {
         $data = [
             'deploy_lock_timeout' => $this->deployLockTimeout,
-            'target' => $this->target,
+            'target' => (string) $this->target,
             'history' => [
                 'schema' => $this->schema,
                 'table_prefix' => $this->tablePrefix,
@@ -42,7 +40,7 @@ class Environment
         ];
 
         if (!$this->target->equals($this->history))
-            $data['history']['dsn'] = $this->history;
+            $data['history']['dsn'] = (string) $this->history;
 
         return $data;
     }

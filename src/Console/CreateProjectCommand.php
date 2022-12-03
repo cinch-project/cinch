@@ -3,7 +3,7 @@
 namespace Cinch\Console;
 
 use Cinch\Common\Dsn;
-use Cinch\Project\Environment;
+use Cinch\Common\Environment;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectName;

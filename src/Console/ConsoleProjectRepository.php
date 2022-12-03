@@ -3,10 +3,10 @@
 namespace Cinch\Console;
 
 use Cinch\Common\Dsn;
+use Cinch\Common\Environment;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Cinch\LastErrorException;
-use Cinch\Project\Environment;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Hook;
 use Cinch\Project\HookEvent;
