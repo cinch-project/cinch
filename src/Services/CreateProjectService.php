@@ -11,8 +11,7 @@ class CreateProjectService
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,
-        private readonly ProjectRepository $projectRepository,
-        private readonly SchemaVersion $schemaVersion)
+        private readonly ProjectRepository $projectRepository)
     {
     }
 
@@ -34,7 +33,7 @@ class CreateProjectService
             $migrationStore->create();
             $rollback['store'] = $migrationStore->delete(...);
 
-            $this->dataStoreFactory->createHistory($environment)->create($this->schemaVersion);
+            $this->dataStoreFactory->createHistory($environment)->create();
         }
         catch (Exception $e) {
             foreach ($rollback as $name => $action) {

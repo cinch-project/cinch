@@ -3,11 +3,9 @@
 namespace Cinch\History;
 
 use Cinch\Common\MigratePolicy;
-use Cinch\Database\Identifier;
 use Cinch\Database\Session;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\Script\CanRollback;
-use Cinch\Project\Environment;
 use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
@@ -18,37 +16,17 @@ use Twig\TwigFilter;
 
 class History
 {
-    /* 'utf8_ci_ai' is a postgresql-only collation */
-    private const SCHEMA_OBJECTS = ['cinch', 'deployment', 'change', 'utf8_ci_ai'];
-
-    private readonly Identifier $schema;
-    private readonly array $objects;
-    private bool $schemaExists;
-    private bool $schemaCreator = false;
-    private bool $objectsExist = false;
+    private readonly Session $session;
 
     /**
-     * @param Session $session
+     * @param Schema $schema
      * @param TwigEnvironment $twig
-     * @param Environment $environment
-     * @param SchemaVersion $schemaVersion
-     * @throws Exception
      */
     public function __construct(
-        private readonly Session $session,
-        private readonly TwigEnvironment $twig,
-        private readonly Environment $environment,
-        private readonly SchemaVersion $schemaVersion)
+        private readonly Schema $schema,
+        private readonly TwigEnvironment $twig)
     {
-        $this->schema = $this->session->getPlatform()->createIdentifier($this->environment->schema);
-
-        $objects = [];
-        $tablePrefix = $this->environment->tablePrefix;
-        foreach (self::SCHEMA_OBJECTS as $name)
-            $objects[$name] = $this->session->quoteIdentifier("$this->schema.$tablePrefix$name");
-
-        $this->objects = $objects;
-        $this->verifySchema();
+        $this->session = $this->schema->session();
         $this->initTwigFilters();
     }
 
@@ -59,22 +37,23 @@ class History
         string $application, string $tag = ''): DeploymentId
     {
         $this->assertSchema();
-        $this->session->getPlatform()->lockSession($this->schema->value, $this->environment->deployLockTimeout);
+        $this->schema->lock();
 
         try {
-            $id = $this->session->insertReturningId($this->objects['deployment'], 'deployment_id', [
+            $table = $this->schema->table('deployment');
+            $id = $this->session->insertReturningId($table, 'deployment_id', [
                 'deployer' => $deployer,
                 'tag' => $tag ?: null,
                 'command' => $command->value,
                 'application' => $application,
-                'schema_version' => $this->schemaVersion->version,
+                'schema_version' => $this->schema->version()->version,
                 'started_at' => $this->formatDateTime()
             ]);
 
             return new DeploymentId($id);
         }
         catch (Exception $e) {
-            ignoreException(fn() => $this->session->getPlatform()->unlockSession($this->schema->value));
+            ignoreException($this->schema->unlock(...));
             throw $e;
         }
     }
@@ -85,8 +64,7 @@ class History
     public function addChange(DeploymentId $id, Migration $migration, Status $status): void
     {
         $this->assertSchema();
-
-        $this->session->insert($this->objects['change'], [
+        $this->session->insert($this->schema->table('change'), [
             'change_id' => $migration->id->value,
             'deployment_id' => $id->value,
             'location' => $migration->location->value,
@@ -109,56 +87,70 @@ class History
     {
         try {
             $this->assertSchema();
-            $this->session->update($this->objects['deployment'], [
+            $this->session->update($this->schema->table('deployment'), [
                 'error' => $error ? json_encode($error, JSON_UNESCAPED_SLASHES) : null,
                 'ended_at' => $this->formatDateTime()
             ], ['deployment_id' => $id->value]);
         }
         finally {
-            ignoreException(fn() => $this->session->getPlatform()->unlockSession($this->schema->value));
+            ignoreException($this->schema->unlock(...));
         }
     }
 
     /**
      * @throws Exception
      */
-    public function create(SchemaVersion $schemaVersion): void
+    public function create(): void
     {
-        if ($this->objectsExist)
-            throw new Exception("history schema '{$this->schema->value}' already exists");
+        $state = $this->schema->state();
 
-        $schemaCreator = !$this->schemaExists;
-        if (!$this->environment->autoCreateSchema && $schemaCreator)
-            throw new RuntimeException("auto_create_schema is disabled and schema '{$this->schema->value}' " .
+        if ($state & Schema::OBJECTS)
+            throw new Exception("history schema '{$this->schema->name()}' already exists");
+
+        /* cinch becomes the creator when the schema does not exist */
+        $creator = $state & Schema::EXISTS ? 0 : Schema::CREATOR;
+
+        if (!$this->schema->autoCreate() && $creator)
+            throw new RuntimeException("auto_create_schema is disabled and schema '{$this->schema->name()}' " .
                 "does not exist. Please create this schema or configure an existing one.");
 
         $Q = $this->session->quoteString(...);
+        $version = $this->schema->version();
+
         $ddl = $this->twig->render('create-history.twig', [
             'db' => [
                 'name' => $this->session->getPlatform()->getName(),
                 'version' => $this->session->getPlatform()->getVersion()
             ],
             'schema' => [
-                'creator' => $schemaCreator,
-                'name' => $this->schema->quotedId,
-                'version' => $Q($schemaVersion->version),
-                'description' => $Q($schemaVersion->description),
-                'release_date' => $Q($schemaVersion->releaseDate->format('Y-m-d')),
+                'creator' => !!$creator,
+                'name' => $this->session->quoteIdentifier($this->schema->name()),
+                'version' => $Q($version->version),
+                'description' => $Q($version->description),
+                'release_date' => $Q($version->releaseDate->format('Y-m-d')),
                 'created_at' => $Q($this->formatDateTime())
             ],
             'commands' => array_map(fn($e) => $e->value, Command::cases()),
             'statuses' => array_map(fn($e) => $e->value, Status::cases()),
             'migrate_policies' => array_map(fn($e) => $e->value, MigratePolicy::cases()),
-            ...$this->objects
+            ...$this->schema->objects()
         ]);
+
+        $withinTransaction = $this->begin();
 
         try {
             $this->session->executeStatement($ddl);
-            $this->schemaExists = true;
-            $this->schemaCreator = $schemaCreator;
+            $this->commit();
+            $this->schema->setState(Schema::EXISTS | Schema::OBJECTS | $creator);
         }
         catch (Exception $e) {
-            ignoreException(fn() => $this->deleteHistory($schemaCreator));
+            ignoreException(function () use ($withinTransaction, $creator) {
+                if ($withinTransaction)
+                    $this->session->rollBack();
+                else
+                    $this->deleteHistory(!!$creator);
+            });
+
             throw $e;
         }
     }
@@ -169,7 +161,7 @@ class History
     public function delete(): void
     {
         $this->assertSchema();
-        $this->deleteHistory($this->schemaCreator);
+        $this->deleteHistory(($this->schema->state() & Schema::CREATOR) != 0);
     }
 
     /**
@@ -181,14 +173,25 @@ class History
             'db' => ['name' => $this->session->getPlatform()->getName()],
             'schema' => [
                 'creator' => $schemaCreator,
-                'name' => $this->schema->quotedId,
+                'name' => $this->session->quoteIdentifier($this->schema->name()),
             ],
-            ...$this->objects
+            ...$this->schema->objects()
         ]);
 
-        $this->session->executeStatement($ddl);
-        $this->schemaExists = false;
+        $withinTransaction = $this->begin();
+
+        try {
+            $this->session->executeStatement($ddl);
+            $this->commit();
+            $this->schema->setState($schemaCreator ? 0 : Schema::EXISTS);
+        }
+        catch (Exception $e) {
+            if ($withinTransaction)
+                ignoreException($this->session->rollBack(...));
+            throw $e;
+        }
     }
+
     /**
      * @throws Exception
      */
@@ -199,85 +202,23 @@ class History
     }
 
     /**
+     * @return bool true if a transaction was opened and false otherwise
      * @throws Exception
      */
-    private function verifySchema(): void
+    private function begin(): bool
     {
-        if (!($this->schemaExists = $this->schemaExists()) || !($this->objectsExist = $this->objectsExist()))
-            return;
-
-        $row = $this->session->executeQuery("
-            select schema_creator, schema_version from $this->objects['cinch'] 
-                where created_at = (select max(created_at) from $this->objects['cinch'])"
-        )->fetchNumeric();
-
-        if ($row === false)
-            throw new CorruptSchemaException("{$this->objects['cinch']} is empty");
-
-        [$this->schemaCreator, $server] = $row;
-
-        if (($n = version_compare($this->schemaVersion->version, $server)) != 0) {
-            $dir = $n < 0 ? 'behind' : 'ahead of';
-            throw new RuntimeException("client '{$this->schemaVersion->version}' is $dir server '$server'");
-        }
+        if ($txn = $this->session->getPlatform()->supportsTransactionalDDL())
+            $this->session->beginTransaction();
+        return $txn;
     }
 
     /**
-     * @return bool
      * @throws Exception
      */
-    private function schemaExists(): bool
+    private function commit(): void
     {
-        if ($this->session->getPlatform()->getName() == 'sqlite')
-            return true;
-
-        $query = 'select 1 from information_schema.schemata where schema_name = ?';
-        return $this->session->executeQuery($query, [$this->schema->value])->fetchNumeric() !== false;
-    }
-
-    /** Do we have cinch schema objects or not.
-     * @throws Exception if objects are found but not all of them, no exception if none are found
-     */
-    private function objectsExist(): bool
-    {
-        $tables = self::SCHEMA_OBJECTS;
-        $collation = array_pop($tables);
-
-        $result = $this->session->executeQuery("
-            select lower(table_name) from information_schema.tables 
-                where table_schema = ? and table_name in (?, ?, ?)", [$this->schema->value, ...$tables]);
-
-        $found = [];
-        while (($t = $result->fetchOne()) !== false)
-            $found[] = $t;
-
-        /* any cinch tables missing? */
-        if ($found && ($missing = array_diff($tables, $found))) {
-            $missing = implode(', ', $missing);
-            throw new CorruptSchemaException("'{$this->schema->value}' missing cinch table(s) $missing");
-        }
-
-        /* postgresql also has a collation */
-        if ($this->session->getPlatform()->getName() == 'pgsql') {
-            $haveCollation = $this->collationExists($collation);
-
-            if ($found && !$haveCollation)
-                throw new CorruptSchemaException("'{$this->schema->value}' missing cinch collation $collation");
-
-            if (!$found && $haveCollation) {
-                $missing = implode(', ', $tables);
-                throw new CorruptSchemaException("'{$this->schema->value}' missing cinch table(s) $missing");
-            }
-        }
-
-        return !!$found;
-    }
-
-    /** @throws Exception */
-    private function collationExists(string $collation): bool
-    {
-        $query = "select 1 from information_schema.collations where collation_schema = ? collation_name in (?)";
-        return $this->session->executeQuery($query, [$this->schema->value, $collation])->fetchOne() !== false;
+        if ($this->session->getPlatform()->supportsTransactionalDDL())
+            $this->session->commit();
     }
 
     private function initTwigFilters(): void
@@ -317,7 +258,7 @@ class History
 
     private function assertSchema(): void
     {
-        if (!$this->schemaExists)
-            throw new RuntimeException("cinch history '{$this->schema->value}' doesn't exist");
+        if (!($this->schema->state() & Schema::OBJECTS))
+            throw new RuntimeException("cinch history '{$this->schema->name()}' contains no objects");
     }
 }
