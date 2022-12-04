@@ -8,8 +8,8 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate', 'Migrates target database to the latest version')]
-class MigrateCommand extends AbstractCommand
+#[AsCommand('migrate-script', 'Migrates target database by one or more migration scripts')]
+class MigrateScriptCommand extends AbstractCommand
 {
     public function __construct(
         private readonly ProjectRepository $projectRepository)

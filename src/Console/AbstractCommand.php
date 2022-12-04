@@ -40,6 +40,30 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
         return $this->addArgument('project', InputArgument::REQUIRED, 'The project name');
     }
 
+    protected function addEnvironmentOptions(bool $migrationStore): static
+    {
+        $this
+            ->addArgument('target', InputArgument::REQUIRED, 'Target (database) DSN')
+            ->addOption('history', 'H', InputOption::VALUE_REQUIRED,
+                'History (database) DSN [default: target]');
+
+        if ($migrationStore)
+            $this->addOption('migration-store', 'm', InputOption::VALUE_REQUIRED,
+                "Migration Store DSN", '.');
+
+        return $this
+            ->addOption('schema', 's', InputOption::VALUE_REQUIRED,
+                "Schema name to use for history tables [default: cinch_{projectName}]")
+            ->addOption('table-prefix', null, InputOption::VALUE_REQUIRED,
+                "History table name prefix", '')
+            ->addOption('deploy-lock-timeout', null, InputOption::VALUE_REQUIRED,
+                "Seconds to wait for a deploy lock before timing out the request",
+                Environment::DEFAULT_DEPLOY_LOCK_TIMEOUT)
+            ->addOption('auto-create-schema', 'a', InputOption::VALUE_REQUIRED,
+                "Automatically create the history schema if it doesn't exist",
+                Environment::DEFAULT_AUTO_CREATE_SCHEMA);
+    }
+
     protected function addTagOption(): static
     {
         return $this->addOption('tag', null,

@@ -101,8 +101,8 @@ create index {{ index_prefix }}deployment_command_idx on {{ deployment|strip_sch
 
 {#
     never do `WHERE location = ?`, there is no index on location since it can be too wide for any db.
-    instead, you need to query change_id, which is typically a HASH of location but doesn't have to be.
-    Each cinch app can use whatever they desire. Cinch CLI and portal do: change_id = HEX(xxh128(location))
+    instead, you need to query change_id, which is typically a HASH of location -- but doesn't have to be.
+    Each cinch app can use whatever they desire. Cinch CLI and portal use `hex(xxh128(location))`.
 #}
 create table {{ change }}
 (
@@ -123,6 +123,8 @@ create table {{ change }}
     constraint {{ 'location cannot be empty'|quote }} check ({{ length }}(location) between 1 and 8192),
     constraint {{ 'checksum must be between 32 and 64 lowercase hex'|quote }} check ({{ length }}(checksum) >= 32),
     constraint {{ 'unknown status'|quote }} check (status in ({{ "'" ~ statuses|join("','") ~ "'" }})),
+    constraint {{ 'non-rollback changes cannot have status of rollbacked'|quote }}
+        check (status <> 'rollbacked' or can_rollback), {# when 'rollbacked', ensure can_rollback is true #}
     constraint {{ 'author cannot be empty'|quote }} check (author <> ''),
     constraint {{ 'change description cannot be empty'|quote }} check (description <> ''),
     constraint {{ 'can_rollback must be 0 or 1'|quote }} check (can_rollback in (0, 1)),

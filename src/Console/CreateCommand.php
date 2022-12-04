@@ -18,7 +18,7 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 
 #[AsCommand('create', 'Creates a new project')]
-class CreateProjectCommand extends AbstractCommand
+class CreateCommand extends AbstractCommand
 {
     public function __construct(
         private readonly CreateProjectService $createProject,
@@ -31,21 +31,7 @@ class CreateProjectCommand extends AbstractCommand
     {
         $this->setHelp('This does cool stuff')
             ->addProjectArgument()
-            ->addArgument('target', InputArgument::REQUIRED, 'Target (database) DSN')
-            ->addOption('history', 'H', InputOption::VALUE_REQUIRED,
-                'History (database) DSN [default: target]')
-            ->addOption('migration-store', 'm', InputOption::VALUE_REQUIRED,
-                "Migration Store DSN", '.')
-            ->addOption('schema', 's', InputOption::VALUE_REQUIRED,
-                "Schema name to use for history tables [default: cinch_{projectName}]")
-            ->addOption('table-prefix', null, InputOption::VALUE_REQUIRED,
-                "History table name prefix", '')
-            ->addOption('deploy-lock-timeout', null, InputOption::VALUE_REQUIRED,
-                "Seconds to wait for a deploy lock before timing out the request",
-                Environment::DEFAULT_DEPLOY_LOCK_TIMEOUT)
-            ->addOption('auto-create-schema', 'a', InputOption::VALUE_REQUIRED,
-                "Automatically create the history schema if it doesn't exist",
-                Environment::DEFAULT_AUTO_CREATE_SCHEMA);
+            ->addEnvironmentOptions(migrationStore: true);
     }
 
     /**

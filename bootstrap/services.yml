@@ -1,8 +1,11 @@
 parameters:
     commands: # Application CommandLoader: lazy-load commands
-        create: Cinch\Console\CreateProjectCommand
-        add-env: Cinch\Console\AddEnvironmentCommand
+        create: Cinch\Console\CreateCommand
+        env: Cinch\Console\EnvCommand
+        env-list: Cinch\Console\EnvListCommand
         migrate: Cinch\Console\MigrateCommand
+        migrate-count: Cinch\Console\MigrateCountCommand
+        migrate-script: Cinch\Console\MigrateScriptCommand
 
 services:
     _defaults:
@@ -29,8 +32,8 @@ services:
         arguments:
             $version: '%cinch.version%'
 
-    # log.file points to a temp file during create. inject path, so it can be moved to projectDir after create
-    Cinch\Console\CreateProjectCommand:
+    # log.file points to a temp file during create. inject path so it can be moved to projectDir after create
+    Cinch\Console\CreateCommand:
         arguments:
             $tempLogFile: '%log.file%'
 

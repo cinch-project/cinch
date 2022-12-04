@@ -1,0 +1,7 @@
+{% for name, env in environments %}
+{{ name }} {{ name == default ? '(default)' : '' }}
+ - target '{{ env.target }}'
+ - history '{{ env.history }}'
+   schema '{{ env.schema }}'
+   table_prefix '{{ env.tablePrefix }}'
+{% endfor %}

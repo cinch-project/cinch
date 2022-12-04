@@ -98,7 +98,7 @@ return new class {
         $count = count($argv);
 
         /* first condition is running cinch with no arguments `cinch`, which runs symfony "list" */
-        if ($count < 2 || $argv[1] == 'help')
+        if ($count < 2 || $argv[1] == 'help' || $argv[1] == 'list')
             return true;
 
         for ($i = 1; $i < $count; $i++)
