@@ -21,7 +21,8 @@ class MigrateScriptCommand extends AbstractCommand
     {
         $this->setHelp('Migrate database to the latest version.')
             ->addProjectArgument()
-            ->addTagOption();
+            ->addTagOption()
+            ->addEnvironmentNameOption();
     }
 
     /**
@@ -30,9 +31,8 @@ class MigrateScriptCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $environment = $project->getEnvironmentMap()->get($this->environmentName);
-
-        dump($environment);
+        $env = $project->getEnvironmentMap()->get($this->getEnvironmentName($project));
+        dump($env);
 
         // cinch create <project> <target>
         // cinch add <project> <location> [options] --author=s --policy=always --description=''

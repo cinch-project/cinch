@@ -21,7 +21,8 @@ class MigrateCommand extends AbstractCommand
     {
         $this->setHelp('Migrate database to the latest version.')
             ->addProjectArgument()
-            ->addTagOption();
+            ->addTagOption()
+            ->addEnvironmentNameOption();
     }
 
     /**
@@ -30,9 +31,9 @@ class MigrateCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $environment = $project->getEnvironmentMap()->get($this->environmentName);
+        $env = $project->getEnvironmentMap()->get($this->getEnvironmentName($project));
 
-        dump($environment);
+        dump($env);
 
         // cinch create <project> <target>
         // cinch add <project> <location> [options] --author=s --policy=always --description=''
@@ -40,21 +41,21 @@ class MigrateCommand extends AbstractCommand
         // cinch repair <project> --checksums, etc.
 
         // cinch env <project> <name> <target>
-        // cinch env:list <project>
-        // cinch env:delete <project> <name>
+        // cinch env-list <project>
+        // cinch env-delete <project> <name>
 
         // cinch migrate <project> --tag=x --dry-run
-        // cinch migrate:count <project> [num=1] --tag=x
-        // cinch migrate:script <project> <file> --tag=x
+        // cinch migrate-count <project> [num=1] --tag=x
+        // cinch migrate-script <project> <file> --tag=x
 
         // cinch tag <project> <name>
-        // cinch tag:list <project> --from
-        // cinch tag:clear <project> <name>
+        // cinch tag-list <project> --from
+        // cinch tag-clear <project> <name>
 
         // cinch rollback <project> [tag=latest]
-        // cinch rollback:count <project> [num=1]
-        // cinch rollback:date <project> <datetime>
-        // cinch rollback:script <project> <location> [location, ...]
+        // cinch rollback-count <project> [num=1]
+        // cinch rollback-date <project> <datetime>
+        // cinch rollback-script <project> <location> [location, ...]
 
         // cinch history - display deployed changes
         // cinch pending - display changes that have not been deployed

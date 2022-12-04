@@ -11,7 +11,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use RuntimeException;
-use Twig\Environment as TwigEnvironment;
+use Twig\Environment as Twig;
 use Twig\TwigFilter;
 
 class History
@@ -20,11 +20,9 @@ class History
 
     /**
      * @param Schema $schema
-     * @param TwigEnvironment $twig
+     * @param Twig $twig
      */
-    public function __construct(
-        private readonly Schema $schema,
-        private readonly TwigEnvironment $twig)
+    public function __construct(private readonly Schema $schema, private readonly Twig $twig)
     {
         $this->session = $this->schema->session();
         $this->initTwigFilters();

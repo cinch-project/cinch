@@ -2,12 +2,11 @@
 
 namespace Cinch\Services;
 
-use Cinch\History\SchemaVersion;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class CreateProjectService
+class CreateProject
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,

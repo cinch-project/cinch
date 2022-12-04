@@ -12,14 +12,14 @@ use Cinch\History\SchemaVersion;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 use Exception;
-use Twig\Environment as TwigEnvironment;
+use Twig\Environment as Twig;
 
 class DataStoreFactory
 {
     public function __construct(
         private readonly SessionFactory $sessionFactory,
         private readonly MigrationStoreFactory $storeFactory,
-        private readonly TwigEnvironment $twig,
+        private readonly Twig $twig,
         private readonly SchemaVersion $schemaVersion)
     {
     }

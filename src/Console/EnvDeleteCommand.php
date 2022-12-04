@@ -3,19 +3,20 @@
 namespace Cinch\Console;
 
 use Cinch\Project\ProjectRepository;
-use Cinch\Services\AddEnvironment;
+use Cinch\Services\RemoveEnvironment;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('env', 'Adds a new environment')]
-class EnvCommand extends AbstractCommand
+#[AsCommand('env-delete', 'Deletes an environment and optionally drops the history schema')]
+class EnvDeleteCommand extends AbstractCommand
 {
     public function __construct(
-        private readonly AddEnvironment $addEnvironment,
-        private readonly ProjectRepository $projectRepository)
+        private readonly ProjectRepository $projectRepository,
+        private readonly RemoveEnvironment $removeEnvironment)
     {
         parent::__construct();
     }
@@ -25,7 +26,7 @@ class EnvCommand extends AbstractCommand
         $this->setHelp('This does cool stuff')
             ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
-            ->addEnvironmentOptions();
+            ->addOption('drop-history', 'D', InputOption::VALUE_NONE, 'Drop history schema');
     }
 
     /**
@@ -34,11 +35,13 @@ class EnvCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $name = $input->getArgument('name');
-        $environment = $this->getEnvironmentFromInput($input, $project->getName());
 
-        $this->logger->info("adding environment $name to project {$project->getName()}");
-        $this->addEnvironment->execute($project, $name, $environment);
+        $name = $input->getArgument('name');
+        $drop = $input->getOption('drop-history');
+
+        $dropMsg = $drop ? 'and dropping history schema' : '';
+        $this->logger->info("deleting environment $name $dropMsg");
+        $this->removeEnvironment->execute($project, $name, $drop);
 
         return self::SUCCESS;
     }

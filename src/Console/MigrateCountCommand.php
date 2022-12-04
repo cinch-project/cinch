@@ -21,7 +21,8 @@ class MigrateCountCommand extends AbstractCommand
     {
         $this->setHelp('Migrate database to the latest version.')
             ->addProjectArgument()
-            ->addTagOption();
+            ->addTagOption()
+            ->addEnvironmentNameOption();
     }
 
     /**
@@ -30,8 +31,8 @@ class MigrateCountCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $environment = $project->getEnvironmentMap()->get($this->environmentName);
-        dump($environment);
+        $env = $project->getEnvironmentMap()->get($this->getEnvironmentName($project));
+        dump($env);
         return self::SUCCESS;
     }
 }

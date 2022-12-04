@@ -3,14 +3,12 @@
 namespace Cinch\Console;
 
 use Cinch\Common\Dsn;
-use Cinch\Common\Environment;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectName;
-use Cinch\Services\CreateProjectService;
+use Cinch\Services\CreateProject;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -21,7 +19,7 @@ use Symfony\Component\Filesystem\Path;
 class CreateCommand extends AbstractCommand
 {
     public function __construct(
-        private readonly CreateProjectService $createProject,
+        private readonly CreateProject $createProject,
         private readonly string $tempLogFile)
     {
         parent::__construct();
@@ -31,7 +29,10 @@ class CreateCommand extends AbstractCommand
     {
         $this->setHelp('This does cool stuff')
             ->addProjectArgument()
-            ->addEnvironmentOptions(migrationStore: true);
+            ->addEnvironmentOptions()
+            ->addOption('migration-store', 'm', InputOption::VALUE_REQUIRED,
+                "Migration Store DSN", '.')
+            ->addEnvironmentNameOption('Sets the default environment [default: projectName]');
     }
 
     /**
@@ -41,16 +42,17 @@ class CreateCommand extends AbstractCommand
     {
         $projectName = new ProjectName($input->getArgument('project'));
         $environment = $this->getEnvironmentFromInput($input, $projectName);
+        $envName = $this->environmentName ?: $projectName->value;
 
         $project = new Project(
             $this->projectId,
             $projectName,
             new Dsn($input->getOption('migration-store')),
-            new EnvironmentMap($projectName->value, [$projectName->value => $environment])
+            new EnvironmentMap($envName, [$envName => $environment])
         );
 
         $this->logger->info("creating project");
-        $this->createProject->execute($project, $this->environmentName);
+        $this->createProject->execute($project, $envName);
 
         /* move temp log to project log dir, now that project dir exists */
         $logFile = Path::join($this->projectId, 'log', basename($this->tempLogFile));

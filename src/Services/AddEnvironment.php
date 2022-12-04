@@ -7,7 +7,7 @@ use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class AddEnvironmentService
+class AddEnvironment
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,

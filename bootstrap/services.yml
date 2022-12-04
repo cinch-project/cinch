@@ -1,8 +1,9 @@
 parameters:
-    commands: # Application CommandLoader: lazy-load commands
+    commands: # used to lazy-load commands (CommandLoader)
         create: Cinch\Console\CreateCommand
         env: Cinch\Console\EnvCommand
         env-list: Cinch\Console\EnvListCommand
+        env-delete: Cinch\Console\EnvDeleteCommand
         migrate: Cinch\Console\MigrateCommand
         migrate-count: Cinch\Console\MigrateCountCommand
         migrate-script: Cinch\Console\MigrateScriptCommand
@@ -18,7 +19,7 @@ services:
             calls:
                 -   setLogger: [ '@logger' ]
                 -   setProjectDir: [ '%project.dir%' ]
-                -   setEnvironment: [ '%env_name%' ]
+                -   setEnvironmentName: [ '%env_name%' ]
         Symfony\Component\EventDispatcher\EventSubscriberInterface:
             tags: [ 'subscriber' ]
 

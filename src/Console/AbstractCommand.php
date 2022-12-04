@@ -5,6 +5,7 @@ namespace Cinch\Console;
 use Cinch\Common\Dsn;
 use Cinch\Common\Environment;
 use Cinch\Component\Assert\Assert;
+use Cinch\Project\Project;
 use Cinch\Project\ProjectId;
 use Cinch\Project\ProjectName;
 use Psr\Log\LoggerInterface;
@@ -20,9 +21,14 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
     protected readonly ProjectId $projectId;
     protected readonly string $environmentName;
 
-    public function setEnvironment(string $name): void
+    public function setEnvironmentName(string $name): void
     {
         $this->environmentName = $name;
+    }
+
+    public function getEnvironmentName(Project $project): string
+    {
+        return $this->environmentName ?: $project->getEnvironmentMap()->getDefaultName();
     }
 
     public function setProjectDir(string $projectDir): void
@@ -40,22 +46,22 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
         return $this->addArgument('project', InputArgument::REQUIRED, 'The project name');
     }
 
-    protected function addEnvironmentOptions(bool $migrationStore): static
+    protected function addEnvironmentNameOption(string $description = ''): static
     {
-        $this
+        $desc = $description ?: 'Sets the environment [default: environments.default]';
+        return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, $desc);
+    }
+
+    protected function addEnvironmentOptions(): static
+    {
+        return $this
             ->addArgument('target', InputArgument::REQUIRED, 'Target (database) DSN')
             ->addOption('history', 'H', InputOption::VALUE_REQUIRED,
-                'History (database) DSN [default: target]');
-
-        if ($migrationStore)
-            $this->addOption('migration-store', 'm', InputOption::VALUE_REQUIRED,
-                "Migration Store DSN", '.');
-
-        return $this
+                'History (database) DSN [default: target]')
             ->addOption('schema', 's', InputOption::VALUE_REQUIRED,
                 "Schema name to use for history tables [default: cinch_{projectName}]")
             ->addOption('table-prefix', null, InputOption::VALUE_REQUIRED,
-                "History table name prefix", '')
+                "Prefix for history table names", '')
             ->addOption('deploy-lock-timeout', null, InputOption::VALUE_REQUIRED,
                 "Seconds to wait for a deploy lock before timing out the request",
                 Environment::DEFAULT_DEPLOY_LOCK_TIMEOUT)
