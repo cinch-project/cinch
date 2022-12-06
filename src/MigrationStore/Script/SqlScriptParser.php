@@ -24,7 +24,7 @@ class SqlScriptParser
         [$migrateSql, $rollbackSql] = self::parseSql($data);
 
         if ($migrateSql && $rollbackSql)
-            return new SqlScript($migrateSql, $rollbackSql, ...$args);
+            return new SqlMultiScript($migrateSql, $rollbackSql, ...$args);
 
         if ($migrateSql)
             return new SqlMigrateScript($migrateSql, ...$args);

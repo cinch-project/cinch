@@ -4,8 +4,6 @@ namespace Cinch\History;
 
 use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
-use Cinch\MigrationStore\Migration;
-use Cinch\MigrationStore\Script\CanRollback;
 use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
@@ -57,25 +55,28 @@ class History
     }
 
     /**
+     * @param ChangeId $id
+     * @return Change|null
      * @throws Exception
      */
-    public function addChange(DeploymentId $id, Migration $migration, Status $status): void
+    public function getLatestChange(ChangeId $id): Change|null
+    {
+        $row = $this->session->executeQuery("
+            select * from {$this->schema->table('change')}
+                where change_id = ? order by deployed_at desc limit 1", [$id->value]
+        )->fetchAssociative();
+
+        return $row ? Change::denormalize($row) : null;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function addChange(Change $change): void
     {
         $this->assertSchema();
-        $this->session->insert($this->schema->table('change'), [
-            'change_id' => $migration->id->value,
-            'deployment_id' => $id->value,
-            'location' => $migration->location->value,
-            'migrate_policy' => $migration->script->getMigratePolicy()->value,
-            'status' => $status->value,
-            'author' => $migration->script->getAuthor()->value,
-            'checksum' => $migration->checksum->value,
-            'description' => $migration->script->getDescription()->value,
-            'can_rollback' => (int) ($migration->script instanceof CanRollback),
-            'is_sql' => (int) (pathinfo($migration->location->value, PATHINFO_EXTENSION) == 'sql'),
-            'authored_at' => $this->formatDateTime($migration->script->getAuthoredAt()),
-            'deployed_at' => $this->formatDateTime()
-        ]);
+        $data = $change->normalize($this->formatDateTime(...));
+        $this->session->insert($this->schema->table('change'), $data);
     }
 
     /**
@@ -134,11 +135,11 @@ class History
             ...$this->schema->objects()
         ]);
 
-        $withinTransaction = $this->begin();
+        $withinTransaction = $this->beginCinchSchema();
 
         try {
             $this->session->executeStatement($ddl);
-            $this->commit();
+            $this->commitCinchSchema();
             $this->schema->setState(Schema::EXISTS | Schema::OBJECTS | $creator);
         }
         catch (Exception $e) {
@@ -176,11 +177,11 @@ class History
             ...$this->schema->objects()
         ]);
 
-        $withinTransaction = $this->begin();
+        $withinTransaction = $this->beginCinchSchema();
 
         try {
             $this->session->executeStatement($ddl);
-            $this->commit();
+            $this->commitCinchSchema();
             $this->schema->setState($schemaCreator ? 0 : Schema::EXISTS);
         }
         catch (Exception $e) {
@@ -195,15 +196,16 @@ class History
      */
     private function formatDateTime(DateTimeInterface|null $dt = null): string
     {
-        $tz = new DateTimeZone('UTC');
-        return $this->session->getPlatform()->formatDateTime($dt ?? new DateTime(timezone: $tz));
+        if (!$dt)
+            $dt = new DateTime(timezone: new DateTimeZone('UTC'));
+        return $this->session->getPlatform()->formatDateTime($dt);
     }
 
     /**
      * @return bool true if a transaction was opened and false otherwise
      * @throws Exception
      */
-    private function begin(): bool
+    private function beginCinchSchema(): bool
     {
         if ($txn = $this->session->getPlatform()->supportsTransactionalDDL())
             $this->session->beginTransaction();
@@ -213,7 +215,7 @@ class History
     /**
      * @throws Exception
      */
-    private function commit(): void
+    private function commitCinchSchema(): void
     {
         if ($this->session->getPlatform()->supportsTransactionalDDL())
             $this->session->commit();

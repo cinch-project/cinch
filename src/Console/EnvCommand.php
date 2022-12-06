@@ -2,8 +2,8 @@
 
 namespace Cinch\Console;
 
+use Cinch\Command\AddEnvironmentCommand;
 use Cinch\Project\ProjectRepository;
-use Cinch\Services\AddEnvironment;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,9 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand('env', 'Adds a new environment')]
 class EnvCommand extends AbstractCommand
 {
-    public function __construct(
-        private readonly AddEnvironment $addEnvironment,
-        private readonly ProjectRepository $projectRepository)
+    public function __construct(private readonly ProjectRepository $projectRepository)
     {
         parent::__construct();
     }
@@ -38,7 +36,7 @@ class EnvCommand extends AbstractCommand
         $environment = $this->getEnvironmentFromInput($input, $project->getName());
 
         $this->logger->info("adding environment $name to project {$project->getName()}");
-        $this->addEnvironment->execute($project, $name, $environment);
+        $this->commandBus->handle(new AddEnvironmentCommand($project, $name, $environment));
 
         return self::SUCCESS;
     }

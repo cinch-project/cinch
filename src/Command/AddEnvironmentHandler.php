@@ -1,13 +1,11 @@
 <?php
 
-namespace Cinch\Services;
+namespace Cinch\Command;
 
-use Cinch\Common\Environment;
-use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class AddEnvironment
+class AddEnvironmentHandler implements CommandHandler
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,
@@ -18,20 +16,20 @@ class AddEnvironment
     /**
      * @throws Exception
      */
-    public function execute(Project $project, string $name, Environment $environment): void
+    public function handle(AddEnvironmentCommand $c): void
     {
         /* fails if $name exists */
-        $project->addEnvironment($name, $environment);
+        $c->project->addEnvironment($c->name, $c->environment);
 
         /* test connection */
-        $this->dataStoreFactory->createSession($environment->target)->close();
+        $this->dataStoreFactory->createSession($c->environment->target)->close();
 
         /* fails if history exists. can't share history between environments or projects */
-        $history = $this->dataStoreFactory->createHistory($environment);
+        $history = $this->dataStoreFactory->createHistory($c->environment);
         $history->create();
 
         try {
-            $this->projectRepository->update($project);
+            $this->projectRepository->update($c->project);
         }
         catch (Exception $e) {
             ignoreException($history->delete(...));

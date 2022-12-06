@@ -1,12 +1,11 @@
 <?php
 
-namespace Cinch\Services;
+namespace Cinch\Command;
 
-use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class CreateProject
+class CreateProjectHandler implements CommandHandler
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,
@@ -17,18 +16,18 @@ class CreateProject
     /**
      * @throws Exception
      */
-    public function execute(Project $project, string $environmentName = ''): void
+    public function execute(CreateProjectCommand $c): void
     {
         $rollback = [];
-        $environment = $project->getEnvironmentMap()->get($environmentName);
+        $environment = $c->project->getEnvironmentMap()->get($c->envName);
 
         $this->dataStoreFactory->createSession($environment->target)->close(); // test connection
 
         try {
-            $this->projectRepository->add($project);
-            $rollback['projectDir'] = fn() => $this->projectRepository->remove($project->getId());
+            $this->projectRepository->add($c->project);
+            $rollback['projectDir'] = fn() => $this->projectRepository->remove($c->project->getId());
 
-            $migrationStore = $this->dataStoreFactory->createMigrationStore($project->getMigrationStore());
+            $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStore());
             $migrationStore->create();
             $rollback['store'] = $migrationStore->delete(...);
 

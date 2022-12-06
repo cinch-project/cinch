@@ -11,8 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand('migrate', 'Migrates target database to the latest version')]
 class MigrateCommand extends AbstractCommand
 {
-    public function __construct(
-        private readonly ProjectRepository $projectRepository)
+    public function __construct(private readonly ProjectRepository $projectRepository)
     {
         parent::__construct();
     }
@@ -31,9 +30,14 @@ class MigrateCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $env = $project->getEnvironmentMap()->get($this->getEnvironmentName($project));
 
-        dump($env);
+        $command = new \Cinch\Command\MigrateCommand(
+            $project,
+            $input->getOption('tag'),
+            $this->getEnvironmentName($project)
+        );
+
+        $this->commandBus->handle($command);
 
         // cinch create <project> <target>
         // cinch add <project> <location> [options] --author=s --policy=always --description=''

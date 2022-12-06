@@ -15,8 +15,14 @@ abstract class Script
         private readonly MigratePolicy $migratePolicy,
         private readonly Author $author,
         private readonly DateTimeInterface $authoredAt,
-        private readonly Description $description)
+        private readonly Description $description,
+        private readonly bool $isSql = false)
     {
+    }
+
+    final public function isSql(): bool
+    {
+        return $this->isSql;
     }
 
     public function getVariables(): array

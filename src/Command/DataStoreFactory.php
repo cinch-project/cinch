@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Services;
+namespace Cinch\Command;
 
 use Cinch\Common\Dsn;
 use Cinch\Common\Environment;

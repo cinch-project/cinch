@@ -14,12 +14,17 @@ services:
         public: false
 
     _instanceof:
+        Cinch\Command\CommandHandler:
+            public: true
+
         Cinch\Console\AbstractCommand:
             public: true
             calls:
                 -   setLogger: [ '@logger' ]
                 -   setProjectDir: [ '%project.dir%' ]
                 -   setEnvironmentName: [ '%env_name%' ]
+                -   setCommandBus: [ '@command_bus' ]
+
         Symfony\Component\EventDispatcher\EventSubscriberInterface:
             tags: [ 'subscriber' ]
 
@@ -101,3 +106,20 @@ services:
                 strict_variables: true
                 auto_reload: '%twig.auto_reload%'
                 debug: '%twig.debug%'
+
+    Cinch\Console\ContainerHandlerLocator:
+        arguments:
+            - '@service_container'
+
+    League\Tactician\Handler\CommandNameExtractor\ClassNameExtractor: ~
+    League\Tactician\Handler\MethodNameInflector\HandleInflector: ~
+    League\Tactician\Handler\CommandHandlerMiddleware:
+        arguments:
+            - '@League\Tactician\Handler\CommandNameExtractor\ClassNameExtractor'
+            - '@Cinch\Console\ContainerHandlerLocator'
+            - '@League\Tactician\Handler\MethodNameInflector\HandleInflector'
+
+    command_bus:
+        class: League\Tactician\CommandBus
+        arguments:
+            - [ '@League\Tactician\Handler\CommandHandlerMiddleware' ]

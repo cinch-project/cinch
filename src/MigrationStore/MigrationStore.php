@@ -69,6 +69,7 @@ class MigrationStore
                 yield $migration;
 
         unset($this->directories);
+        $this->directories = null;
     }
 
     /**

@@ -25,7 +25,8 @@
         "ext-mbstring": "*",
         "twig/twig": "^3.4",
         "symfony/dotenv": "^6.1",
-        "guzzlehttp/guzzle": "^7.5"
+        "guzzlehttp/guzzle": "^7.5",
+        "league/tactician": "^1.1"
     },
     "require-dev": {
         "symfony/var-dumper": "^6.0"

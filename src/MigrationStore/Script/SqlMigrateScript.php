@@ -18,7 +18,7 @@ class SqlMigrateScript extends Script implements CanMigrate
         DateTimeInterface $authoredAt,
         Description $description)
     {
-        parent::__construct($migratePolicy, $author, $authoredAt, $description);
+        parent::__construct($migratePolicy, $author, $authoredAt, $description, isSql: true);
     }
 
     /**

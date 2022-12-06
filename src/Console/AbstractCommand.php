@@ -8,6 +8,7 @@ use Cinch\Component\Assert\Assert;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectId;
 use Cinch\Project\ProjectName;
+use League\Tactician\CommandBus;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
@@ -20,7 +21,9 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
     protected readonly LoggerInterface $logger;
     protected readonly ProjectId $projectId;
     protected readonly string $environmentName;
+    protected readonly CommandBus $commandBus;
 
+    // injected by container
     public function setEnvironmentName(string $name): void
     {
         $this->environmentName = $name;
@@ -31,11 +34,19 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
         return $this->environmentName ?: $project->getEnvironmentMap()->getDefaultName();
     }
 
+    // injected by container
     public function setProjectDir(string $projectDir): void
     {
         $this->projectId = new ProjectId($projectDir);
     }
 
+    // injected by container
+    public function setCommandBus(CommandBus $commandBus): void
+    {
+        $this->commandBus = $commandBus;
+    }
+
+    // injected by container
     public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
@@ -73,7 +84,7 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
     protected function addTagOption(): static
     {
         return $this->addOption('tag', null,
-            InputOption::VALUE_REQUIRED, 'Tags the deployment (recommended)');
+            InputOption::VALUE_REQUIRED, 'Tags the deployment (recommended)', '');
     }
 
     protected function getEnvironmentFromInput(InputInterface $input, ProjectName $projectName): Environment

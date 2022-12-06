@@ -7,11 +7,14 @@ use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver;
 use Exception;
+use PDOException;
 use RuntimeException;
 
 /** Adds cinch-specific functionality to Doctrine Connection. */
 class Session extends Connection
 {
+    private const NO_ACTIVE_TRANSACTION = 'There is no active transaction';
+
     private readonly Platform $platform;
 
     public function __construct(array $params, Driver $driver, ?Configuration $config = null, ?EventManager $eventManager = null)
@@ -23,6 +26,43 @@ class Session extends Connection
     public function getPlatform(): Platform
     {
         return $this->platform;
+    }
+
+    public function beginTransaction(): bool
+    {
+        if ($this->isTransactionActive())
+            throw new RuntimeException("A transaction is already active: nested transactions not supported");
+        return parent::beginTransaction();
+    }
+
+    public function commit(): bool
+    {
+        try {
+            return parent::commit();
+        }
+        catch (PDOException $e) {
+            if ($this->isNoActiveTransactionException($e)) {
+                $this->clearTransactions();
+                return true;
+            }
+
+            throw $e;
+        }
+    }
+
+    public function rollBack(): bool
+    {
+        try {
+            return parent::rollBack();
+        }
+        catch (PDOException $e) {
+            if ($this->isNoActiveTransactionException($e)) {
+                $this->clearTransactions();
+                return true;
+            }
+
+            throw $e;
+        }
     }
 
     /**
@@ -53,7 +93,7 @@ class Session extends Connection
     }
 
     /** Inserts a record and returns the last insert identifier.
-     * @param string $table should be schema qualified
+     * @param string $table should be schema qualified and properly quoted
      * @param string $idColumn sequence, auto_increment, identity column name
      * @param array $data assoc array of column_name => value.
      * @return int
@@ -92,6 +132,26 @@ class Session extends Connection
         }
 
         return $this->executeQuery($insert, $values)->fetchOne(); // from returning or output
+    }
+
+    private function isNoActiveTransactionException(PDOException $e): bool
+    {
+        /* for platforms without transaction DDL, DDL statements auto-commit any open transaction. If doctrine still
+         * indicates an active transaction and we get NO_ACTIVE_TRANSACTION, cinch ignores the failed commit.
+         */
+        return !$this->platform->supportsTransactionalDDL()
+            && $this->isTransactionActive()
+            && $e->getMessage() == self::NO_ACTIVE_TRANSACTION;
+    }
+
+    private function clearTransactions(): void
+    {
+        /* must set $this->transactionNestingLevel back to zero, but it's private. Only close() sets it back
+         * to zero. close() also sets $this->_conn (protected) to null, so save it before calling close().
+         */
+        $conn = $this->_conn;
+        parent::close();
+        $this->_conn = $conn;
     }
 
     private function setPlatform(array &$params): void

@@ -2,11 +2,11 @@
 
 namespace Cinch\Console;
 
+use Cinch\Command\CreateProjectCommand;
 use Cinch\Common\Dsn;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectName;
-use Cinch\Services\CreateProject;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,9 +18,7 @@ use Symfony\Component\Filesystem\Path;
 #[AsCommand('create', 'Creates a new project')]
 class CreateCommand extends AbstractCommand
 {
-    public function __construct(
-        private readonly CreateProject $createProject,
-        private readonly string $tempLogFile)
+    public function __construct(private readonly string $tempLogFile)
     {
         parent::__construct();
     }
@@ -52,7 +50,7 @@ class CreateCommand extends AbstractCommand
         );
 
         $this->logger->info("creating project");
-        $this->createProject->execute($project, $envName);
+        $this->commandBus->handle(new CreateProjectCommand($project, $envName));
 
         /* move temp log to project log dir, now that project dir exists */
         $logFile = Path::join($this->projectId, 'log', basename($this->tempLogFile));

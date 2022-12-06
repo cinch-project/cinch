@@ -9,7 +9,7 @@ use DateTimeInterface;
 use Cinch\Database\Session;
 use Exception;
 
-class SqlScript extends Script implements CanMigrate, CanRollback
+class SqlMultiScript extends Script implements CanMigrate, CanRollback
 {
     public function __construct(
         private readonly string $migrateSql,
@@ -19,7 +19,7 @@ class SqlScript extends Script implements CanMigrate, CanRollback
         DateTimeInterface $authoredAt,
         Description $description)
     {
-        parent::__construct($migratePolicy, $author, $authoredAt, $description);
+        parent::__construct($migratePolicy, $author, $authoredAt, $description, isSql: true);
     }
 
     /**

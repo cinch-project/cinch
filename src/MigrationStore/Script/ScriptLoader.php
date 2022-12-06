@@ -8,13 +8,13 @@ use Cinch\Common\Location;
 use Cinch\Component\Assert\AssertException;
 use Exception;
 use ReflectionMethod;
-use Twig\Environment;
+use Twig\Environment as Twig;
 
 class ScriptLoader
 {
     public function __construct(
         private readonly SqlScriptParser $sqlScriptParser,
-        private readonly Environment $twig)
+        private readonly Twig $twig)
     {
     }
 

@@ -18,7 +18,7 @@ class SqlRollbackScript extends Script implements CanRollback
         DateTimeInterface $authoredAt,
         Description $description)
     {
-        parent::__construct($migratePolicy, $author, $authoredAt, $description);
+        parent::__construct($migratePolicy, $author, $authoredAt, $description, isSql: true);
     }
 
     /**

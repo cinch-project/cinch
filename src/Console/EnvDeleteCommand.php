@@ -2,8 +2,8 @@
 
 namespace Cinch\Console;
 
+use Cinch\Command\RemoveEnvironmentCommand;
 use Cinch\Project\ProjectRepository;
-use Cinch\Services\RemoveEnvironment;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -14,9 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand('env-delete', 'Deletes an environment and optionally drops the history schema')]
 class EnvDeleteCommand extends AbstractCommand
 {
-    public function __construct(
-        private readonly ProjectRepository $projectRepository,
-        private readonly RemoveEnvironment $removeEnvironment)
+    public function __construct(private readonly ProjectRepository $projectRepository)
     {
         parent::__construct();
     }
@@ -41,7 +39,7 @@ class EnvDeleteCommand extends AbstractCommand
 
         $dropMsg = $drop ? 'and dropping history schema' : '';
         $this->logger->info("deleting environment $name $dropMsg");
-        $this->removeEnvironment->execute($project, $name, $drop);
+        $this->commandBus->handle(new RemoveEnvironmentCommand($project, $name, $drop));
 
         return self::SUCCESS;
     }
