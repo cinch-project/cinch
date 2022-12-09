@@ -2,12 +2,14 @@
 
 namespace Cinch\MigrationStore;
 
+use Cinch\Common\Location;
 use Cinch\Component\Assert\AssertException;
 use Cinch\MigrationStore\Adapter\File;
 use Cinch\MigrationStore\Adapter\MigrationStoreAdapter;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
 use Generator;
+use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 
 /** migration store directory object */
 class Directory
@@ -27,6 +29,8 @@ class Directory
      */
     public function __construct(
         private readonly MigrationStoreAdapter $storeAdapter,
+        private readonly ScriptLoader $scriptLoader,
+        private readonly MigrationFactory $migrationFactory,
         public readonly string $path,
         public readonly array $variables,
         public readonly array $exclude,
@@ -37,12 +41,24 @@ class Directory
     }
 
     /**
-     * @param ScriptLoader $scriptLoader
-     * @param MigrationFactory $migrationFactory
-     * @return Generator<Migration>
+     * @return Migration|null null is returned if the location is not found
      * @throws Exception
      */
-    public function search(ScriptLoader $scriptLoader, MigrationFactory $migrationFactory): Generator
+    public function getMigration(Location $location): Migration|null
+    {
+        try {
+            return $this->createMigration($this->storeAdapter->getFile($location->value));
+        }
+        catch (FileNotFoundException) {
+            return null;
+        }
+    }
+
+    /**
+     * @return Generator
+     * @throws Exception
+     */
+    public function search(): Generator
     {
         $files = $this->storeAdapter->search($this);
 
@@ -51,12 +67,19 @@ class Directory
 
         $files = $this->sort($files);
 
-        while ($file = array_shift($files)) {
-            $script = $scriptLoader->load($file, $this->variables, $this->flags & self::ENVIRONMENT);
-            yield $migrationFactory->create($file->getLocation(), $file->getChecksum(), $script);
-        }
+        while ($file = array_shift($files))
+            yield $this->createMigration($file);
 
         unset($files);
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function createMigration(File $file): Migration
+    {
+        $script = $this->scriptLoader->load($file, $this->variables, $this->flags & self::ENVIRONMENT);
+        return $this->migrationFactory->create($file->getLocation(), $file->getChecksum(), $script);
     }
 
     /**

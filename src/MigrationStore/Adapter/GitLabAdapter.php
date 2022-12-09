@@ -2,9 +2,11 @@
 
 namespace Cinch\MigrationStore\Adapter;
 
-use Cinch\MigrationStore\Directory;
+use Cinch\Common\Checksum;
 use Cinch\Common\Dsn;
+use Cinch\Common\Location;
 use Cinch\Component\Assert\Assert;
+use Cinch\MigrationStore\Directory;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
@@ -101,15 +103,25 @@ class GitLabAdapter extends GitAdapter
     /**
      * @throws GuzzleException
      */
-    public function getContentsBySha(string $sha): string
+    public function getFile(string $path): File
     {
-        return $this->getContentsByUri("$this->baseUri/blobs/$sha/raw");
+        if (!($path = rawurlencode($this->resolvePath($path))))
+            throw new RuntimeException("cannot get file without a path");
+
+        $data = $this->getFileByUri("$this->baseUri/files/$path?ref=$this->branch");
+
+        return new GitFile(
+            $this,
+            new Location($path),
+            new Checksum($data['blob_id']),
+            base64_decode($data['content'])
+        );
     }
 
     /**
      * @throws GuzzleException
      */
-    protected function getContentsByPath(string $path): string
+    public function getContents(string $path): string
     {
         if (!($path = rawurlencode($this->resolvePath($path))))
             throw new RuntimeException("cannot get file contents without a path");

@@ -2,10 +2,10 @@
 
 namespace Cinch\MigrationStore\Script;
 
-use Cinch\MigrationStore\Adapter\File;
-use Cinch\MigrationStore\Adapter\LocalFile;
 use Cinch\Common\Location;
 use Cinch\Component\Assert\AssertException;
+use Cinch\MigrationStore\Adapter\File;
+use Cinch\MigrationStore\Adapter\LocalFile;
 use Exception;
 use ReflectionMethod;
 use Twig\Environment as Twig;
@@ -23,7 +23,7 @@ class ScriptLoader
      */
     public function load(File $file, array $variables, bool $environment): Script
     {
-        if ($file->isSql())
+        if ($file->getLocation()->isSql())
             $script = $this->parseSql($file, $variables, $environment);
         else if ($file instanceof LocalFile)
             $script = $this->requireFile($file);
@@ -58,10 +58,9 @@ class ScriptLoader
 
     private function assertScript(mixed $script, Location $location): Script
     {
-        if (($script instanceof CanMigrate || $script instanceof CanRollback) && $script instanceof Script)
+        if ($script instanceof Script)
             return $script;
 
-        throw new AssertException("$location must be a " . Script::class .
-            " that implements " . CanMigrate::class . ' and/or ' . CanRollback::class);
+        throw new AssertException("$location must be a " . Script::class);
     }
 }

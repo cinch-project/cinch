@@ -9,7 +9,6 @@ use Cinch\MigrationStore\Script\Script;
 class Migration
 {
     public function __construct(
-        public readonly MigrationId $id,
         public readonly Location $location,
         public readonly Checksum $checksum,
         public readonly Script $script)

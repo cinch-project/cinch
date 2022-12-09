@@ -7,6 +7,7 @@ use Cinch\Common\Location;
 
 class LocalFile extends File
 {
+    private string|null $content = null;
     private Checksum|null $checksum = null;
 
     public function __construct(private readonly string $absolutePath, Location $location)
@@ -21,9 +22,12 @@ class LocalFile extends File
 
     public function getContents(): string
     {
-        $contents = slurp($this->absolutePath);
-        $this->checksum = Checksum::fromData($contents);
-        return $contents;
+        if ($this->content === null) {
+            $this->content = slurp($this->absolutePath);
+            $this->checksum = Checksum::fromData($this->content);
+        }
+
+        return $this->content;
     }
 
     public function getChecksum(): Checksum

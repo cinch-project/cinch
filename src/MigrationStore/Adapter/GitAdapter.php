@@ -62,7 +62,17 @@ abstract class GitAdapter extends MigrationStoreAdapter
     /**
      * @throws GuzzleException
      */
-    public abstract function getContentsBySha(string $sha): string;
+    protected function getFileByUri(string|Uri $uri, array $options = []): array
+    {
+        try {
+            return $this->toJson($this->client->get($uri, $options));
+        }
+        catch (ClientException $e) {
+            if ($e->getResponse()->getStatusCode() == 404)
+                throw new FileNotFoundException(path: $uri);
+            throw $e;
+        }
+    }
 
     /**
      * @throws GuzzleException

@@ -5,7 +5,9 @@ namespace Cinch\MigrationStore\Script;
 use Cinch\Common\Author;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
+use Cinch\Database\Session;
 use DateTimeInterface;
+use Exception;
 
 abstract class Script
 {
@@ -15,15 +17,19 @@ abstract class Script
         private readonly MigratePolicy $migratePolicy,
         private readonly Author $author,
         private readonly DateTimeInterface $authoredAt,
-        private readonly Description $description,
-        private readonly bool $isSql = false)
+        private readonly Description $description)
     {
     }
 
-    final public function isSql(): bool
-    {
-        return $this->isSql;
-    }
+    /**
+     * @throws Exception
+     */
+    public abstract function migrate(Session $session): void;
+
+    /**
+     * @throws Exception
+     */
+    public abstract function rollback(Session $session): void;
 
     public function getVariables(): array
     {

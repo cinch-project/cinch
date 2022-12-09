@@ -21,15 +21,7 @@ class SqlScriptParser
     public function parse(string $data): Script
     {
         $args = self::parseTags($data);
-        [$migrateSql, $rollbackSql] = self::parseSql($data);
-
-        if ($migrateSql && $rollbackSql)
-            return new SqlMultiScript($migrateSql, $rollbackSql, ...$args);
-
-        if ($migrateSql)
-            return new SqlMigrateScript($migrateSql, ...$args);
-
-        return new SqlRollbackScript($rollbackSql, ...$args);
+        return new SqlScript(...self::parseSql($data), ...$args);
     }
 
     /**
@@ -82,7 +74,7 @@ class SqlScriptParser
      */
     private static function parseSql(string $data): array
     {
-        /* find "-- @migrate" or "-- @rollback", ignoring whitespace */
+        /* find "-- @migrate" and/or "-- @rollback" */
         static $pattern = '~^[ \t]*--[ \t]+@(migrate|rollback)\b~Sm';
 
         $count = preg_match_all($pattern, $data, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
@@ -94,8 +86,8 @@ class SqlScriptParser
 
         $migrateOff = -1;
         $rollbackOff = -1;
-        $migrateSql = null;
-        $rollbackSql = null;
+        $migrateSql = '';
+        $rollbackSql = '';
 
         /* one or two sections: can only be 'migrate' and 'rollback' */
         foreach ($matches as $m) {
@@ -122,6 +114,6 @@ class SqlScriptParser
             $rollbackSql = substr($data, $rollbackOff);
         }
 
-        return [$migrateSql, $rollbackSql];
+        return [trim($migrateSql), trim($rollbackSql)];
     }
 }

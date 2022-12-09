@@ -2,9 +2,11 @@
 
 namespace Cinch\MigrationStore\Adapter;
 
-use Cinch\MigrationStore\Directory;
+use Cinch\Common\Checksum;
 use Cinch\Common\Dsn;
+use Cinch\Common\Location;
 use Cinch\Component\Assert\Assert;
+use Cinch\MigrationStore\Directory;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
@@ -16,12 +18,12 @@ class AzureAdapter extends GitAdapter
 
     /* docs say set to 6.0 but response headers return 7.0 -- Nov 9, 2022 */
     private const API_VERSION = '7.0';
-    private readonly array $queryVersion;
+    private readonly array $branchInfo;
 
     public function __construct(string $baseUri, string $branch, string $storeDir, array $config)
     {
         parent::__construct($baseUri, $branch, $storeDir, $config);
-        $this->queryVersion = [
+        $this->branchInfo = [
             'searchCriteria.compareVersion.version' => $this->branch,
             'searchCriteria.compareVersion.versionType' => 'branch'
         ];
@@ -36,7 +38,7 @@ class AzureAdapter extends GitAdapter
             'api-version' => self::API_VERSION,
             'scopePath' => $this->resolvePath($dir->path),
             'recursionLevel' => ($dir->flags & Directory::RECURSIVE) ? 'full' : 'oneLevel',
-            ...$this->queryVersion
+            ...$this->branchInfo
         ]);
 
         $tree = $this->getTree("$this->baseUri/items?$query");
@@ -108,30 +110,43 @@ class AzureAdapter extends GitAdapter
     /**
      * @throws GuzzleException
      */
-    public function getContentsBySha(string $sha): string
+    public function getFile(string $path): File
     {
-        $query = http_build_query(['api-version' => self::API_VERSION, '$format' => 'text']);
-        return $this->getContentsByUri("$this->baseUri/blobs/$sha?$query");
+        $query = $this->getItemsQueryString($path);
+        $data = $this->getFileByUri("$this->baseUri/items?$query", [
+            'headers' => ['Content-Type' => 'application/json'] // metadata and content
+        ]);
+
+        return new GitFile(
+            $this,
+            new Location($path),
+            new Checksum($data['objectId']),
+            $data['content']
+        );
     }
 
     /**
      * @throws GuzzleException
      */
-    protected function getContentsByPath(string $path): string
+    public function getContents(string $path): string
+    {
+        $query = $this->getItemsQueryString($path);
+        return $this->getContentsByUri("$this->baseUri/items?$query", [
+            'headers' => ['Content-Type' => 'text/plain'] // only content
+        ]);
+    }
+
+    private function getItemsQueryString(string $path): string
     {
         if (!($path = $this->resolvePath($path)))
-            throw new RuntimeException("cannot get blob without a path");
+            throw new RuntimeException("cannot get items without a path");
 
-        $query = http_build_query([
+        return http_build_query([
             'api-version' => self::API_VERSION,
-            'path' => $path,
-            '$format' => 'text',
-            'includeContent' => true,
-            'recursionLevel' => 'none',
-            ...$this->queryVersion
+            'path' => rawurlencode($path),
+            'includeContent' => 'true',
+            ...$this->branchInfo
         ]);
-
-        return $this->getContentsByUri("$this->baseUri/items?$query");
     }
 
     /** unfortunately, azure requires latest commit id to add/delete a file. separate call required

@@ -82,7 +82,12 @@ class LocalAdapter extends MigrationStoreAdapter
         (new Filesystem())->remove($this->resolvePath($path));
     }
 
-    protected function getContentsByPath(string $path): string
+    public function getFile(string $path): File
+    {
+        return new LocalFile($this->resolvePath($path), new Location($path));
+    }
+
+    public function getContents(string $path): string
     {
         $path = $this->resolvePath($path);
         if (!file_exists($path))
