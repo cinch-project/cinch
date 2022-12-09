@@ -2,7 +2,10 @@
 
 namespace Cinch\History;
 
+use Cinch\Common\Author;
+use Cinch\Common\Location;
 use Cinch\Common\MigratePolicy;
+use Cinch\Component\Assert\Assert;
 use Cinch\Database\Session;
 use DateTime;
 use DateTimeInterface;
@@ -19,9 +22,14 @@ class History
     /**
      * @param Schema $schema
      * @param Twig $twig
+     * @param string $application
      */
-    public function __construct(private readonly Schema $schema, private readonly Twig $twig)
+    public function __construct(
+        private readonly Schema $schema,
+        private readonly Twig $twig,
+        private readonly string $application)
     {
+        Assert::notEmpty($this->application, 'application');
         $this->session = $this->schema->session();
         $this->initTwigFilters();
     }
@@ -29,8 +37,7 @@ class History
     /**
      * @throws Exception
      */
-    public function startDeployment(Command $command, string $deployer,
-        string $application, string $tag = ''): DeploymentId
+    public function startDeployment(Command $command, Author $deployer, string|null $tag = null): DeploymentId
     {
         $this->assertSchema();
         $this->schema->lock();
@@ -38,10 +45,10 @@ class History
         try {
             $table = $this->schema->table('deployment');
             $id = $this->session->insertReturningId($table, 'deployment_id', [
-                'deployer' => $deployer,
-                'tag' => $tag ?: null,
+                'deployer' => $deployer->value,
+                'tag' => $tag,
                 'command' => $command->value,
-                'application' => $application,
+                'application' => $this->application,
                 'schema_version' => $this->schema->version()->version,
                 'started_at' => $this->formatDateTime()
             ]);
@@ -55,15 +62,15 @@ class History
     }
 
     /**
-     * @param ChangeId $id
+     * @param Location $location
      * @return Change|null
      * @throws Exception
      */
-    public function getLatestChange(ChangeId $id): Change|null
+    public function getLatestChangeForLocation(Location $location): Change|null
     {
         $row = $this->session->executeQuery("
             select * from {$this->schema->table('change')}
-                where change_id = ? order by deployed_at desc limit 1", [$id->value]
+                where location = ? order by deployed_at desc limit 1", [$location->value]
         )->fetchAssociative();
 
         return $row ? Change::denormalize($row) : null;

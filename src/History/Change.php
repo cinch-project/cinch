@@ -15,16 +15,13 @@ use Exception;
 class Change
 {
     public function __construct(
-        public readonly ChangeId $id,
-        public readonly DeploymentId $deploymentId,
         public readonly Location $location,
+        public readonly DeploymentId $deploymentId,
         public readonly MigratePolicy $migratePolicy,
         public readonly Status $status,
         public readonly Author $author,
         public readonly Checksum $checksum,
         public readonly Description $description,
-        public readonly bool $canRollback,
-        public readonly bool $isSql,
         public readonly DateTimeInterface $authoredAt,
         public readonly DateTimeInterface $deployedAt)
     {
@@ -45,16 +42,13 @@ class Change
             $formatDateTime = self::formatDateTime(...);
 
         return [
-            'change_id' => $this->id->value,
-            'deployment_id' => $this->deploymentId->value,
             'location' => $this->location->value,
+            'deployment_id' => $this->deploymentId->value,
             'migrate_policy' => $this->migratePolicy->value,
             'status' => $this->status->value,
             'author' => $this->author->value,
             'checksum' => $this->checksum->value,
             'description' => $this->description->value,
-            'can_rollback' => (int) $this->canRollback,
-            'is_sql' => (int) $this->isSql,
             'authored_at' => $formatDateTime($this->authoredAt),
             'deployed_at' => $formatDateTime()
         ];
@@ -68,16 +62,13 @@ class Change
     public static function denormalize(array $data): Change
     {
         return new Change(
-            new ChangeId($data['change_id']),
-            new DeploymentId($data['deployment_id']),
             new Location($data['location']),
+            new DeploymentId($data['deployment_id']),
             MigratePolicy::from($data['migrate_policy']),
             Status::from($data['status']),
             new Author($data['author']),
             new Checksum($data['checksum']),
             new Description($data['description']),
-            $data['can_rollback'] == 1,
-            $data['is_sql'] == 1,
             new DateTimeImmutable($data['authored_at']),
             new DateTimeImmutable($data['deployed_at']),
         );

@@ -84,7 +84,7 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
     protected function addTagOption(): static
     {
         return $this->addOption('tag', null,
-            InputOption::VALUE_REQUIRED, 'Tags the deployment (recommended)', '');
+            InputOption::VALUE_REQUIRED, 'Tags the deployment (recommended)', null);
     }
 
     protected function getEnvironmentFromInput(InputInterface $input, ProjectName $projectName): Environment

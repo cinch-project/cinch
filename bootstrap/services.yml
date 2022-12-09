@@ -79,14 +79,18 @@ services:
     Cinch\Console\ConsoleProjectRepository: ~
     Cinch\Project\ProjectRepository: '@Cinch\Console\ConsoleProjectRepository'
 
+    Cinch\Command\DataStoreFactory:
+        arguments:
+            $application: 'cinch-cli/%cinch.version%'
+
     Cinch\History\SchemaVersion:
         arguments:
             - '%schema.version%'
             - '%schema.description%'
             - '%schema.release_date%'
 
-    Cinch\MigrationStore\XXH128MigrationFactory: ~
-    Cinch\MigrationStore\MigrationFactory: '@Cinch\MigrationStore\XXH128MigrationFactory'
+    Cinch\MigrationStore\CinchMigrationFactory: ~
+    Cinch\MigrationStore\MigrationFactory: '@Cinch\MigrationStore\CinchMigrationFactory'
 
     Cinch\MigrationStore\MigrationStoreFactory:
         arguments:

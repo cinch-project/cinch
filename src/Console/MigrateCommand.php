@@ -2,10 +2,12 @@
 
 namespace Cinch\Console;
 
+use Cinch\Common\Author;
 use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate', 'Migrates target database to the latest version')]
@@ -20,6 +22,8 @@ class MigrateCommand extends AbstractCommand
     {
         $this->setHelp('Migrate database to the latest version.')
             ->addProjectArgument()
+            ->addOption('deployer', null, InputOption::VALUE_REQUIRED,
+                'The user or application performing the migration [default: current system user]')
             ->addTagOption()
             ->addEnvironmentNameOption();
     }
@@ -33,6 +37,7 @@ class MigrateCommand extends AbstractCommand
 
         $command = new \Cinch\Command\MigrateCommand(
             $project,
+            new Author($input->getOption('deployer') ?: get_system_user()),
             $input->getOption('tag'),
             $this->getEnvironmentName($project)
         );
