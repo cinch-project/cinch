@@ -1,14 +1,12 @@
 <?php
 
-use Cinch\MigrationStore\Script\CanMigrate;
-use Cinch\MigrationStore\Script\CanRollback;
-use Cinch\MigrationStore\Script\Script;
 use Cinch\Common\Author;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
 use Cinch\Database\Session;
+use Cinch\MigrationStore\Script\Script;
 
-return new class extends Script implements CanMigrate, CanRollback {
+return new class extends Script {
     public function __construct()
     {
         parent::__construct(

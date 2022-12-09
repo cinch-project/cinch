@@ -2,7 +2,7 @@
 # This file is an object with two properties: variables and directories. Variables at the top-level scope
 # are available within any script: replacing {{ name }} within SQL scripts and available as an associative
 # array to PHP scripts. The directories property is an array of directory objects. The array defines the
-# deployment order of directories. Within each directory, a 'sort' policy defines the order of script files.
+# deployment order of directories. Within each directory, a 'sort' policy defines the order of migration scripts.
 #
 # When a store directory is configured recursively, the order is still defined by the sort policy,
 # with the addition that processing is depth first: a/a/a.sql is processed before a/a.sql. Subdirectories
@@ -25,7 +25,7 @@
 #                          # take precedence over 'variables' when there is a conflict.
 #     exclude: []          # path patterns to exclude: PHP regular expressions - must use '/' delimiters
 #     variables: {}        # available to this directory only, merged into top-level variables
-#   - path: v1.3.0         # next directory of change scripts...
+#   - path: v1.3.0         # next directory of migration scripts...
 #
 
 # This configures the current directory (store dir) non-recursively. It is a typical setup found in framework

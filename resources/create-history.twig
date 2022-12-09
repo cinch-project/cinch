@@ -12,6 +12,8 @@
 {% set bigint = 'bigint' %}
 {% set release_date_type = 'date not null' %}
 {% set index_prefix = '' %}
+{% set location_pkindex = 'primary key' %}
+{% set requires_fkindex = true %}
 
 {% if db.name == 'pgsql' %}
     {% set table_options = '' %}
@@ -26,6 +28,7 @@
     {% set legacy = db.name == 'mysql' and db.version == 5.7 %}
     {% set utf8bin = legacy ? 'utf8mb4_bin' : 'utf8mb4_0900_bin' %}
     {% set table_options = 'engine=InnoDB row_format=dynamic charset=utf8mb4 collate=' ~ utf8bin %}
+    {% set requires_fkindex = false %} {# mysql automatically creates index for FK colum #}
     {% set collate_ascii = 'charset ascii collate ascii_bin' %}
     {% set collate_utf8ci = legacy ? 'collate utf8_unicode_520_ci' : 'collate utf8mb4_0900_ai_ci' %}
     {% set json = 'json' %}
@@ -49,6 +52,8 @@
     {% set location_type = 'nvarchar(max)' %}
     {% set length = 'len' %}
     {% set restrict = 'no action' %}
+    {# location(512) is 1024 bytes, mssql PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}
+    {% set location_pkindex = 'unique' %}
     {% set collate_ascii = 'collate Latin1_General_100_BIN' %}
     {% set collate_utf8ci = 'collate Latin1_General_100_CI_AI' %}
     {% set json = 'nvarchar' %}
@@ -99,39 +104,39 @@ create index {{ index_prefix }}deployment_deployer_idx on {{ deployment|strip_sc
 create index {{ index_prefix }}deployment_tag_idx on {{ deployment|strip_schema }} (tag);
 create index {{ index_prefix }}deployment_command_idx on {{ deployment|strip_schema }} (command);
 
-{#
-    never do `WHERE location = ?`, there is no index on location since it can be too wide for any db.
-    instead, you need to query change_id, which is typically a HASH of location -- but doesn't have to be.
-    Each cinch app can use whatever they desire. Cinch CLI and portal use `hex(xxh128(location))`.
-#}
+{% if requires_fkindex %}
+create index {{ index_prefix }}deployment_schema_version_idx on {{ deployment|strip_schema }} (schema_version);
+{% endif %}
+
 create table {{ change }}
 (
-    {{ 'change_id'|varchar(64) }} {{ collate_ascii }} not null,
+    {{ 'location'|nvarchar(512) }} {{ collate_utf8ci }} not null,
     deployment_id {{ bigint }} not null references {{ deployment|strip_schema }} (deployment_id) on delete {{ restrict }},
-    location {{ location_type }} not null,
     {{ 'migrate_policy'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'status'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'author'|nvarchar(64) }} {{ collate_utf8ci }} not null,
     {{ 'checksum'|varchar(64) }} {{ collate_ascii }} not null,
     {{ 'description'|nvarchar(255) }} {{ collate_utf8ci }} not null,
-    can_rollback {{ bool }} not null,
-    is_sql {{ bool }} not null,
     authored_at {{ datetime }} not null,
     deployed_at {{ datetime }} not null,
-    primary key (change_id, deployment_id),
-    constraint {{ 'change_id cannot be empty'|quote }} check (change_id <> ''),
-    constraint {{ 'location cannot be empty'|quote }} check ({{ length }}(location) between 1 and 8192),
+    {{ location_pkindex }} (location, deployment_id),
+    constraint {{ 'location cannot be empty'|quote }} check (location <> ''),
     constraint {{ 'checksum must be between 32 and 64 lowercase hex'|quote }} check ({{ length }}(checksum) >= 32),
     constraint {{ 'unknown status'|quote }} check (status in ({{ "'" ~ statuses|join("','") ~ "'" }})),
-    constraint {{ 'non-rollback changes cannot have status of rollbacked'|quote }}
-        check (status <> 'rollbacked' or can_rollback), {# when 'rollbacked', ensure can_rollback is true #}
     constraint {{ 'author cannot be empty'|quote }} check (author <> ''),
     constraint {{ 'change description cannot be empty'|quote }} check (description <> ''),
-    constraint {{ 'can_rollback must be 0 or 1'|quote }} check (can_rollback in (0, 1)),
-    constraint {{ 'is_sql must be 0 or 1'|quote }} check (is_sql in (0, 1)),
     constraint {{ 'unknown migrate policy'|quote }}
         check (migrate_policy in ({{ "'" ~ migrate_policies|join("','") ~ "'" }}))
 ) {{ table_options }};
 
+{% if requires_fkindex %}
 create index {{ index_prefix }}change_deployment_id_idx on {{ change|strip_schema }} (deployment_id);
-create index {{ index_prefix }}change_deployed_at_idx on {{ change|strip_schema }} (deployed_at);
+{% endif %}
+
+create index {{ index_prefix }}change_status_idx on {{ change|strip_schema }} (status);
+
+{#
+    most common use case is reading in desc order. note: MySQL 5.7 allows 'desc' syntax but ignores it. For this
+    reason, always include DESC within a query: `order by deployed_at desc`.
+#}
+create unique index {{ index_prefix }}change_deployed_at_idx on {{ change|strip_schema }} (deployed_at desc);
