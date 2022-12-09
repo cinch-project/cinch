@@ -16,7 +16,7 @@ class CreateProjectHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function execute(CreateProjectCommand $c): void
+    public function handle(CreateProjectCommand $c): void
     {
         $rollback = [];
         $environment = $c->project->getEnvironmentMap()->get($c->envName);

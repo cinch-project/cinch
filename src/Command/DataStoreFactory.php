@@ -20,7 +20,8 @@ class DataStoreFactory
         private readonly SessionFactory $sessionFactory,
         private readonly MigrationStoreFactory $storeFactory,
         private readonly Twig $twig,
-        private readonly SchemaVersion $schemaVersion)
+        private readonly SchemaVersion $schemaVersion,
+        private readonly string $application)
     {
     }
 
@@ -50,6 +51,6 @@ class DataStoreFactory
     public function createHistory(Environment $environment): History
     {
         $session = $this->createSession($environment->history);
-        return new History(new Schema($session, $environment, $this->schemaVersion), $this->twig);
+        return new History(new Schema($session, $environment, $this->schemaVersion), $this->twig, $this->application);
     }
 }

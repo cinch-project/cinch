@@ -2,18 +2,16 @@
 
 namespace Cinch\Command;
 
-use Cinch\Common\MigratePolicy;
 use Cinch\History\Change;
 use Cinch\History\Command;
 use Cinch\History\DeploymentId;
-use Cinch\History\History;
 use Cinch\History\Status;
 use Cinch\MigrationStore\Migration;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 
-class MigrateHandler implements CommandHandler
+class RollbackHandler implements CommandHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {
@@ -24,22 +22,43 @@ class MigrateHandler implements CommandHandler
      */
     public function handle(MigrateCommand $c): void
     {
+        // tag, count, date, script...
+
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
         $target = $this->dataStoreFactory->createSession($environment->target);
         $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStore());
         $history = $this->dataStoreFactory->createHistory($environment);
 
-        $deploymentId = $history->startDeployment(Command::MIGRATE, $c->deployer, $c->tag);
+        $deploymentId = $history->startDeployment(Command::ROLLBACK, $c->deployer, $c->tag);
 
-        foreach ($migrationStore->iterateMigrations() as $migration) {
-            if (($status = $this->getStatus($history, $migration)) === null)
-                continue;
+        // select * from change where deployed_at > (select ended_at from deployment where tag = tag)
+        //     and status <> 'rollbacked'
+        // migrated
+        // rollbacked
+        // remigrated
+        // rollbacked
+        // select * from change where status <> 'rollbacked' order by deployed_at desc limit 5;
+        // select * from change where deployed_at > datetime and status <> 'rollbacked' order by deployed_at desc;
+
+        // change_id, directory, script:
+        // getChangesSinceDateTime(dt), getChangesSinceTag(tag), getLatestChanges(count)
+        // foreach (changes as $change)
+        //    $migration = $migrationStore->getMigration($change->location)
+
+        /** @var Change[] $changes */
+        $changes = [null];
+
+        foreach ($changes as $change) {
+            $migration = $migrationStore->getMigration($change->location);
+
+            if (!$change->checksum->equals($migration->checksum))
+                throw new Exception("rollback '$change->location' failed: script changed since last migrated");
 
             $target->beginTransaction();
 
             try {
-                $migration->script->migrate($target);
-                $history->addChange($this->createChange($deploymentId, $status, $migration));
+                $migration->script->rollback($target);
+                $history->addChange($this->createChange($deploymentId, Status::ROLLBACKED, $migration));
                 $target->commit();
             }
             catch (Exception $e) {
@@ -53,46 +72,6 @@ class MigrateHandler implements CommandHandler
         }
 
         $history->endDeployment($deploymentId);
-    }
-
-    /**
-     * @param History $history
-     * @param Migration $migration
-     * @return Status|null change status or null if migration should be skipped
-     * @throws Exception
-     */
-    private function getStatus(History $history, Migration $migration): Status|null
-    {
-        $change = $history->getLatestChangeForLocation($migration->location);
-
-        /* doesn't exist yet, migrate it */
-        if (!$change)
-            return Status::MIGRATED;
-
-        $scriptChanged = !$change->checksum->equals($migration->checksum);
-
-        if ($change->migratePolicy == MigratePolicy::ONCE) {
-            /* error: migrate once policy cannot change */
-            if ($scriptChanged)
-                ;// error
-
-            return null;
-        }
-
-        if ($change->status == Status::ROLLBACKED) {
-            /* error: rollbacked script cannot change */
-            if ($scriptChanged)
-                ; //error
-
-            return null;
-        }
-
-        /* only migrate when script changes */
-        if (!$scriptChanged && $change->migratePolicy == MigratePolicy::ONCHANGE)
-            return null;
-
-        /* remigrate: policy is ONCHANGE or ALWAYS */
-        return Status::REMIGRATED;
     }
 
     /**

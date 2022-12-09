@@ -16,7 +16,7 @@ class RemoveEnvironmentHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function execute(RemoveEnvironmentCommand $c): void
+    public function handle(RemoveEnvironmentCommand $c): void
     {
         if ($c->dropHistory) {
             $env = $c->project->getEnvironmentMap()->get($c->name);
