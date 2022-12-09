@@ -2,6 +2,7 @@
 
 namespace Cinch\Database;
 
+use Cinch\Database\Platform\Platform;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;

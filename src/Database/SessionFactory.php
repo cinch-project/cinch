@@ -8,6 +8,7 @@ use Cinch\Component\Assert\AssertException;
 use Cinch\Database\Platform\MsSqlPlatform;
 use Cinch\Database\Platform\MySqlPlatform;
 use Cinch\Database\Platform\PgSqlPlatform;
+use Cinch\Database\Platform\Platform;
 use Cinch\Database\Platform\SqlitePlatform;
 use Doctrine\DBAL\DriverManager;
 use Exception;
