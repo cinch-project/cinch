@@ -10,6 +10,7 @@ use Cinch\Database\Session;
 use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
+use Doctrine\DBAL\Result;
 use Exception;
 use RuntimeException;
 use Twig\Environment as Twig;
@@ -74,6 +75,63 @@ class History
         )->fetchAssociative();
 
         return $row ? Change::denormalize($row) : null;
+    }
+
+    /** Gets changes since the given tag. This is used by rollbacks.
+     * Changes marked as rollbacked are not included.
+     * @param string $tag
+     * @return Change[] ordered by deployed time descending
+     * @throws Exception
+     */
+    public function getChangesSinceTag(string $tag): array
+    {
+        if (!$tag)
+            return [];
+
+        $r = $this->session->executeQuery("
+            select * from {$this->schema->table('change')}  
+                where deployed_at > (select ended_at from {$this->schema->table('deployment')} where tag = ?)
+                    and status <> ? order by deployed_at desc", [$tag, Status::ROLLBACKED]
+        );
+
+        return $this->getChangesFromResult($r);
+    }
+
+    /** Gets changes since the given datetime. This is used by rollbacks.
+     * Changes marked as rollbacked are not included.
+     * @param DateTimeInterface $date
+     * @return Change[] ordered by deployed time descending
+     * @throws Exception
+     */
+    public function getChangesSinceDate(DateTimeInterface $date): array
+    {
+        $date = $this->formatDateTime($date);
+
+        $r = $this->session->executeQuery("
+            select * from {$this->schema->table('change')} 
+                where deployed_at > ? and status <> ? order by deployed_at desc", [$date, Status::ROLLBACKED]
+        );
+
+        return $this->getChangesFromResult($r);
+    }
+
+    /** Gets the last N number of changes. This is used by rollbacks.
+     * Changes marked as rollbacked are not included.
+     * @param int $count
+     * @return Change[] ordered by deployed time descending
+     * @throws Exception
+     */
+    public function getLastChanges(int $count): array
+    {
+        if ($count <= 0)
+            return [];
+
+        $r = $this->session->executeQuery("
+            select * from {$this->schema->table('change')} 
+                where status <> ? order by deployed_at desc limit $count", [Status::ROLLBACKED]
+        );
+
+        return $this->getChangesFromResult($r);
     }
 
     /**
@@ -196,6 +254,19 @@ class History
                 ignoreException($this->session->rollBack(...));
             throw $e;
         }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function getChangesFromResult(Result $r): array
+    {
+        $changes = [];
+
+        while ($row = $r->fetchAssociative())
+            $changes[] = Change::denormalize($row);
+
+        return $changes;
     }
 
     /**

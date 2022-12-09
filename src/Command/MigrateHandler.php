@@ -3,17 +3,13 @@
 namespace Cinch\Command;
 
 use Cinch\Common\MigratePolicy;
-use Cinch\History\Change;
 use Cinch\History\Command;
-use Cinch\History\DeploymentId;
 use Cinch\History\History;
 use Cinch\History\Status;
 use Cinch\MigrationStore\Migration;
-use DateTimeImmutable;
-use DateTimeZone;
 use Exception;
 
-class MigrateHandler implements CommandHandler
+class MigrateHandler extends AbstractDeployHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {
@@ -32,22 +28,19 @@ class MigrateHandler implements CommandHandler
         $deploymentId = $history->startDeployment(Command::MIGRATE, $c->deployer, $c->tag);
 
         foreach ($migrationStore->iterateMigrations() as $migration) {
-            if (($status = $this->getStatus($history, $migration)) === null)
-                continue;
-
             $target->beginTransaction();
 
             try {
-                $migration->script->migrate($target);
-                $history->addChange($this->createChange($deploymentId, $status, $migration));
+                if ($status = $this->getStatus($history, $migration)) {
+                    $migration->script->migrate($target);
+                    $history->addChange($this->createChange($deploymentId, $status, $migration));
+                }
+
                 $target->commit();
             }
             catch (Exception $e) {
                 ignoreException($target->rollBack(...));
-                ignoreException(function () use ($history, $deploymentId, $e) {
-                    $history->endDeployment($deploymentId, ['error' => $e->getMessage()]);
-                });
-
+                ignoreException(fn() => $history->endDeployment($deploymentId, $this->toDeploymentError($e)));
                 throw $e;
             }
         }
@@ -93,27 +86,5 @@ class MigrateHandler implements CommandHandler
 
         /* remigrate: policy is ONCHANGE or ALWAYS */
         return Status::REMIGRATED;
-    }
-
-    /**
-     * @param DeploymentId $deploymentId
-     * @param Status $status
-     * @param Migration $migration
-     * @return Change
-     * @throws Exception
-     */
-    private function createChange(DeploymentId $deploymentId, Status $status, Migration $migration): Change
-    {
-        return new Change(
-            $migration->location,
-            $deploymentId,
-            $migration->script->getMigratePolicy(),
-            $status,
-            $migration->script->getAuthor(),
-            $migration->checksum,
-            $migration->script->getDescription(),
-            $migration->script->getAuthoredAt(),
-            new DateTimeImmutable(timezone: new DateTimeZone('UTC'))
-        );
     }
 }

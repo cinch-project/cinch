@@ -2,16 +2,16 @@
 
 namespace Cinch\Command;
 
+use Cinch\Database\Session;
 use Cinch\History\Change;
 use Cinch\History\Command;
 use Cinch\History\DeploymentId;
+use Cinch\History\History;
 use Cinch\History\Status;
-use Cinch\MigrationStore\Migration;
-use DateTimeImmutable;
-use DateTimeZone;
+use Cinch\MigrationStore\MigrationStore;
 use Exception;
 
-class RollbackHandler implements CommandHandler
+class RollbackHandler extends AbstractDeployHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {
@@ -20,34 +20,45 @@ class RollbackHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function handle(MigrateCommand $c): void
+    public function handle(RollbackCommand $c): void
     {
-        // tag, count, date, script...
-
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
-        $target = $this->dataStoreFactory->createSession($environment->target);
-        $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStore());
         $history = $this->dataStoreFactory->createHistory($environment);
 
+        $changes = match ($c->type) {
+            RollbackType::COUNT => $history->getLastChanges($c->count),
+            RollbackType::TAG => $history->getChangesSinceTag($c->tag),
+            RollbackType::DATE => $history->getChangesSinceDate($c->date),
+            RollbackType::SCRIPT => []//$history->getChangesSinceDate($c->scripts)
+        };
+
+        if (count($changes) == 0)
+            return;
+
+        $target = $this->dataStoreFactory->createSession($environment->target);
+        $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStore());
+
+        $error = [];
         $deploymentId = $history->startDeployment(Command::ROLLBACK, $c->deployer, $c->tag);
 
-        // select * from change where deployed_at > (select ended_at from deployment where tag = tag)
-        //     and status <> 'rollbacked'
-        // migrated
-        // rollbacked
-        // remigrated
-        // rollbacked
-        // select * from change where status <> 'rollbacked' order by deployed_at desc limit 5;
-        // select * from change where deployed_at > datetime and status <> 'rollbacked' order by deployed_at desc;
+        try {
+            $this->rollback($changes, $target, $migrationStore, $history, $deploymentId);
+        }
+        catch (Exception $e) {
+            $error = $this->toDeploymentError($e);
+        }
+        finally {
+            ignoreException(fn() => $history->endDeployment($deploymentId, $error));
+        }
+    }
 
-        // change_id, directory, script:
-        // getChangesSinceDateTime(dt), getChangesSinceTag(tag), getLatestChanges(count)
-        // foreach (changes as $change)
-        //    $migration = $migrationStore->getMigration($change->location)
-
-        /** @var Change[] $changes */
-        $changes = [null];
-
+    /**
+     * @param Change[] $changes
+     * @throws Exception
+     */
+    private function rollback(array $changes, Session $target, MigrationStore $migrationStore,
+        History $history, DeploymentId $deploymentId): void
+    {
         foreach ($changes as $change) {
             $migration = $migrationStore->getMigration($change->location);
 
@@ -63,36 +74,8 @@ class RollbackHandler implements CommandHandler
             }
             catch (Exception $e) {
                 ignoreException($target->rollBack(...));
-                ignoreException(function () use ($history, $deploymentId, $e) {
-                    $history->endDeployment($deploymentId, ['error' => $e->getMessage()]);
-                });
-
                 throw $e;
             }
         }
-
-        $history->endDeployment($deploymentId);
-    }
-
-    /**
-     * @param DeploymentId $deploymentId
-     * @param Status $status
-     * @param Migration $migration
-     * @return Change
-     * @throws Exception
-     */
-    private function createChange(DeploymentId $deploymentId, Status $status, Migration $migration): Change
-    {
-        return new Change(
-            $migration->location,
-            $deploymentId,
-            $migration->script->getMigratePolicy(),
-            $status,
-            $migration->script->getAuthor(),
-            $migration->checksum,
-            $migration->script->getDescription(),
-            $migration->script->getAuthoredAt(),
-            new DateTimeImmutable(timezone: new DateTimeZone('UTC'))
-        );
     }
 }
