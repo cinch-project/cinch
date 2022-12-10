@@ -36,7 +36,6 @@ class RollbackBy
         return new self(self::SCRIPT, $locations);
     }
 
-
     private function __construct(
         public readonly string $type,
         public readonly int|string|DateTimeInterface|array $value)

@@ -30,8 +30,7 @@ class MigrationStore
     public function __construct(
         private readonly MigrationStoreAdapter $storeAdapter,
         private readonly ScriptLoader $scriptLoader,
-        private readonly string $resourceDir,
-        private readonly MigrationFactory $migrationFactory)
+        private readonly string $resourceDir)
     {
     }
 
@@ -144,7 +143,6 @@ class MigrationStore
             $directories[$dirPath] = new Directory(
                 $this->storeAdapter,
                 $this->scriptLoader,
-                $this->migrationFactory,
                 $dirPath,
                 [...$variables, ...$this->parseVariables($dir, "$subPath.variables")],
                 Assert::array($dir->exclude ?? [], "$subPath.exclude"),

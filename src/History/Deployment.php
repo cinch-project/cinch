@@ -3,7 +3,6 @@
 namespace Cinch\History;
 
 use Cinch\Common\Author;
-use Cinch\Component\Assert\Assert;
 use Cinch\Database\Session;
 use Cinch\MigrationStore\Migration;
 use Exception;

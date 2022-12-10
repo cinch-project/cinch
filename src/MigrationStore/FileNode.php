@@ -8,10 +8,9 @@ use RuntimeException;
 /** Used to build a tree of migration store directory files for the purpose of sorting.
  *
  * Due to remote data stores like github, azure, etc., listing one directory at a time is not practical:
- * API calls are typically between ~250ms and 500ms. Thus, when recursive, MigrationStoreAdapter::search()
- * returns a list that is unordered, multi-depth, and across many directories. This class builds a
- * tree, allowing us to walk it and sort one depth at a time. Trying to sort without a tree, using
- * quicksort and/or manual methods, proved to be complicated and ultimately elusive.
+ * API calls are typically between ~200ms and 500ms. Thus when recursive, MigrationStore searching
+ * can return a list that is unordered, multi-depth, and across many directories. This class builds a
+ * tree, allowing us to walk it and sort one depth at a time.
  *
  * @internal
  */

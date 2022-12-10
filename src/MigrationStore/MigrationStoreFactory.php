@@ -15,7 +15,6 @@ class MigrationStoreFactory
 {
     public function __construct(
         private readonly ScriptLoader $scriptLoader,
-        private readonly MigrationFactory $migrationFactory,
         private readonly string $projectDir,
         private readonly string $resourceDir,
         private readonly string $userAgent)
@@ -35,6 +34,6 @@ class MigrationStoreFactory
             default => throw new RuntimeException("unsupported migration store adapter '{$dsn->getScheme()}'")
         };
 
-        return new MigrationStore($adapter, $this->scriptLoader, $this->resourceDir, $this->migrationFactory);
+        return new MigrationStore($adapter, $this->scriptLoader, $this->resourceDir);
     }
 }

@@ -30,7 +30,6 @@ class Directory
     public function __construct(
         private readonly MigrationStoreAdapter $storeAdapter,
         private readonly ScriptLoader $scriptLoader,
-        private readonly MigrationFactory $migrationFactory,
         public readonly string $path,
         public readonly array $variables,
         public readonly array $exclude,
@@ -79,7 +78,7 @@ class Directory
     private function createMigration(File $file): Migration
     {
         $script = $this->scriptLoader->load($file, $this->variables, $this->flags & self::ENVIRONMENT);
-        return $this->migrationFactory->create($file->getLocation(), $file->getChecksum(), $script);
+        return new Migration($file->getLocation(), $file->getChecksum(), $script);
     }
 
     /**
