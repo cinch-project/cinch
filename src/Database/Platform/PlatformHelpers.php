@@ -3,6 +3,9 @@
 namespace Cinch\Database\Platform;
 
 use Cinch\Database\Session;
+use DateTime;
+use DateTimeInterface;
+use DateTimeZone;
 
 trait PlatformHelpers
 {
@@ -21,8 +24,10 @@ trait PlatformHelpers
         return true; /* default, since most have support */
     }
 
-    public function formatDateTime(\DateTimeInterface $dt): string
+    public function formatDateTime(DateTimeInterface|null $dt = null): string
     {
+        if (!$dt)
+            $dt = new DateTime(timezone: new DateTimeZone('UTC'));
         return $dt->format(self::DATETIME_FORMAT);
     }
 

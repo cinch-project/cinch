@@ -20,10 +20,10 @@ interface Platform
     public function supportsTransactionalDDL(): bool;
 
     /** Formats a platform-aware datetime.
-     * @param DateTimeInterface $dt
+     * @param DateTimeInterface|null $dt
      * @return string
      */
-    public function formatDateTime(DateTimeInterface $dt): string;
+    public function formatDateTime(DateTimeInterface|null $dt = null): string;
 
     /** Gets the platform version: major.minor only.
      * @return float

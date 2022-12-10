@@ -6,7 +6,9 @@ use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
+use DateTime;
 use DateTimeInterface;
+use DateTimeZone;
 use Exception;
 use PDO;
 use RuntimeException;
@@ -27,8 +29,10 @@ class MySqlPlatform implements Platform
         return false; /* like oracle, mysql does not support this */
     }
 
-    public function formatDateTime(DateTimeInterface $dt): string
+    public function formatDateTime(DateTimeInterface|null $dt = null): string
     {
+        if (!$dt)
+            $dt = new DateTime(timezone: new DateTimeZone('UTC'));
         return $dt->format($this->dateTimeFormat); // mysql 5.7 excludes time zone offset
     }
 
