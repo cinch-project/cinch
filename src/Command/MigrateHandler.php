@@ -3,11 +3,15 @@
 namespace Cinch\Command;
 
 use Cinch\Common\MigratePolicy;
+use Cinch\Database\Session;
+use Cinch\History\ChangeStatus;
+use Cinch\History\Deployment;
 use Cinch\History\DeploymentCommand;
 use Cinch\History\DeploymentError;
 use Cinch\History\HistoryView;
-use Cinch\History\ChangeStatus;
 use Cinch\MigrationStore\Migration;
+use Cinch\MigrationStore\MigrationOutOfSyncException;
+use Cinch\MigrationStore\MigrationStore;
 use Exception;
 
 class MigrateHandler implements CommandHandler
@@ -25,10 +29,28 @@ class MigrateHandler implements CommandHandler
         $target = $this->dataStoreFactory->createSession($environment->targetDsn);
         $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStoreDsn());
         $history = $this->dataStoreFactory->createHistory($environment);
-        $view = $history->getView();
 
+        $error = null;
         $deployment = $history->openDeployment(DeploymentCommand::MIGRATE, $c->deployer, $c->tag);
 
+        try {
+            $this->migrate($deployment, $target, $migrationStore, $history->getView());
+        }
+        catch (Exception $e) {
+            $error = DeploymentError::fromException($e);
+            throw $e;
+        }
+        finally {
+            ignoreException(fn() => $deployment->close($error));
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function migrate(Deployment $deployment, Session $target,
+        MigrationStore $migrationStore, HistoryView $view): void
+    {
         foreach ($migrationStore->iterateMigrations() as $migration) {
             $target->beginTransaction();
 
@@ -42,12 +64,9 @@ class MigrateHandler implements CommandHandler
             }
             catch (Exception $e) {
                 ignoreException($target->rollBack(...));
-                ignoreException(fn() => $deployment->close(DeploymentError::fromException($e)));
                 throw $e;
             }
         }
-
-        $deployment->close();
     }
 
     /**
@@ -70,7 +89,8 @@ class MigrateHandler implements CommandHandler
         if ($change->migratePolicy == MigratePolicy::ONCE) {
             /* error: migrate once policy cannot change */
             if ($scriptChanged)
-                ;// error
+                throw new MigrationOutOfSyncException(
+                    "once migration '$migration->location' no longer matches history");
 
             return null;
         }
@@ -78,7 +98,8 @@ class MigrateHandler implements CommandHandler
         if ($change->status == ChangeStatus::ROLLBACKED) {
             /* error: rollbacked script cannot change */
             if ($scriptChanged)
-                ; //error
+                throw new MigrationOutOfSyncException(
+                    "rollbacked migration '$migration->location' no longer matches history");
 
             return null;
         }

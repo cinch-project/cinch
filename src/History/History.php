@@ -54,14 +54,15 @@ class History
         $state = $this->schema->state();
 
         if ($state & Schema::OBJECTS)
-            throw new Exception("history schema '{$this->schema->name()}' already contains cinch objects");
+            throw new SchemaConflictException(
+                "history schema '{$this->schema->name()}' already contains cinch objects");
 
         /* cinch becomes the creator when the schema does not exist */
         $creator = $state & Schema::EXISTS ? 0 : Schema::CREATOR;
 
         if (!$this->schema->autoCreate() && $creator)
-            throw new RuntimeException("auto_create_schema is disabled and schema '{$this->schema->name()}' " .
-                "does not exist. Please create this schema or configure an existing one.");
+            throw new SchemaConflictException("auto_create_schema is disabled and schema " .
+                "'{$this->schema->name()}' does not exist. Please create this schema or configure an existing one.");
 
         $Q = $this->session->quoteString(...);
         $version = $this->schema->version();

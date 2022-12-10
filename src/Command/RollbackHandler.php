@@ -4,10 +4,10 @@ namespace Cinch\Command;
 
 use Cinch\Database\Session;
 use Cinch\History\Change;
+use Cinch\History\ChangeStatus;
 use Cinch\History\Deployment;
 use Cinch\History\DeploymentCommand;
 use Cinch\History\DeploymentError;
-use Cinch\History\ChangeStatus;
 use Cinch\MigrationStore\MigrationStore;
 use Exception;
 
@@ -58,7 +58,8 @@ class RollbackHandler implements CommandHandler
      * @param Change[] $changes
      * @throws Exception
      */
-    private function rollback(Deployment $deployment, Session $target, MigrationStore $migrationStore, array $changes): void
+    private function rollback(Deployment $deployment, Session $target,
+        MigrationStore $migrationStore, array $changes): void
     {
         foreach ($changes as $change) {
             $migration = $migrationStore->getMigration($change->location);
