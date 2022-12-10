@@ -2,7 +2,7 @@
 
 namespace Cinch\History;
 
-enum Command: string
+enum DeploymentCommand: string
 {
     case MIGRATE = 'migrate';
     case ROLLBACK = 'rollback';

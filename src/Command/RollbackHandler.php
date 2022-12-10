@@ -4,14 +4,14 @@ namespace Cinch\Command;
 
 use Cinch\Database\Session;
 use Cinch\History\Change;
-use Cinch\History\Command;
-use Cinch\History\DeploymentId;
-use Cinch\History\History;
-use Cinch\History\Status;
+use Cinch\History\Deployment;
+use Cinch\History\DeploymentCommand;
+use Cinch\History\DeploymentError;
+use Cinch\History\ChangeStatus;
 use Cinch\MigrationStore\MigrationStore;
 use Exception;
 
-class RollbackHandler extends AbstractDeployHandler
+class RollbackHandler implements CommandHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {
@@ -24,31 +24,33 @@ class RollbackHandler extends AbstractDeployHandler
     {
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
         $history = $this->dataStoreFactory->createHistory($environment);
+        $view = $history->getView();
 
-        $changes = match ($c->type) {
-            RollbackType::COUNT => $history->getLastChanges($c->count),
-            RollbackType::TAG => $history->getChangesSinceTag($c->tag),
-            RollbackType::DATE => $history->getChangesSinceDate($c->date),
-            RollbackType::SCRIPT => []//$history->getChangesSinceDate($c->scripts)
+        $changes = match ($c->rollbackBy->type) {
+            RollbackBy::COUNT => $view->getLastCountChanges($c->rollbackBy->value),
+            RollbackBy::TAG => $view->getChangesSinceTag($c->rollbackBy->value),
+            RollbackBy::DATE => $view->getChangesSinceDate($c->rollbackBy->value),
+            RollbackBy::SCRIPT => $view->getLatestChangeForLocations($c->rollbackBy->value, excludeRollbacked: true)
         };
 
         if (count($changes) == 0)
             return;
 
-        $target = $this->dataStoreFactory->createSession($environment->target);
-        $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStore());
+        $target = $this->dataStoreFactory->createSession($environment->targetDsn);
+        $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStoreDsn());
 
-        $error = [];
-        $deploymentId = $history->startDeployment(Command::ROLLBACK, $c->deployer, $c->tag);
+        $error = null;
+        $deployment = $history->openDeployment(DeploymentCommand::ROLLBACK, $c->deployer);
 
         try {
-            $this->rollback($changes, $target, $migrationStore, $history, $deploymentId);
+            $this->rollback($deployment, $target, $migrationStore, $changes);
         }
         catch (Exception $e) {
-            $error = $this->toDeploymentError($e);
+            $error = DeploymentError::fromException($e);
+            throw $e;
         }
         finally {
-            ignoreException(fn() => $history->endDeployment($deploymentId, $error));
+            ignoreException(fn() => $deployment->close($error));
         }
     }
 
@@ -56,8 +58,7 @@ class RollbackHandler extends AbstractDeployHandler
      * @param Change[] $changes
      * @throws Exception
      */
-    private function rollback(array $changes, Session $target, MigrationStore $migrationStore,
-        History $history, DeploymentId $deploymentId): void
+    private function rollback(Deployment $deployment, Session $target, MigrationStore $migrationStore, array $changes): void
     {
         foreach ($changes as $change) {
             $migration = $migrationStore->getMigration($change->location);
@@ -69,7 +70,7 @@ class RollbackHandler extends AbstractDeployHandler
 
             try {
                 $migration->script->rollback($target);
-                $history->addChange($this->createChange($deploymentId, Status::ROLLBACKED, $migration));
+                $deployment->addChange(ChangeStatus::ROLLBACKED, $migration);
                 $target->commit();
             }
             catch (Exception $e) {

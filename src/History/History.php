@@ -3,14 +3,9 @@
 namespace Cinch\History;
 
 use Cinch\Common\Author;
-use Cinch\Common\Location;
 use Cinch\Common\MigratePolicy;
 use Cinch\Component\Assert\Assert;
 use Cinch\Database\Session;
-use DateTime;
-use DateTimeInterface;
-use DateTimeZone;
-use Doctrine\DBAL\Result;
 use Exception;
 use RuntimeException;
 use Twig\Environment as Twig;
@@ -18,6 +13,7 @@ use Twig\TwigFilter;
 
 class History
 {
+    private readonly HistoryView $view;
     private readonly Session $session;
 
     /**
@@ -35,130 +31,19 @@ class History
         $this->initTwigFilters();
     }
 
-    /**
-     * @throws Exception
-     */
-    public function startDeployment(Command $command, Author $deployer, string|null $tag = null): DeploymentId
+    public function getView(): HistoryView
     {
-        $this->assertSchema();
-        $this->schema->lock();
-
-        try {
-            $table = $this->schema->table('deployment');
-            $id = $this->session->insertReturningId($table, 'deployment_id', [
-                'deployer' => $deployer->value,
-                'tag' => $tag,
-                'command' => $command->value,
-                'application' => $this->application,
-                'schema_version' => $this->schema->version()->version,
-                'started_at' => $this->formatDateTime()
-            ]);
-
-            return new DeploymentId($id);
-        }
-        catch (Exception $e) {
-            ignoreException($this->schema->unlock(...));
-            throw $e;
-        }
-    }
-
-    /**
-     * @param Location $location
-     * @return Change|null
-     * @throws Exception
-     */
-    public function getLatestChangeForLocation(Location $location): Change|null
-    {
-        $row = $this->session->executeQuery("
-            select * from {$this->schema->table('change')}
-                where location = ? order by deployed_at desc limit 1", [$location->value]
-        )->fetchAssociative();
-
-        return $row ? Change::denormalize($row) : null;
-    }
-
-    /** Gets changes since the given tag. This is used by rollbacks.
-     * Changes marked as rollbacked are not included.
-     * @param string $tag
-     * @return Change[] ordered by deployed time descending
-     * @throws Exception
-     */
-    public function getChangesSinceTag(string $tag): array
-    {
-        if (!$tag)
-            return [];
-
-        $r = $this->session->executeQuery("
-            select * from {$this->schema->table('change')}  
-                where deployed_at > (select ended_at from {$this->schema->table('deployment')} where tag = ?)
-                    and status <> ? order by deployed_at desc", [$tag, Status::ROLLBACKED]
-        );
-
-        return $this->getChangesFromResult($r);
-    }
-
-    /** Gets changes since the given datetime. This is used by rollbacks.
-     * Changes marked as rollbacked are not included.
-     * @param DateTimeInterface $date
-     * @return Change[] ordered by deployed time descending
-     * @throws Exception
-     */
-    public function getChangesSinceDate(DateTimeInterface $date): array
-    {
-        $date = $this->formatDateTime($date);
-
-        $r = $this->session->executeQuery("
-            select * from {$this->schema->table('change')} 
-                where deployed_at > ? and status <> ? order by deployed_at desc", [$date, Status::ROLLBACKED]
-        );
-
-        return $this->getChangesFromResult($r);
-    }
-
-    /** Gets the last N number of changes. This is used by rollbacks.
-     * Changes marked as rollbacked are not included.
-     * @param int $count
-     * @return Change[] ordered by deployed time descending
-     * @throws Exception
-     */
-    public function getLastChanges(int $count): array
-    {
-        if ($count <= 0)
-            return [];
-
-        $r = $this->session->executeQuery("
-            select * from {$this->schema->table('change')} 
-                where status <> ? order by deployed_at desc limit $count", [Status::ROLLBACKED]
-        );
-
-        return $this->getChangesFromResult($r);
+        if (!isset($this->view))
+            $this->view = new HistoryView($this->schema);
+        return $this->view;
     }
 
     /**
      * @throws Exception
      */
-    public function addChange(Change $change): void
+    public function openDeployment(DeploymentCommand $command, Author $deployer, string|null $tag = null): Deployment
     {
-        $this->assertSchema();
-        $data = $change->normalize($this->formatDateTime(...));
-        $this->session->insert($this->schema->table('change'), $data);
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function endDeployment(DeploymentId $id, array $error = []): void
-    {
-        try {
-            $this->assertSchema();
-            $this->session->update($this->schema->table('deployment'), [
-                'error' => $error ? json_encode($error, JSON_UNESCAPED_SLASHES) : null,
-                'ended_at' => $this->formatDateTime()
-            ], ['deployment_id' => $id->value]);
-        }
-        finally {
-            ignoreException($this->schema->unlock(...));
-        }
+        return new Deployment($this->schema, $command, $deployer, $this->application, $tag);
     }
 
     /**
@@ -192,19 +77,19 @@ class History
                 'version' => $Q($version->version),
                 'description' => $Q($version->description),
                 'release_date' => $Q($version->releaseDate->format('Y-m-d')),
-                'created_at' => $Q($this->formatDateTime())
+                'created_at' => $Q($this->session->getPlatform()->formatDateTime())
             ],
-            'commands' => array_map(fn($e) => $e->value, Command::cases()),
-            'statuses' => array_map(fn($e) => $e->value, Status::cases()),
+            'commands' => array_map(fn($e) => $e->value, DeploymentCommand::cases()),
+            'statuses' => array_map(fn($e) => $e->value, ChangeStatus::cases()),
             'migrate_policies' => array_map(fn($e) => $e->value, MigratePolicy::cases()),
             ...$this->schema->objects()
         ]);
 
-        $withinTransaction = $this->beginCinchSchema();
+        $withinTransaction = $this->beginSchema();
 
         try {
             $this->session->executeStatement($ddl);
-            $this->commitCinchSchema();
+            $this->commitSchema();
             $this->schema->setState(Schema::EXISTS | Schema::OBJECTS | $creator);
         }
         catch (Exception $e) {
@@ -242,11 +127,11 @@ class History
             ...$this->schema->objects()
         ]);
 
-        $withinTransaction = $this->beginCinchSchema();
+        $withinTransaction = $this->beginSchema();
 
         try {
             $this->session->executeStatement($ddl);
-            $this->commitCinchSchema();
+            $this->commitSchema();
             $this->schema->setState($schemaCreator ? 0 : Schema::EXISTS);
         }
         catch (Exception $e) {
@@ -257,33 +142,10 @@ class History
     }
 
     /**
-     * @throws Exception
-     */
-    private function getChangesFromResult(Result $r): array
-    {
-        $changes = [];
-
-        while ($row = $r->fetchAssociative())
-            $changes[] = Change::denormalize($row);
-
-        return $changes;
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function formatDateTime(DateTimeInterface|null $dt = null): string
-    {
-        if (!$dt)
-            $dt = new DateTime(timezone: new DateTimeZone('UTC'));
-        return $this->session->getPlatform()->formatDateTime($dt);
-    }
-
-    /**
      * @return bool true if a transaction was opened and false otherwise
      * @throws Exception
      */
-    private function beginCinchSchema(): bool
+    private function beginSchema(): bool
     {
         if ($txn = $this->session->getPlatform()->supportsTransactionalDDL())
             $this->session->beginTransaction();
@@ -293,7 +155,7 @@ class History
     /**
      * @throws Exception
      */
-    private function commitCinchSchema(): void
+    private function commitSchema(): void
     {
         if ($this->session->getPlatform()->supportsTransactionalDDL())
             $this->session->commit();
@@ -321,7 +183,7 @@ class History
         }));
 
         /* varchar column: {{ 'name'|varchar(255) }}
-         *     name varchar(255)
+         *     others: name varchar(255)
          *     sqlite: name text constraint "'name' value too long for varchar(255)" check (length(name) between 0 and 255)
          */
         $this->twig->addFilter(new TwigFilter('varchar', function (string $name, int $len) {
@@ -329,7 +191,7 @@ class History
         }));
 
         /* varchar column: {{ 'name'|nvarchar(255) }}
-         *     name varchar(255)
+         *     others: name varchar(255)
          *     mssql: name nvarchar(255) (uses national varying character UCS2|UTF-16)
          *     sqlite: name text constraint "'name' value too long for varchar(255)" check (length(name) between 0 and 255)
          */

@@ -2,7 +2,7 @@
 
 namespace Cinch\History;
 
-enum Status: string
+enum ChangeStatus: string
 {
     case MIGRATED = 'migrated';
     case REMIGRATED = 'remigrated';
