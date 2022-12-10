@@ -52,7 +52,7 @@
     {% set location_type = 'nvarchar(max)' %}
     {% set length = 'len' %}
     {% set restrict = 'no action' %}
-    {# location(512) is 1024 bytes, mssql PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}
+    {# location(512) is 1024 bytes (USC2), mssql PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}
     {% set location_pkindex = 'unique' %}
     {% set collate_ascii = 'collate Latin1_General_100_BIN' %}
     {% set collate_utf8ci = 'collate Latin1_General_100_CI_AI' %}
