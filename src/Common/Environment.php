@@ -12,8 +12,8 @@ class Environment
     public readonly bool $autoCreateSchema;
 
     public function __construct(
-        public readonly Dsn $target,
-        public readonly Dsn $history,
+        public readonly Dsn $targetDsn,
+        public readonly Dsn $historyDsn,
         string $schema,
         public readonly string $tablePrefix,
         public readonly int $deployLockTimeout,
@@ -22,7 +22,7 @@ class Environment
         /* these options are not supported in sqlite, it has a 'main' schema and you cannot create more. You
          * would have to attach another db file.
          */
-        if ($this->history->getScheme() == 'sqlite') {
+        if ($this->historyDsn->getScheme() == 'sqlite') {
             $schema = 'main';
             $autoCreateSchema = false;
         }
@@ -35,7 +35,7 @@ class Environment
     {
         $data = [
             'deploy_lock_timeout' => $this->deployLockTimeout,
-            'target' => (string) $this->target,
+            'target' => (string) $this->targetDsn,
             'history' => [
                 'schema' => $this->schema,
                 'table_prefix' => $this->tablePrefix,
@@ -43,8 +43,8 @@ class Environment
             ]
         ];
 
-        if (!$this->target->equals($this->history))
-            $data['history']['dsn'] = (string) $this->history;
+        if (!$this->targetDsn->equals($this->historyDsn))
+            $data['history']['dsn'] = (string) $this->historyDsn;
 
         return $data;
     }
