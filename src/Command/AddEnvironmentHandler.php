@@ -22,7 +22,7 @@ class AddEnvironmentHandler implements CommandHandler
         $c->project->addEnvironment($c->name, $c->environment);
 
         /* test connection */
-        $this->dataStoreFactory->createSession($c->environment->target)->close();
+        $this->dataStoreFactory->createSession($c->environment->targetDsn)->close();
 
         /* fails if history exists. can't share history between environments or projects */
         $history = $this->dataStoreFactory->createHistory($c->environment);

@@ -21,13 +21,13 @@ class CreateProjectHandler implements CommandHandler
         $rollback = [];
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
 
-        $this->dataStoreFactory->createSession($environment->target)->close(); // test connection
+        $this->dataStoreFactory->createSession($environment->targetDsn)->close(); // test connection
 
         try {
             $this->projectRepository->add($c->project);
             $rollback['projectDir'] = fn() => $this->projectRepository->remove($c->project->getId());
 
-            $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStore());
+            $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStoreDsn());
             $migrationStore->create();
             $rollback['store'] = $migrationStore->delete(...);
 

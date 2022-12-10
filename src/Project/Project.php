@@ -14,7 +14,7 @@ class Project
     public function __construct(
         private readonly ProjectId $id,
         private readonly ProjectName $name,
-        protected Dsn $migrationStore,
+        protected Dsn $migrationStoreDsn,
         protected EnvironmentMap $envMap,
         protected array $hooks = [])
     {
@@ -55,9 +55,9 @@ class Project
         return $this->name;
     }
 
-    public function getMigrationStore(): Dsn
+    public function getMigrationStoreDsn(): Dsn
     {
-        return $this->migrationStore;
+        return $this->migrationStoreDsn;
     }
 
     /**
@@ -75,7 +75,7 @@ class Project
             $hooks[$name] = $hook->normalize();
 
         return [
-            'migration_store' => (string) $this->migrationStore,
+            'migration_store' => (string) $this->migrationStoreDsn,
             'environments' => $this->envMap->normalize(),
             'hooks' => (object) $hooks
         ];

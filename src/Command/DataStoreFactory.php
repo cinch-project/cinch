@@ -50,7 +50,7 @@ class DataStoreFactory
      */
     public function createHistory(Environment $environment): History
     {
-        $session = $this->createSession($environment->history);
+        $session = $this->createSession($environment->historyDsn);
         return new History(new Schema($session, $environment, $this->schemaVersion), $this->twig, $this->application);
     }
 }
