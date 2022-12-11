@@ -84,7 +84,7 @@ return new class {
 
     private function hasShortcut(string $arg, string $shortcut): bool
     {
-        if ($arg[0] == '-' && strlen($arg) >= 2 && $arg[1] != '-') {
+        if ($arg && $arg[0] == '-' && strlen($arg) >= 2 && $arg[1] != '-') {
             $parts = explode('=', $arg, 2);
             if (str_contains($parts[0], $shortcut))
                 return true;

@@ -50,7 +50,7 @@ class RollbackCommandHandler implements CommandHandler
             throw $e;
         }
         finally {
-            ignoreException(fn() => $deployment->close($error));
+            ignoreException($deployment->close(...), $error);
         }
     }
 

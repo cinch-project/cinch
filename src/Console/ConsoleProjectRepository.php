@@ -63,7 +63,7 @@ class ConsoleProjectRepository implements ProjectRepository
             $this->update($project);
         }
         catch (Exception $e) {
-            ignoreException(fn() => $this->remove($project->getId()));
+            ignoreException($this->remove(...), $project->getId());
             throw $e;
         }
     }

@@ -10,11 +10,13 @@ use Cinch\MigrationStore\Adapter\LocalAdapter;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
 use RuntimeException;
+use Twig\Environment as Twig;
 
 class MigrationStoreFactory
 {
     public function __construct(
         private readonly ScriptLoader $scriptLoader,
+        private readonly Twig $twig,
         private readonly string $projectDir,
         private readonly string $resourceDir,
         private readonly string $userAgent)
@@ -34,6 +36,6 @@ class MigrationStoreFactory
             default => throw new RuntimeException("unsupported migration store adapter '{$dsn->getScheme()}'")
         };
 
-        return new MigrationStore($adapter, $this->scriptLoader, $this->resourceDir);
+        return new MigrationStore($adapter, $this->scriptLoader, $this->twig, $this->resourceDir);
     }
 }

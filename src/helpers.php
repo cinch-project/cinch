@@ -1,14 +1,12 @@
 <?php
 // avoid function_exists checks so we "actually" see redefinition errors
 
-const DATETIME_FORMAT = 'Y-m-d H:i:s.uO';
-
-function ignoreException(callable $c): void
+function ignoreException(callable $c, ...$args): void
 {
     try {
-        $c();
+        $c(...$args);
     }
-    catch (\Throwable) {
+    catch (Throwable) {
     }
 }
 

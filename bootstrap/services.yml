@@ -1,6 +1,7 @@
 parameters:
     commands: # used to lazy-load commands (CommandLoader)
         create: Cinch\Console\CreateCommand
+        add: Cinch\Console\AddCommand
         env: Cinch\Console\EnvCommand
         env-list: Cinch\Console\EnvListCommand
         env-delete: Cinch\Console\EnvDeleteCommand

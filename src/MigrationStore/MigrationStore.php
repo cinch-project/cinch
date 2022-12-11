@@ -2,17 +2,22 @@
 
 namespace Cinch\MigrationStore;
 
+use Cinch\Common\Author;
+use Cinch\Common\Description;
 use Cinch\Common\Location;
+use Cinch\Common\MigratePolicy;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Adapter\FileId;
 use Cinch\MigrationStore\Adapter\MigrationStoreAdapter;
 use Cinch\MigrationStore\Script\ScriptLoader;
+use DateTimeInterface;
 use Exception;
 use Generator;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 use Symfony\Component\Yaml\Yaml;
+use Twig\Environment as Twig;
 
 class MigrationStore
 {
@@ -30,6 +35,7 @@ class MigrationStore
     public function __construct(
         private readonly MigrationStoreAdapter $storeAdapter,
         private readonly ScriptLoader $scriptLoader,
+        private readonly Twig $twig,
         private readonly string $resourceDir)
     {
     }
@@ -69,6 +75,22 @@ class MigrationStore
     public function getMigration(Location $location): Migration
     {
         return $this->getDirectoryFor($location)->getMigration($location);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function addMigration(Location $location, MigratePolicy $migratePolicy, Author $author,
+        DateTimeInterface $authoredAt, Description $description): void
+    {
+        $content = $this->twig->render($location->isSql() ? 'sql.twig' : 'php.twig', [
+            'migrate_policy' => $migratePolicy->value,
+            'author' => $author->value,
+            'authored_at' => $authoredAt->format('Y-m-d H:i:sP'),
+            'description' => $description->value,
+        ]);
+
+        $this->storeAdapter->addFile($location->value, $content, 'added migration script from template');
     }
 
     /** Iterates through all migrations in directory migrate order.
