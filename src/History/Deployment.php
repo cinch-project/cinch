@@ -104,6 +104,7 @@ class Deployment
         }
     }
 
+    /** Once a deployment object is closed, it cannot be reused. */
     private function clear(): void
     {
         $this->schema = $this->session = $this->id = null;

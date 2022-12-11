@@ -20,7 +20,7 @@ class DeploymentError implements JsonSerializable
             $t = preg_replace_callback('~^#\d+ (/.+)\(\d+\)~', fn($m) => Path::makeRelative($m[1], $base), $t);
 
         return new static(
-            $e->getMessage() ?: '[error missing message]',
+            $e->getMessage() ?: '[no message provided]',
             get_class($e),
             Path::makeRelative($e->getFile(), $base),
             $e->getLine(),

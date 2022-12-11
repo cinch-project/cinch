@@ -2,6 +2,7 @@
 
 namespace Cinch\History;
 
+use Cinch\Common\Location;
 use Cinch\Database\Session;
 use DateTimeInterface;
 use Doctrine\DBAL\Result;
@@ -17,7 +18,7 @@ class ChangeView
     }
 
     /** Gets the most recent change for one or more locations.
-     * @param array $locations
+     * @param Location[] $locations
      * @param bool $excludeRollbacked indicates if rollbacked changes should be excluded
      * @return array ordered by deployed time descending
      * @throws Exception
@@ -128,11 +129,5 @@ class ChangeView
     private function getChangesFromResult(Result $r): array
     {
         return array_map(fn(array $row) => Change::hydrate($row), $r->fetchAllAssociative());
-    }
-
-    private function limit(int $num): string
-    {
-        $name = $this->session->getPlatform()->getName();
-        return $name == 'mssql' ? "offset 0 row fetch first $num row only" : "limit $num";
     }
 }

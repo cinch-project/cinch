@@ -82,7 +82,7 @@ class Session extends Connection
         $this->platform->unlockSession($this, $name);
     }
 
-    /** Testing.
+    /** Quotes a string literal.
      * @param string $value
      * @return string
      * @throws Exception
