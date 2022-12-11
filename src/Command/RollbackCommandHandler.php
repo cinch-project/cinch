@@ -11,7 +11,7 @@ use Cinch\History\DeploymentError;
 use Cinch\MigrationStore\MigrationStore;
 use Exception;
 
-class RollbackHandler implements CommandHandler
+class RollbackCommandHandler implements CommandHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {

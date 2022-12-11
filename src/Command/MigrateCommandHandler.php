@@ -14,7 +14,7 @@ use Cinch\MigrationStore\MigrationOutOfSyncException;
 use Cinch\MigrationStore\MigrationStore;
 use Exception;
 
-class MigrateHandler implements CommandHandler
+class MigrateCommandHandler implements CommandHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {

@@ -5,7 +5,7 @@ namespace Cinch\Command;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class CreateProjectHandler implements CommandHandler
+class CreateProjectCommandHandler implements CommandHandler
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,

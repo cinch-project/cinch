@@ -20,8 +20,6 @@ class ContainerHandlerLocator implements HandlerLocator
     {
         if (!str_ends_with($commandName, 'Command'))
             throw new RuntimeException("commands must end with 'Command', found '$commandName'");
-
-        $handlerClass = substr($commandName, 0, -7) . 'Handler';
-        return $this->container->get($handlerClass);
+        return $this->container->get($commandName . 'Handler');
     }
 }

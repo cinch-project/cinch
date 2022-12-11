@@ -20,7 +20,7 @@ class RollbackBy
 
     public static function date(DateTimeInterface $date): self
     {
-        return new self(self::COUNT, $date);
+        return new self(self::DATE, $date);
     }
 
     public static function count(int $count): self
