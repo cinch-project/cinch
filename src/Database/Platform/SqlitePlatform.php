@@ -7,7 +7,6 @@ use Cinch\Component\Assert\Assert;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
 use Cinch\LastErrorException;
-use Exception;
 use PDO;
 
 class SqlitePlatform implements Platform
@@ -66,8 +65,11 @@ class SqlitePlatform implements Platform
                 return !!($this->lockStream = $fp);
 
             /* error occurred */
-            if (!$tryAgain)
-                $this->throwLockError($fp);
+            if (!$tryAgain) {
+                $e = new LastErrorException();
+                fclose($fp);
+                throw $e;
+            }
 
             if ($timeout == 0)
                 break;
@@ -87,7 +89,7 @@ class SqlitePlatform implements Platform
 
         $path = stream_get_meta_data($this->lockStream)['uri'];
 
-        if (str_ends_with($path, "$name.lock")) {
+        if (str_ends_with($path, ".$name.lock")) {
             fclose($this->lockStream); // releases any locks
             $this->lockStream = null;
         }
@@ -95,16 +97,5 @@ class SqlitePlatform implements Platform
             // TODO: $this->logger->debug()
             fprintf(STDERR, "locked file is '$path', given wrong name '$name'\n");
         }
-    }
-
-    /**
-     * @param resource $fp
-     * @throws Exception
-     */
-    private function throwLockError($fp): void
-    {
-        $e = new LastErrorException();
-        fclose($fp);
-        throw $e;
     }
 }

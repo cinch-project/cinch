@@ -13,7 +13,7 @@ use Twig\TwigFilter;
 
 class History
 {
-    private readonly HistoryView $view;
+    private readonly ChangeView $changeView;
     private readonly Session $session;
 
     /**
@@ -31,11 +31,11 @@ class History
         $this->initTwigFilters();
     }
 
-    public function getView(): HistoryView
+    public function getChangeView(): ChangeView
     {
-        if (!isset($this->view))
-            $this->view = new HistoryView($this->schema);
-        return $this->view;
+        if (!isset($this->changeView))
+            $this->changeView = new ChangeView($this->schema);
+        return $this->changeView;
     }
 
     /**

@@ -24,13 +24,13 @@ class RollbackHandler implements CommandHandler
     {
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
         $history = $this->dataStoreFactory->createHistory($environment);
-        $view = $history->getView();
+        $changeView = $history->getChangeView();
 
         $changes = match ($c->rollbackBy->type) {
-            RollbackBy::COUNT => $view->getLastCountChanges($c->rollbackBy->value),
-            RollbackBy::TAG => $view->getChangesSinceTag($c->rollbackBy->value),
-            RollbackBy::DATE => $view->getChangesSinceDate($c->rollbackBy->value),
-            RollbackBy::SCRIPT => $view->getLatestChangeForLocations($c->rollbackBy->value, excludeRollbacked: true)
+            RollbackBy::COUNT => $changeView->getMostRecentChangesByCount($c->rollbackBy->value),
+            RollbackBy::TAG => $changeView->getMostRecentChangesSinceTag($c->rollbackBy->value),
+            RollbackBy::DATE => $changeView->getMostRecentChangesSinceDate($c->rollbackBy->value),
+            RollbackBy::SCRIPT => $changeView->getMostRecentChanges($c->rollbackBy->value, excludeRollbacked: true)
         };
 
         if (count($changes) == 0)

@@ -134,9 +134,5 @@ create index {{ index_prefix }}change_deployment_id_idx on {{ change|strip_schem
 {% endif %}
 
 create index {{ index_prefix }}change_status_idx on {{ change|strip_schema }} (status);
-
-{#
-    most common use case is reading in desc order. note: MySQL 5.7 allows 'desc' syntax but ignores it. For this
-    reason, always include DESC within a query: `order by deployed_at desc`.
-#}
+{# most common use case is reading in desc order #}
 create unique index {{ index_prefix }}change_deployed_at_idx on {{ change|strip_schema }} (deployed_at desc);

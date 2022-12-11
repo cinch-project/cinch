@@ -5,10 +5,10 @@ namespace Cinch\Command;
 use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
 use Cinch\History\ChangeStatus;
+use Cinch\History\ChangeView;
 use Cinch\History\Deployment;
 use Cinch\History\DeploymentCommand;
 use Cinch\History\DeploymentError;
-use Cinch\History\HistoryView;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationOutOfSyncException;
 use Cinch\MigrationStore\MigrationStore;
@@ -34,7 +34,7 @@ class MigrateHandler implements CommandHandler
         $deployment = $history->openDeployment(DeploymentCommand::MIGRATE, $c->deployer, $c->tag);
 
         try {
-            $this->migrate($deployment, $target, $migrationStore, $history->getView());
+            $this->migrate($deployment, $target, $migrationStore, $history->getChangeView());
         }
         catch (Exception $e) {
             $error = DeploymentError::fromException($e);
@@ -49,13 +49,13 @@ class MigrateHandler implements CommandHandler
      * @throws Exception
      */
     private function migrate(Deployment $deployment, Session $target,
-        MigrationStore $migrationStore, HistoryView $view): void
+        MigrationStore $migrationStore, ChangeView $changeView): void
     {
         foreach ($migrationStore->iterateMigrations() as $migration) {
             $target->beginTransaction();
 
             try {
-                if ($status = $this->getStatus($view, $migration)) {
+                if ($status = $this->getStatus($changeView, $migration)) {
                     $migration->script->migrate($target);
                     $deployment->addChange($status, $migration);
                 }
@@ -70,14 +70,14 @@ class MigrateHandler implements CommandHandler
     }
 
     /**
-     * @param HistoryView $view
+     * @param ChangeView $changeView
      * @param Migration $migration
      * @return ChangeStatus|null change status or null if migration should be skipped
      * @throws Exception
      */
-    private function getStatus(HistoryView $view, Migration $migration): ChangeStatus|null
+    private function getStatus(ChangeView $changeView, Migration $migration): ChangeStatus|null
     {
-        $changes = $view->getLatestChangeForLocations([$migration->location]);
+        $changes = $changeView->getMostRecentChanges([$migration->location]);
 
         /* doesn't exist yet, migrate it */
         if (!$changes)
