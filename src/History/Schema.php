@@ -42,7 +42,7 @@ class Schema
 
     public function autoCreate(): bool
     {
-        return $this->environment->autoCreateSchema;
+        return $this->environment->createSchema;
     }
 
     public function setState(int $state): void
@@ -82,7 +82,7 @@ class Schema
      */
     public function lock(): bool
     {
-        return $this->session->lock($this->name, $this->environment->deployLockTimeout);
+        return $this->session->lock($this->name, $this->environment->deployTimeout);
     }
 
     /**
