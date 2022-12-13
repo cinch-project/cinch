@@ -13,6 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand('env:add', 'Adds an environment')]
 class EnvAddCommand extends AbstractCommand
 {
+    use EnvironmentOptions;
+
     public function __construct(private readonly ProjectRepository $projectRepository)
     {
         parent::__construct();

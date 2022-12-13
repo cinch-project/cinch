@@ -33,14 +33,11 @@ class MigrationAddCommand extends AbstractCommand
         // cinch add <project> <location> <description> --author= --migrate-policy=
         $this->setHelp('This does cool stuff')
             ->addProjectArgument()
-            ->addArgument('location', InputArgument::REQUIRED,
-                'Migration location relative to migration store')
+            ->addArgument('location', InputArgument::REQUIRED, 'Migration location (relative to migration store)')
             ->addArgument('description', InputArgument::REQUIRED, 'Migration description')
-            ->addOption('migrate-policy', 'm', InputOption::VALUE_REQUIRED,
-                "Migrate policy: $policies", $defaultPolicy)
-            ->addOption('author', 'a', InputOption::VALUE_REQUIRED,
-                'Migration author [default: current system user]')
-            ->addEnvironmentNameOption();
+            ->addOption('migrate-policy', 'm', InputOption::VALUE_REQUIRED, "Migrate policy: $policies", $defaultPolicy)
+            ->addOption('author', 'a', InputOption::VALUE_REQUIRED, 'Migration author [default: current system user]')
+            ->addOptionByName('env');
     }
 
     /**

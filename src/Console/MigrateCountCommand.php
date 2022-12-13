@@ -43,13 +43,12 @@ class MigrateCountCommand extends AbstractCommand
 
     protected function configure()
     {
-        $this->addProjectArgument()
-            ->addArgument('number', InputArgument::REQUIRED,
-                "The number of eligible migrations to migrate")
-            ->addOption('deployer', null, InputOption::VALUE_REQUIRED,
-                'The user or application [default: current system user]')
-            ->addTagOption()
-            ->addEnvironmentNameOption()
+        $this
+            ->addProjectArgument()
+            ->addArgument('number', InputArgument::REQUIRED, 'The number of eligible migrations to migrate')
+            ->addOptionByName('deployer')
+            ->addOptionByName('tag')
+            ->addOptionByName('env')
             ->setHelp(<<<HELP
 This will deploy the next <info><number></info> eligible migrations. They are selected based on the sorting 
 policy of the migration store's directory configuration. 

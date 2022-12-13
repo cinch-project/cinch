@@ -29,12 +29,12 @@ class ConsoleProjectRepository implements ProjectRepository
      */
     public function get(ProjectId $id): Project
     {
-        $name = new ProjectName(basename($id));
         $file = Path::join($id, self::PROJECT_FILE);
 
         if (!file_exists($file))
             throw new Exception("project '$id' does not exist");
 
+        $name = new ProjectName(basename($id));
         $state = Yaml::parseFile($file, Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE | Yaml::PARSE_OBJECT_FOR_MAP);
 
         return new Project(
@@ -113,8 +113,8 @@ class ConsoleProjectRepository implements ProjectRepository
     {
         $tablePrefix = '';
         $schema = sprintf(Environment::DEFAULT_SCHEMA_FORMAT, $projectName);
-        $autoCreateSchema = Environment::DEFAULT_AUTO_CREATE_SCHEMA;
-        $deployLockTimeout = Environment::DEFAULT_DEPLOY_LOCK_TIMEOUT;
+        $createSchema = Environment::DEFAULT_CREATE_SCHEMA;
+        $deployTimeout = Environment::DEFAULT_DEPLOY_TIMEOUT;
 
         /* 'env_name: dsn' */
         if (is_string($value)) {
@@ -122,8 +122,8 @@ class ConsoleProjectRepository implements ProjectRepository
         }
         /* 'env_name: {target: dsn, history: dsn}', history optional */
         else if (is_object($value)) {
-            if (property_exists($value, 'deploy_lock_timeout'))
-                $deployLockTimeout = Assert::that($value->deploy_lock_timeout, "$path.deploy_lock_timeout")
+            if (property_exists($value, 'deploy_timeout'))
+                $deployTimeout = Assert::that($value->deploy_timeout, "$path.deploy_timeout")
                     ->int()->greaterThanEqualTo(0)->value();
 
             $target = Assert::thatProp($value, 'target', "$path.target")
@@ -150,8 +150,8 @@ class ConsoleProjectRepository implements ProjectRepository
                 $tablePrefix = Assert::ifPropSet($h, 'table_prefix', $tablePrefix, "$path.table_prefix")
                     ->string()->value();
 
-                $autoCreateSchema = Assert::ifPropSet($h, 'auto_create_schema',
-                    $autoCreateSchema, "$path.auto_create_schema")->bool()->value();
+                $createSchema = Assert::ifPropSet($h, 'create_schema',
+                    $createSchema, "$path.create_schema")->bool()->value();
             }
             else {
                 throw new Exception("$path.history must be a string|object, found " .
@@ -165,7 +165,7 @@ class ConsoleProjectRepository implements ProjectRepository
             throw new AssertException("$path must be an object|string, found " . get_debug_type($value));
         }
 
-        return new Environment($targetDsn, $historyDsn, $schema, $tablePrefix, $deployLockTimeout, $autoCreateSchema);
+        return new Environment($targetDsn, $historyDsn, $schema, $tablePrefix, $deployTimeout, $createSchema);
     }
 
     /**

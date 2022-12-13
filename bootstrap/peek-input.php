@@ -63,7 +63,7 @@ return new class {
         $parts = explode('=', $arg, 2);
         $isShortcut = $shortcut && !str_starts_with($arg, '--');
 
-        /* all shortcut options peeked require a value. if the options (-shdy) doesn't end with parts[0],
+        /* all peeked shortcut options require a value. if the option (-shdy) doesn't end with parts[0],
          * the value is missing.
          */
         if ($isShortcut && !str_ends_with($parts[0], $shortcut))

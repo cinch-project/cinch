@@ -61,7 +61,7 @@ class History
         $creator = $state & Schema::EXISTS ? 0 : Schema::CREATOR;
 
         if (!$this->schema->autoCreate() && $creator)
-            throw new SchemaConflictException("auto_create_schema is disabled and schema " .
+            throw new SchemaConflictException("create_schema is disabled and schema " .
                 "'{$this->schema->name()}' does not exist. Please create this schema or configure an existing one.");
 
         $Q = $this->session->quoteString(...);

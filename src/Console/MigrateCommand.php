@@ -9,7 +9,6 @@ use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate', 'Migrates all eligible migrations')]
@@ -63,11 +62,11 @@ class MigrateCommand extends AbstractCommand
 
     protected function configure()
     {
-        $this->addProjectArgument()
-            ->addOption('deployer', null, InputOption::VALUE_REQUIRED,
-                'The user or application [default: current system user]')
-            ->addTagOption()
-            ->addEnvironmentNameOption()
+        $this
+            ->addProjectArgument()
+            ->addOptionByName('deployer')
+            ->addOptionByName('tag')
+            ->addOptionByName('env')
             ->setHelp(<<<HELP
 <code-comment># migrate all eligible migrations</code-comment>
 <code>cinch migrate project-name --tag=v12.9.3</code>

@@ -11,7 +11,6 @@ use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate:script', 'Migrates one or more migration scripts')]
@@ -28,7 +27,7 @@ class MigrateScriptCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $locations = array_map(fn(string $l) => new Location($l), $input->getArgument('location'));
+        $locations = array_map(fn(string $l) => new Location($l), $input->getArgument('locations'));
 
         $this->commandBus->handle(new \Cinch\Command\MigrateCommand(
             $project,
@@ -43,13 +42,12 @@ class MigrateScriptCommand extends AbstractCommand
 
     protected function configure()
     {
-        $this->addProjectArgument()
-            ->addArgument('location', InputArgument::REQUIRED | InputArgument::IS_ARRAY,
-                "One or more locations")
-            ->addOption('deployer', null, InputOption::VALUE_REQUIRED,
-                'The user or application [default: current system user]')
-            ->addTagOption()
-            ->addEnvironmentNameOption()
+        $this
+            ->addProjectArgument()
+            ->addArgument('locations', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'One or more locations')
+            ->addOptionByName('deployer')
+            ->addOptionByName('tag')
+            ->addOptionByName('env')
             ->setHelp(<<<HELP
 The locations are deployed in the order they are specified.
 

@@ -10,7 +10,6 @@ use Cinch\Project\ProjectName;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
@@ -18,19 +17,11 @@ use Symfony\Component\Filesystem\Path;
 #[AsCommand('create', 'Creates a project')]
 class CreateCommand extends AbstractCommand
 {
+    use EnvironmentOptions;
+
     public function __construct(private readonly string $tempLogFile)
     {
         parent::__construct();
-    }
-
-    protected function configure()
-    {
-        $this->setHelp('This does cool stuff')
-            ->addProjectArgument()
-            ->addEnvironmentOptions()
-            ->addOption('migration-store', 'm', InputOption::VALUE_REQUIRED,
-                "Migration Store DSN", '.')
-            ->addEnvironmentNameOption('Sets the default environment [default: projectName]');
     }
 
     /**
@@ -63,5 +54,14 @@ class CreateCommand extends AbstractCommand
     {
         echo "delete project\n";
         parent::handleSignal($signal);
+    }
+
+    protected function configure()
+    {
+        $this
+            ->addProjectArgument()
+            ->addEnvironmentOptions()
+            ->addOptionByName('migration-store')
+            ->addOptionByName('env', 'Sets the project\'s default environment [default: $projectName]');
     }
 }

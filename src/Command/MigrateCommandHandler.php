@@ -132,7 +132,7 @@ class MigrateCommandHandler implements CommandHandler
         if (!$scriptChanged && $change->migratePolicy == MigratePolicy::ONCHANGE)
             return null;
 
-        /* remigrate: policy is ONCHANGE or ALWAYS */
+        /* migrate policy is ONCHANGE or ALWAYS */
         return ChangeStatus::REMIGRATED;
     }
 }

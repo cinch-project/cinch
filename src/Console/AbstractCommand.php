@@ -2,12 +2,9 @@
 
 namespace Cinch\Console;
 
-use Cinch\Common\Dsn;
-use Cinch\Common\Environment;
 use Cinch\Component\Assert\Assert;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectId;
-use Cinch\Project\ProjectName;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -16,14 +13,20 @@ use League\Tactician\CommandBus;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
-use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class AbstractCommand extends Command implements SignalableCommandInterface
 {
+    /* lookup table for commonly used options: see getOptionByName() */
+    private const OPTIONS = [
+        'env' => [null, InputOption::VALUE_REQUIRED, 'Sets the environment [default: environments.default]'],
+        'tag' => [null, 'Deployment tag [default: version 7 UUID]'],
+        'deployer' => [null, InputOption::VALUE_REQUIRED, 'User or application performing deployment [default: current user]'],
+        'migration-store' => ['m', InputOption::VALUE_REQUIRED, 'Migration Store DSN', '.'],
+    ];
+
     protected readonly LoggerInterface $logger;
     protected readonly ProjectId $projectId;
     protected readonly string $environmentName;
@@ -60,53 +63,19 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
 
     protected function addProjectArgument(): static
     {
-        return $this->addArgument('project', InputArgument::REQUIRED, 'The project name');
+        return $this->addArgument('project', InputArgument::REQUIRED, 'Project name');
     }
 
-    protected function addEnvironmentNameOption(string $description = ''): static
+    protected function addOptionByName(string $name, string $description = ''): static
     {
-        $desc = $description ?: 'Sets the environment [default: environments.default]';
-        return $this->addOption('env', null, InputOption::VALUE_REQUIRED, $desc);
-    }
+        $opt = self::OPTIONS[$name] ?? null;
+        if (!$opt)
+            throw new \RuntimeException("option '$name' does not exist");
 
-    protected function addEnvironmentOptions(): static
-    {
-        return $this
-            ->addArgument('target', InputArgument::REQUIRED, 'Target (database) DSN')
-            ->addOption('history', 'H', InputOption::VALUE_REQUIRED,
-                'History (database) DSN [default: target]')
-            ->addOption('schema', 's', InputOption::VALUE_REQUIRED,
-                "Schema name to use for history tables [default: cinch_{projectName}]")
-            ->addOption('table-prefix', null, InputOption::VALUE_REQUIRED,
-                "Prefix for history table names", '')
-            ->addOption('deploy-lock-timeout', null, InputOption::VALUE_REQUIRED,
-                "Seconds to wait for a deploy lock before timing out the request",
-                Environment::DEFAULT_DEPLOY_LOCK_TIMEOUT)
-            ->addOption('auto-create-schema', 'a', InputOption::VALUE_REQUIRED,
-                "Automatically create the history schema if it doesn't exist",
-                Environment::DEFAULT_AUTO_CREATE_SCHEMA);
-    }
+        if ($description)
+            $opt[2] = $description;
 
-    protected function addTagOption(): static
-    {
-        return $this->addOption('tag', null,
-            InputOption::VALUE_REQUIRED, 'Deployment tag [default: version 7 UUID]', null);
-    }
-
-    protected function getEnvironmentFromInput(InputInterface $input, ProjectName $projectName): Environment
-    {
-        $target = $input->getArgument('target');
-        $history = $input->getOption('history') ?: $target;
-        $defaultSchema = sprintf(Environment::DEFAULT_SCHEMA_FORMAT, $projectName->value);
-
-        return new Environment(
-            new Dsn($target),
-            new Dsn($history),
-            $input->getOption('schema') ?: $defaultSchema,
-            $input->getOption('table-prefix'),
-            $this->getIntOption($input, 'deploy-lock-timeout'),
-            $input->getOption('auto-create-schema')
-        );
+        return $this->addOption($name, ...$opt);
     }
 
     /**

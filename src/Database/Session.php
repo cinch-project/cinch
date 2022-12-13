@@ -93,48 +93,6 @@ class Session extends Connection
         return $this->getDatabasePlatform()->quoteStringLiteral($value);
     }
 
-    /** Inserts a record and returns the last insert identifier.
-     * @param string $table should be schema qualified and properly quoted
-     * @param string $idColumn sequence, auto_increment, identity column name
-     * @param array $data assoc array of column_name => value.
-     * @return int
-     * @throws Exception
-     */
-    public function insertReturningId(string $table, string $idColumn, array $data): int
-    {
-        $columns = '';
-        $values = [];
-        $placeholders = '';
-        $platformName = $this->platform->getName();
-
-        foreach ($data as $column => $value) {
-            $comma = $columns ? ',' : '';
-            $columns .= $comma . $column;
-            $placeholders .= $comma . '?';
-            $values[] = $value;
-        }
-
-        /* need auto-incremented value across databases. MySQL/MariaDB automatically return this in an
-         * "OK Packet". The other databases support either RETURNING or OUTPUT clauses.
-         */
-        $insert = "insert into $table ($columns)";
-
-        if ($platformName == 'mssql')
-            $insert .= " output inserted.$idColumn"; // must come before VALUES()
-
-        $insert .= " values ($placeholders)";
-
-        if ($platformName == 'pgsql' || $platformName == 'sqlite')
-            $insert .= " returning $idColumn"; // must come after VALUES()
-
-        if ($platformName == 'mysql' || $platformName == 'mariadb') {
-            $this->executeStatement($insert, $values);
-            return $this->lastInsertId(); // from ok packet
-        }
-
-        return $this->executeQuery($insert, $values)->fetchOne(); // from returning or output
-    }
-
     private function isNoActiveTransactionException(PDOException $e): bool
     {
         /* for platforms without transaction DDL, DDL statements auto-commit any open transaction. If doctrine still
