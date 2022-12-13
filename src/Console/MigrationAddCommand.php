@@ -17,8 +17,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('add', 'Adds a migration to the migration store using a template.')]
-class AddCommand extends AbstractCommand
+#[AsCommand('migration:add', 'Adds a migration')]
+class MigrationAddCommand extends AbstractCommand
 {
     public function __construct(private readonly ProjectRepository $projectRepository)
     {

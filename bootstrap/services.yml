@@ -1,13 +1,13 @@
 parameters:
     commands: # used to lazy-load commands (CommandLoader)
         create: Cinch\Console\CreateCommand
-        add: Cinch\Console\AddCommand
-        env: Cinch\Console\EnvCommand
-        env-list: Cinch\Console\EnvListCommand
-        env-delete: Cinch\Console\EnvDeleteCommand
+        'migration:add': Cinch\Console\MigrationAddCommand
+        'env': Cinch\Console\EnvCommand
+        'env:add': Cinch\Console\EnvAddCommand
+        'env:remove': Cinch\Console\EnvRemoveCommand
         migrate: Cinch\Console\MigrateCommand
-        migrate-count: Cinch\Console\MigrateCountCommand
-        migrate-script: Cinch\Console\MigrateScriptCommand
+        'migrate:count': Cinch\Console\MigrateCountCommand
+        'migrate:script': Cinch\Console\MigrateScriptCommand
 
 services:
     _defaults:

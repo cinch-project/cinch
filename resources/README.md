@@ -28,7 +28,7 @@ the latest deployment record's `tag` is updated.
 
 ## Columns
 
-* `deployment_id bigint` primary key for a deployment
+* `tag varchar(128)` primary key for a deployment
 * `deployer varchar(64)` who initiated the deployment
 * `tag varchar(64)` tag name, can be `null`
 * `command varchar(16)` command executed: `'commit'` or `'revert'`
@@ -49,7 +49,7 @@ The original `COMMITTED` record remains. This is a log.
 
 ## change columns
 
-The primary key of this table is `(location, deployment_id)`.
+The primary key of this table is `(location, tag)`.
 
 ### location varchar(760)
 
@@ -59,9 +59,9 @@ etc. The only requirement is that this value uniquely identify the script.
 > This is a very wide field, allowing for 760 characters (not bytes). Due to database key length
 > constraints, this is the widest it can be.
 
-### deployment_id bigint
+### tag varchar(128)
 
-The deployment this change belongs to -- foreign key.
+The deployment tag this change belongs to -- foreign key.
 
 ### deployed_at datetime(6) or timestamptz(6)
 

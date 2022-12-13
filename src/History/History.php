@@ -41,9 +41,9 @@ class History
     /**
      * @throws Exception
      */
-    public function openDeployment(DeploymentCommand $command, Author $deployer, string|null $tag = null): Deployment
+    public function openDeployment(DeploymentCommand $command, DeploymentTag $tag, Author $deployer): Deployment
     {
-        return new Deployment($this->schema, $command, $deployer, $this->application, $tag);
+        return new Deployment($this->schema, $command, $tag, $deployer, $this->application);
     }
 
     /**

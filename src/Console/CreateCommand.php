@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 
-#[AsCommand('create', 'Creates a new project')]
+#[AsCommand('create', 'Creates a project')]
 class CreateCommand extends AbstractCommand
 {
     public function __construct(private readonly string $tempLogFile)

@@ -6,15 +6,25 @@ use Symfony\Component\Console\Application as SymfonyApplication;
 use Symfony\Component\Console\Command\CompleteCommand;
 use Symfony\Component\Console\Command\HelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class Application extends SymfonyApplication
 {
     public function __construct(string $version)
     {
         parent::__construct('cinch', $version);
+    }
+
+    protected function configureIO(InputInterface $input, OutputInterface $output): void
+    {
+        $output->getFormatter()->setStyle('code-comment', new OutputFormatterStyle('gray'));
+        $output->getFormatter()->setStyle('code', new OutputFormatterStyle('blue'));
+        parent::configureIO($input, $output);
     }
 
     protected function getDefaultInputDefinition(): InputDefinition
@@ -33,6 +43,6 @@ class Application extends SymfonyApplication
 
     protected function getDefaultCommands(): array
     {
-        return [new HelpCommand(), new ListCommand(), new CompleteCommand()];
+        return [new HelpCommand(), (new ListCommand())->setHidden(), new CompleteCommand()];
     }
 }

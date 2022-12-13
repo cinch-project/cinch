@@ -8,13 +8,19 @@ use Cinch\Component\Assert\Assert;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectId;
 use Cinch\Project\ProjectName;
+use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
+use Exception;
 use League\Tactician\CommandBus;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class AbstractCommand extends Command implements SignalableCommandInterface
 {
@@ -60,7 +66,7 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
     protected function addEnvironmentNameOption(string $description = ''): static
     {
         $desc = $description ?: 'Sets the environment [default: environments.default]';
-        return $this->addOption('environment', 'e', InputOption::VALUE_REQUIRED, $desc);
+        return $this->addOption('env', null, InputOption::VALUE_REQUIRED, $desc);
     }
 
     protected function addEnvironmentOptions(): static
@@ -84,7 +90,7 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
     protected function addTagOption(): static
     {
         return $this->addOption('tag', null,
-            InputOption::VALUE_REQUIRED, 'Tags the deployment (recommended)', null);
+            InputOption::VALUE_REQUIRED, 'Deployment tag [default: version 7 UUID]', null);
     }
 
     protected function getEnvironmentFromInput(InputInterface $input, ProjectName $projectName): Environment
@@ -101,6 +107,39 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
             $this->getIntOption($input, 'deploy-lock-timeout'),
             $input->getOption('auto-create-schema')
         );
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function parseDateValue(string $value): DateTimeInterface|null
+    {
+        if (preg_match('~([+\-]\d\d:?\d\d)$~', $value, $m)) {
+            $timeZone = new DateTimeZone($m[1]);
+            $value = substr($value, 0, -strlen($m[1]));
+        }
+        else {
+            $timeZone = new DateTimeZone(get_system_time_zone());
+        }
+
+        $date = str_contains($value, '-');
+        $time = str_contains($value, ':');
+
+        if ($date && $time)
+            $format = 'Y-m-d\TH:i:s';
+        else if ($date)
+            $format = 'Y-m-d';
+        else if ($time)
+            $format = 'H:i:s';
+        else
+            $format = '';
+
+        if ($format) {
+            Assert::date($value, $format, '(date) value argument');
+            return new DateTimeImmutable($value, $timeZone);
+        }
+
+        return null;
     }
 
     protected function getIntOption(InputInterface $input, string $name, int $default = 0): int

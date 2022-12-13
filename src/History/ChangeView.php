@@ -55,18 +55,15 @@ class ChangeView
 
     /** Gets the most recent changes since a specific tag. This is used by rollbacks.
      * @note Changes marked as rollbacked are excluded.
-     * @param string $tag
-     * @return Change[] ordered by deployed time descending
+     * @param DeploymentTag $tag
+     * @return array ordered by deployed time descending
      * @throws Exception
      */
-    public function getMostRecentChangesSinceTag(string $tag): array
+    public function getMostRecentChangesSinceTag(DeploymentTag $tag): array
     {
-        if (!$tag)
-            return [];
-
         $change = $this->schema->table('change');
         $deployment = $this->schema->table('deployment');
-        $params = [$tag, ChangeStatus::ROLLBACKED];
+        $params = [$tag->value, ChangeStatus::ROLLBACKED];
 
         return $this->getChangesFromResult($this->session->executeQuery("
             select c.* from $change c join (

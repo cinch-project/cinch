@@ -2,6 +2,7 @@
 
 namespace Cinch\Command;
 
+use Cinch\Common\Location;
 use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
 use Cinch\History\ChangeStatus;
@@ -13,6 +14,7 @@ use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationOutOfSyncException;
 use Cinch\MigrationStore\MigrationStore;
 use Exception;
+use Generator;
 
 class MigrateCommandHandler implements CommandHandler
 {
@@ -31,10 +33,10 @@ class MigrateCommandHandler implements CommandHandler
         $history = $this->dataStoreFactory->createHistory($environment);
 
         $error = null;
-        $deployment = $history->openDeployment(DeploymentCommand::MIGRATE, $c->deployer, $c->tag);
+        $deployment = $history->openDeployment(DeploymentCommand::MIGRATE, $c->tag, $c->deployer);
 
         try {
-            $this->migrate($deployment, $target, $migrationStore, $history->getChangeView());
+            $this->migrate($deployment, $target, $migrationStore, $history->getChangeView(), $c->options);
         }
         catch (Exception $e) {
             $error = DeploymentError::fromException($e);
@@ -48,24 +50,46 @@ class MigrateCommandHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    private function migrate(Deployment $deployment, Session $target,
-        MigrationStore $migrationStore, ChangeView $changeView): void
+    private function migrate(Deployment $deployment, Session $target, MigrationStore $migrationStore,
+        ChangeView $changeView, MigrateOptions $options): void
     {
-        foreach ($migrationStore->iterateMigrations() as $migration) {
+        $count = $options->getCount();
+
+        foreach ($this->next($migrationStore, $options) as $migration) {
+            if (!($status = $this->getStatus($changeView, $migration)))
+                continue;
+
             $target->beginTransaction();
 
             try {
-                if ($status = $this->getStatus($changeView, $migration)) {
-                    $migration->script->migrate($target);
-                    $deployment->addChange($status, $migration);
-                }
-
+                $migration->script->migrate($target);
+                $deployment->addChange($status, $migration);
                 $target->commit();
+                if ($count !== null && --$count == 0)
+                    break;
             }
             catch (Exception $e) {
                 ignoreException($target->rollBack(...));
                 throw $e;
             }
+        }
+    }
+
+    /**
+     * @param MigrationStore $migrationStore
+     * @param MigrateOptions $options
+     * @return Generator
+     * @throws Exception
+     */
+    private function next(MigrationStore $migrationStore, MigrateOptions $options): Generator
+    {
+        /* migrate specific scripts */
+        if ($locations = $options->getLocations()) {
+            foreach ($locations as $location)
+                yield $migrationStore->getMigration($location);
+        }
+        else {
+            return $migrationStore->iterateMigrations();
         }
     }
 

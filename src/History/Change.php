@@ -15,7 +15,7 @@ class Change
 {
     public function __construct(
         public readonly Location $location,
-        public readonly DeploymentId $deploymentId,
+        public readonly DeploymentTag $tag,
         public readonly MigratePolicy $migratePolicy,
         public readonly ChangeStatus $status,
         public readonly Author $author,
@@ -35,7 +35,7 @@ class Change
     {
         return new Change(
             new Location($data['location']),
-            new DeploymentId($data['deployment_id']),
+            new DeploymentTag($data['tag']),
             MigratePolicy::from($data['migrate_policy']),
             ChangeStatus::from($data['status']),
             new Author($data['author']),

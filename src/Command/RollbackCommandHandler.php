@@ -40,7 +40,7 @@ class RollbackCommandHandler implements CommandHandler
         $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStoreDsn());
 
         $error = null;
-        $deployment = $history->openDeployment(DeploymentCommand::ROLLBACK, $c->deployer);
+        $deployment = $history->openDeployment(DeploymentCommand::ROLLBACK, $c->tag, $c->deployer);
 
         try {
             $this->rollback($deployment, $target, $migrationStore, $changes);

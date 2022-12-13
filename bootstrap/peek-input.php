@@ -39,8 +39,8 @@ return new class {
                 $workingDir = $this->getOption($arg, '--working-dir', 'w', $argv, $i);
             else if (!$timeZone && $this->hasOption($arg, '--time-zone', 'z'))
                 $timeZone = $this->getOption($arg, '--time-zone', 'z', $argv, $i);
-            else if (!$envName && $this->hasOption($arg, '--environment', 'e'))
-                $envName = $this->getOption($arg, '--environment', 'e', $argv, $i);
+            else if (!$envName && $this->hasOption($arg, '--env', ''))
+                $envName = $this->getOption($arg, '--env', '', $argv, $i);
             else if (!$projectName && $arg[0] != '-')
                 $projectName = $arg; /* first "argument" MUST be project name */
 
@@ -61,8 +61,11 @@ return new class {
     private function getOption(string $arg, string $name, string $shortcut, array $argv, int &$i): string
     {
         $parts = explode('=', $arg, 2);
-        $isShortcut = !str_starts_with($arg, '--');
+        $isShortcut = $shortcut && !str_starts_with($arg, '--');
 
+        /* all shortcut options peeked require a value. if the options (-shdy) doesn't end with parts[0],
+         * the value is missing.
+         */
         if ($isShortcut && !str_ends_with($parts[0], $shortcut))
             throw new InvalidOptionException("-$shortcut missing value");
 
@@ -84,7 +87,7 @@ return new class {
 
     private function hasShortcut(string $arg, string $shortcut): bool
     {
-        if ($arg && $arg[0] == '-' && strlen($arg) >= 2 && $arg[1] != '-') {
+        if ($shortcut && $arg && $arg[0] == '-' && strlen($arg) >= 2 && $arg[1] != '-') {
             $parts = explode('=', $arg, 2);
             if (str_contains($parts[0], $shortcut))
                 return true;
@@ -98,7 +101,7 @@ return new class {
         $count = count($argv);
 
         /* first condition is running cinch with no arguments `cinch`, which runs symfony "list" */
-        if ($count < 2 || $argv[1] == 'help' || $argv[1] == 'list')
+        if ($count < 2 || $argv[1] == 'help')
             return true;
 
         for ($i = 1; $i < $count; $i++)

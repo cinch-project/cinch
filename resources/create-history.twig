@@ -22,7 +22,6 @@
     {% set json = 'jsonb' %}
     {% set bool = 'smallint' %}
     {% set datetime = 'timestamptz(6)' %}
-    {% set deployment_id_seq = 'bigserial' %}
     create collation {{ utf8_ci_ai }} (provider = 'icu', locale = '@colStrength=primary', deterministic = false);
 {% elseif db.name in ['mysql', 'mariadb'] %}
     {% set legacy = db.name == 'mysql' and db.version == 5.7 %}
@@ -34,7 +33,6 @@
     {% set json = 'json' %}
     {% set bool = 'tinyint(1)' %}
     {% set datetime = 'datetime(6)' %}
-    {% set deployment_id_seq = 'bigint auto_increment' %}
 {% elseif db.name == 'sqlite' %}
     {% set table_options = 'strict' %}
     {% set bigint = 'integer' %}
@@ -46,7 +44,6 @@
     {% set json = 'text' %}
     {% set bool = 'integer' %}
     {% set datetime = 'text' %} {# stored in ISO 8601 format #}
-    {% set deployment_id_seq = 'integer' %} {# INTEGER PRIMARY KEY == auto increment in sqlite #}
 {% elseif db.name == 'mssql' %}
     {% set table_options = '' %}
     {% set location_type = 'nvarchar(max)' %}
@@ -59,7 +56,6 @@
     {% set json = 'nvarchar' %}
     {% set bool = 'tinyint' %}
     {% set datetime = 'datetimeoffset(7)' %} {# precision is 100ns #}
-    {% set deployment_id_seq = 'bigint identity(1,1)' %}
 {% endif %}
 
 create table {{ cinch }}
@@ -84,9 +80,8 @@ insert into {{ cinch }} values (
 
 create table {{ deployment }}
 (
-    deployment_id {{ deployment_id_seq }} primary key not null,
+    {{ 'tag'|nvarchar(128) }} {{ collate_utf8ci }} primary key not null,
     {{ 'deployer'|nvarchar(64) }} {{ collate_utf8ci }} not null,
-    {{ 'tag'|nvarchar(64) }} {{ collate_utf8ci }} unique null default null,
     {{ 'command'|varchar(16) }} {{ collate_ascii }} not null,
     error {{ json }} null default null,
     {{ 'application'|nvarchar(128) }} {{ collate_utf8ci }} not null,
@@ -94,14 +89,13 @@ create table {{ deployment }}
         references {{ cinch|strip_schema }} (schema_version) on delete {{ restrict }},
     started_at {{ datetime }} not null,
     ended_at {{ datetime }} null default null,
-    constraint {{ 'tag cannot be empty'|quote }} check (tag is null or tag <> ''),
+    constraint {{ 'tag cannot be empty'|quote }} check (tag <> ''),
     constraint {{ 'unknown command'|quote }} check (command in ({{ "'" ~ commands|join("','") ~ "'" }})),
     constraint {{ 'deployer cannot be empty'|quote }} check (deployer <> ''),
     constraint {{ 'application cannot be empty'|quote }} check (application <> '')
 ) {{ table_options }};
 
 create index {{ index_prefix }}deployment_deployer_idx on {{ deployment|strip_schema }} (deployer);
-create index {{ index_prefix }}deployment_tag_idx on {{ deployment|strip_schema }} (tag);
 create index {{ index_prefix }}deployment_command_idx on {{ deployment|strip_schema }} (command);
 
 {% if requires_fkindex %}
@@ -111,7 +105,7 @@ create index {{ index_prefix }}deployment_schema_version_idx on {{ deployment|st
 create table {{ change }}
 (
     {{ 'location'|nvarchar(512) }} {{ collate_utf8ci }} not null,
-    deployment_id {{ bigint }} not null references {{ deployment|strip_schema }} (deployment_id) on delete {{ restrict }},
+    {{ 'tag'|nvarchar(128) }} not null references {{ deployment|strip_schema }} (tag) on delete {{ restrict }},
     {{ 'migrate_policy'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'status'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'author'|nvarchar(64) }} {{ collate_utf8ci }} not null,
@@ -119,7 +113,7 @@ create table {{ change }}
     {{ 'description'|nvarchar(255) }} {{ collate_utf8ci }} not null,
     authored_at {{ datetime }} not null,
     deployed_at {{ datetime }} not null,
-    {{ location_pkindex }} (location, deployment_id),
+    {{ location_pkindex }} (location, tag),
     constraint {{ 'location cannot be empty'|quote }} check (location <> ''),
     constraint {{ 'checksum must be between 32 and 64 lowercase hex'|quote }} check ({{ length }}(checksum) >= 32),
     constraint {{ 'unknown status'|quote }} check (status in ({{ "'" ~ statuses|join("','") ~ "'" }})),
@@ -130,7 +124,7 @@ create table {{ change }}
 ) {{ table_options }};
 
 {% if requires_fkindex %}
-create index {{ index_prefix }}change_deployment_id_idx on {{ change|strip_schema }} (deployment_id);
+create index {{ index_prefix }}change_tag_idx on {{ change|strip_schema }} (tag);
 {% endif %}
 
 create index {{ index_prefix }}change_status_idx on {{ change|strip_schema }} (status);

@@ -4,6 +4,7 @@ namespace Cinch\Command;
 
 use Cinch\Common\Location;
 use Cinch\Component\Assert\Assert;
+use Cinch\History\DeploymentTag;
 use DateTimeInterface;
 
 class RollbackBy
@@ -15,7 +16,7 @@ class RollbackBy
 
     public static function tag(string $tag): self
     {
-        return new self(self::TAG, Assert::betweenLength($tag, 1, 64, message: 'rollback-by-tag'));
+        return new self(self::TAG, new DeploymentTag($tag));
     }
 
     public static function date(DateTimeInterface $date): self
@@ -38,7 +39,7 @@ class RollbackBy
 
     private function __construct(
         public readonly string $type,
-        public readonly int|string|DateTimeInterface|array $value)
+        public readonly int|DeploymentTag|DateTimeInterface|array $value)
     {
     }
 }
