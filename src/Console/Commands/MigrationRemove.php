@@ -45,7 +45,6 @@ class MigrationRemove extends AbstractCommand
             ->setHelp(<<<HELP
 This command cannot remove migrations that have already been deployed. For migrations with an 'always' 
 or 'onchange' migrate policy, update their policy to 'never'. 
-HELP
-            );
+HELP);
     }
 }

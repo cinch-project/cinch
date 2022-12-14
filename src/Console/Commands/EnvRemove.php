@@ -19,14 +19,6 @@ class EnvRemove extends AbstractCommand
         parent::__construct();
     }
 
-    protected function configure()
-    {
-        $this->setHelp('This does cool stuff')
-            ->addProjectArgument()
-            ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
-            ->addOption('drop-history', 'D', InputOption::VALUE_NONE, 'Drop history schema');
-    }
-
     /**
      * @throws Exception
      */
@@ -48,5 +40,13 @@ class EnvRemove extends AbstractCommand
     {
         echo "delete project\n";
         parent::handleSignal($signal);
+    }
+
+    protected function configure()
+    {
+        $this
+            ->addProjectArgument()
+            ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
+            ->addOption('drop-history', 'D', InputOption::VALUE_NONE, 'Drop history schema');
     }
 }

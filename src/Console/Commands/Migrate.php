@@ -70,7 +70,6 @@ class Migrate extends AbstractCommand
             ->setHelp(<<<HELP
 <code-comment># migrate all eligible migrations</code-comment>
 <code>cinch migrate project-name --tag=v12.9.3</code>
-HELP
-            );
+HELP);
     }
 }

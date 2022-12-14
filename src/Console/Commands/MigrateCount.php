@@ -54,7 +54,6 @@ policy of the migration store's directory configuration.
 
 <code-comment># limit to the first 4 eligible migrations</code-comment>
 <code>cinch migrate project-name 4 --tag=hotfix-72631</code>
-HELP
-            );
+HELP);
     }
 }

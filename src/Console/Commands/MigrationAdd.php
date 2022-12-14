@@ -48,7 +48,7 @@ class MigrationAdd extends AbstractCommand
         $policies = "'" . implode("', '", array_map(fn($v) => $v->value, MigratePolicy::cases())) . "'";
 
         // cinch add <project> <location> <description> --author= --migrate-policy=
-        $this->setHelp('This does cool stuff')
+        $this
             ->addProjectArgument()
             ->addArgument('location', InputArgument::REQUIRED, 'Migration location (relative to migration store)')
             ->addArgument('description', InputArgument::REQUIRED, 'Migration description')

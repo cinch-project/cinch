@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand('env:add', 'Adds an environment')]
 class EnvAdd extends AbstractCommand
 {
-    use ConfiguresEnvironment;
+    use AddsEnvironment;
 
     public function __construct(private readonly ProjectRepository $projectRepository)
     {
@@ -43,7 +43,7 @@ class EnvAdd extends AbstractCommand
 
     protected function configure()
     {
-        $this->setHelp('This does cool stuff')
+        $this
             ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
             ->addEnvironmentOptions();

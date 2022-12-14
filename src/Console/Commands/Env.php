@@ -19,11 +19,6 @@ class Env extends AbstractCommand
         parent::__construct();
     }
 
-    protected function configure()
-    {
-        $this->setHelp('This does cool stuff')->addProjectArgument();
-    }
-
     /**
      * @throws Exception
      */
@@ -43,5 +38,10 @@ class Env extends AbstractCommand
     {
         echo "delete project\n";
         parent::handleSignal($signal);
+    }
+
+    protected function configure()
+    {
+        $this->addProjectArgument();
     }
 }

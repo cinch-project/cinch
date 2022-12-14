@@ -17,7 +17,7 @@ use Symfony\Component\Filesystem\Path;
 #[AsCommand('create', 'Creates a project')]
 class Create extends AbstractCommand
 {
-    use ConfiguresEnvironment;
+    use AddsEnvironment;
 
     public function __construct(private readonly string $tempLogFile)
     {

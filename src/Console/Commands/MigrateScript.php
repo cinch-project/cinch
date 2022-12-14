@@ -53,7 +53,6 @@ The locations are deployed in the order they are specified.
 
 <code-comment># deploy 2 migrations in the given order</code-comment>
 <code>cinch migrate project-name 2022/create-pricing.php 2022/drop-old-pricing.sql --tag=pricing-2.0</code>
-HELP
-            );
+HELP);
     }
 }
