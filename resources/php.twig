@@ -3,8 +3,10 @@
 use Cinch\Common\Author;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
+use Cinch\Common\Labels;
 use Cinch\Database\Session;
 use Cinch\MigrationStore\Script\Script;
+use DateTimeImmutable;
 
 return new class extends Script {
     public function __construct()
@@ -13,7 +15,8 @@ return new class extends Script {
             MigratePolicy::from('{{ migrate_policy }}'),
             new Author('{{ author }}'),
             new DateTimeImmutable('{{ authored_at }}'),
-            new Description('{{ description }}')
+            new Description('{{ description }}'),
+            new Labels({{ labels }})
         );
     }}
 

@@ -62,7 +62,7 @@ class RollbackCommandHandler implements CommandHandler
         MigrationStore $migrationStore, array $changes): void
     {
         foreach ($changes as $change) {
-            $migration = $migrationStore->getMigration($change->location);
+            $migration = $migrationStore->get($change->location);
 
             if (!$change->checksum->equals($migration->checksum))
                 throw new Exception("rollback '$change->location' failed: script changed since last migrated");

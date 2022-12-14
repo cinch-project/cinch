@@ -2,7 +2,6 @@
 
 namespace Cinch\Command;
 
-use Cinch\Common\Location;
 use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
 use Cinch\History\ChangeStatus;
@@ -56,8 +55,10 @@ class MigrateCommandHandler implements CommandHandler
         $count = $options->getCount();
 
         foreach ($this->next($migrationStore, $options) as $migration) {
-            if (!($status = $this->getStatus($changeView, $migration)))
+            if ($migration->script->getMigratePolicy() == MigratePolicy::NEVER ||
+                !($status = $this->getStatus($changeView, $migration))) {
                 continue;
+            }
 
             $target->beginTransaction();
 
@@ -86,10 +87,10 @@ class MigrateCommandHandler implements CommandHandler
         /* migrate specific scripts */
         if ($locations = $options->getLocations()) {
             foreach ($locations as $location)
-                yield $migrationStore->getMigration($location);
+                yield $migrationStore->get($location);
         }
         else {
-            return $migrationStore->iterateMigrations();
+            return $migrationStore->iterate();
         }
     }
 

@@ -28,8 +28,8 @@ class CreateProjectCommandHandler implements CommandHandler
             $rollback['project directory'] = fn() => $this->projectRepository->remove($c->project->getId());
 
             $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStoreDsn());
-            $migrationStore->create();
-            $rollback['migration store'] = $migrationStore->delete(...);
+            $migrationStore->createConfig();
+            $rollback['migration store'] = $migrationStore->deleteConfig(...);
 
             $this->dataStoreFactory->createHistory($environment)->create();
         }

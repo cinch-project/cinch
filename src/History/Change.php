@@ -5,6 +5,7 @@ namespace Cinch\History;
 use Cinch\Common\Author;
 use Cinch\Common\Checksum;
 use Cinch\Common\Description;
+use Cinch\Common\Labels;
 use Cinch\Common\Location;
 use Cinch\Common\MigratePolicy;
 use DateTimeImmutable;
@@ -21,6 +22,7 @@ class Change
         public readonly Author $author,
         public readonly Checksum $checksum,
         public readonly Description $description,
+        public readonly Labels $labels,
         public readonly DateTimeInterface $authoredAt,
         public readonly DateTimeInterface $deployedAt)
     {
@@ -41,6 +43,7 @@ class Change
             new Author($data['author']),
             new Checksum($data['checksum']),
             new Description($data['description']),
+            Labels::hydrate($data['labels']),
             new DateTimeImmutable($data['authored_at']),
             new DateTimeImmutable($data['deployed_at']),
         );

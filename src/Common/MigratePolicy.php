@@ -7,4 +7,5 @@ enum MigratePolicy: string
     case ALWAYS = 'always';
     case ONCHANGE = 'onchange';
     case ONCE = 'once';
+    case NEVER = 'never';
 }

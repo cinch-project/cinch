@@ -3,8 +3,9 @@
 namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
-use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
+use Cinch\Common\Labels;
+use Cinch\Common\MigratePolicy;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use DateTimeImmutable;
@@ -29,23 +30,34 @@ class SqlScriptParser
      */
     private static function parseTags(string $data): array
     {
-        // Format is a DocBlock
+        // DocBlock
         // /**
         //  * @author ...
         //  * @authoredAt ...
         //  * etc.
         //  */
-        if (preg_match('~/\*\*(.*)\*/~SsU', $data, $matches) !== 1)
+        if (preg_match('~/\*\*(.*)\*/~SsU', $data, $docBlock) !== 1)
             throw new AssertException("missing entry comment: /** @tags... */");
 
         $tags = [];
+        $labels = [];
 
-        foreach (preg_split('~\R~', trim($matches[1]), flags: PREG_SPLIT_NO_EMPTY) as $line) {
+        foreach (preg_split('~\R~', trim($docBlock[1]), flags: PREG_SPLIT_NO_EMPTY) as $line) {
+            /* remove possible DocBlock continuation line formatting: ' * @author blah' */
             $line = rtrim(ltrim($line, "* \t\n\r\0\x0B"));
+
+            /* is this a tag? remove '@' and ensure result is not empty */
             if ($line && $line[0] == '@' && ($line = substr($line, 1))) {
-                $parts = preg_split('~[ \t]+~', $line, 2, PREG_SPLIT_NO_EMPTY);
-                if (in_array($parts[0], self::TAGS))
-                    $tags[$parts[0]] = $parts[1] ?? null;
+                /* split on any number of spaces and/or tabs, limit split to two tokens: name and value */
+                $pair = preg_split('~[ \t]+~', $line, 2, PREG_SPLIT_NO_EMPTY);
+
+                $name = array_shift($pair);
+                $value = array_shift($pair);
+
+                if ($name == 'label')
+                    $labels[] = $name;
+                else if (in_array($name, self::TAGS))
+                    $tags[$name] = $value;
             }
         }
 
@@ -65,7 +77,8 @@ class SqlScriptParser
             MigratePolicy::from($tags['migrate_policy']),
             new Author($tags['author']),
             $authoredAt,
-            new Description($tags['description'])
+            new Description($tags['description']),
+            new Labels($labels)
         ];
     }
 
@@ -74,45 +87,30 @@ class SqlScriptParser
      */
     private static function parseSql(string $data): array
     {
-        /* find "-- @migrate" and/or "-- @rollback" */
-        static $pattern = '~^[ \t]*--[ \t]+@(migrate|rollback)\b~Sm';
-
-        $count = preg_match_all($pattern, $data, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
-        if (!$count)
-            throw new AssertException("invalid entry: no migrate or rollback section found.");
-
-        if ($count > 2)
-            throw new AssertException("invalid entry: multiple migrate and/or rollback sections");
-
-        $migrateOff = -1;
-        $rollbackOff = -1;
         $migrateSql = '';
         $rollbackSql = '';
+        $section = '';
 
-        /* one or two sections: can only be 'migrate' and 'rollback' */
-        foreach ($matches as $m) {
-            if ($m[1][0] == 'migrate')
-                $migrateOff = $m[0][1];
-            else
-                $rollbackOff = $m[0][1];
+        foreach (preg_split('~\R~', $data) as $line => $data) {
+            if (preg_match('~^[ \t]*--[ \t]+@(migrate|rollback)\b~S', $data, $m)) {
+                $section = $m[1];
+
+                if ($section == 'migrate' && $migrateSql)
+                    throw new AssertException("second migrate section found at line $line");
+
+                if ($section == 'rollback' && $rollbackSql)
+                    throw new AssertException("second rollback section found at line $line");
+            }
+            else if ($section == 'migrate') {
+                $migrateSql .= "$data\n";
+            }
+            else if ($section == 'rollback') {
+                $rollbackSql .= "$data\n";
+            }
         }
 
-        if ($rollbackOff == -1) {
-            $migrateSql = substr($data, $migrateOff);
-        }
-        else if ($migrateOff == -1) {
-            $rollbackSql = substr($data, $rollbackOff);
-        }
-        /* rollback section declared first */
-        else if ($rollbackOff < $migrateOff) {
-            $rollbackSql = substr($data, $rollbackOff, $migrateOff - $rollbackOff);
-            $migrateSql = substr($data, $migrateOff);
-        }
-        /* migrate section declared first */
-        else {
-            $migrateSql = substr($data, $migrateOff, $rollbackOff - $migrateOff);
-            $rollbackSql = substr($data, $rollbackOff);
-        }
+        if (!($migrateSql || $rollbackSql))
+            throw new AssertException("no migrate or rollback section found");
 
         return [trim($migrateSql), trim($rollbackSql)];
     }

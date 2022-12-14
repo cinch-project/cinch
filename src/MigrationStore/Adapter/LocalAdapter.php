@@ -64,7 +64,7 @@ class LocalAdapter extends MigrationStoreAdapter
     /**
      * @throws Exception
      */
-    public function addFile(string $path, string $content, string $message): FileId
+    public function addFile(string $path, string $content, string $message): void
     {
         $path = $this->resolvePath($path);
 
@@ -73,11 +73,9 @@ class LocalAdapter extends MigrationStoreAdapter
 
         if (@file_put_contents($path, $content) === false)
             throw new LastErrorException();
-
-        return new FileId;
     }
 
-    public function deleteFile(string $path, string $message, FileId $fileId): void
+    public function deleteFile(string $path, string $message): void
     {
         (new Filesystem())->remove($this->resolvePath($path));
     }

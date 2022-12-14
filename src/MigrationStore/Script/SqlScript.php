@@ -4,6 +4,7 @@ namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
 use Cinch\Common\Description;
+use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
 use DateTimeInterface;
@@ -18,6 +19,7 @@ class SqlScript extends Script
      * @param Author $author
      * @param DateTimeInterface $authoredAt
      * @param Description $description
+     * @param Labels $labels
      */
     public function __construct(
         private readonly string $migrateSql,
@@ -25,9 +27,10 @@ class SqlScript extends Script
         MigratePolicy $migratePolicy,
         Author $author,
         DateTimeInterface $authoredAt,
-        Description $description)
+        Description $description,
+        Labels $labels)
     {
-        parent::__construct($migratePolicy, $author, $authoredAt, $description);
+        parent::__construct($migratePolicy, $author, $authoredAt, $description, $labels);
     }
 
     /**

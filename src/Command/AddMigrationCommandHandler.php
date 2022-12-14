@@ -17,6 +17,6 @@ class AddMigrationCommandHandler implements CommandHandler
     {
         $this->dataStoreFactory
             ->createMigrationStore($c->migrationStoreDsn)
-            ->addMigration($c->location, $c->migratePolicy, $c->author, $c->authoredAt, $c->description);
+            ->add($c->location, $c->migratePolicy, $c->author, $c->authoredAt, $c->description);
     }
 }

@@ -47,6 +47,7 @@ class Deployment
             'author' => $migration->script->getAuthor()->value,
             'checksum' => $migration->checksum->value,
             'description' => $migration->script->getDescription()->value,
+            'labels' => $migration->script->getLabels()->normalize(),
             'authored_at' => $this->session->getPlatform()->formatDateTime($migration->script->getAuthoredAt()),
             'deployed_at' => $this->session->getPlatform()->formatDateTime()
         ]);

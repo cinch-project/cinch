@@ -27,11 +27,10 @@ abstract class MigrationStoreAdapter
      * @param string $path
      * @param string $content
      * @param string $message
-     * @return FileId
      */
-    public abstract function addFile(string $path, string $content, string $message): FileId;
+    public abstract function addFile(string $path, string $content, string $message): void;
 
-    public abstract function deleteFile(string $path, string $message, FileId $fileId): void;
+    public abstract function deleteFile(string $path, string $message): void;
 
     /**
      * @param string $path

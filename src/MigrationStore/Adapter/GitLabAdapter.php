@@ -67,7 +67,7 @@ class GitLabAdapter extends GitAdapter
     /**
      * @throws GuzzleException
      */
-    public function addFile(string $path, string $content, string $message): FileId
+    public function addFile(string $path, string $content, string $message): void
     {
         if (!($path = rawurlencode($this->resolvePath($path))))
             throw new RuntimeException("cannot add file without a path");
@@ -80,14 +80,12 @@ class GitLabAdapter extends GitAdapter
                 'content' => base64_encode($content)
             ]
         ]);
-
-        return new FileId;
     }
 
     /**
      * @throws GuzzleException
      */
-    public function deleteFile(string $path, string $message, FileId $fileId): void
+    public function deleteFile(string $path, string $message): void
     {
         if (!($path = rawurlencode($this->resolvePath($path))))
             throw new RuntimeException("cannot delete file without a path");

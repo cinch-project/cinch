@@ -43,7 +43,13 @@ class ScriptLoader
             $variables = [...$variables, ...getenv()];
 
         $sql = $this->twig->createTemplate($file->getContents())->render($variables);
-        return $this->sqlScriptParser->parse($sql);
+
+        try {
+            return $this->sqlScriptParser->parse($sql);
+        }
+        catch (AssertException $e) {
+            throw new AssertException("{$file->getContents()}: {$e->getMessage()}", $e->getErrors());
+        }
     }
 
     private function requireFile(LocalFile $file): Script

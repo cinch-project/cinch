@@ -3,10 +3,10 @@
 namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
-use Cinch\Common\Location;
-use Cinch\MigrationStore\Directory;
 use Cinch\Common\Dsn;
+use Cinch\Common\Location;
 use Cinch\Component\Assert\Assert;
+use Cinch\MigrationStore\Directory;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
@@ -47,29 +47,27 @@ class GitHubAdapter extends GitAdapter
     /**
      * @throws GuzzleException
      */
-    public function addFile(string $path, string $content, string $message): FileId
+    public function addFile(string $path, string $content, string $message): void
     {
-        $r = $this->client->put("$this->baseUri/contents/{$this->resolvePath($path)}", [
+        $this->client->put("$this->baseUri/contents/{$this->resolvePath($path)}", [
             'json' => [
                 'message' => $this->buildCommitMessage($message),
                 'branch' => $this->branch,
                 'content' => base64_encode($content)
             ]
         ]);
-
-        return new FileId($this->toJson($r)['content']['sha']);
     }
 
     /**
      * @throws GuzzleException
      */
-    public function deleteFile(string $path, string $message, FileId $fileId): void
+    public function deleteFile(string $path, string $message): void
     {
         $this->client->delete("$this->baseUri/contents/{$this->resolvePath($path)}", [
             'json' => [
                 'message' => $this->buildCommitMessage($message),
                 'branch' => $this->branch,
-                'sha' => $fileId->value
+                'sha' => $this->getFile($path)->getChecksum()->value // github requires blob sha
             ]
         ]);
     }
@@ -86,7 +84,13 @@ class GitHubAdapter extends GitAdapter
             'query' => ['ref' => $this->branch]
         ]);
 
-        return new GitFile($this, new Location($path), new Checksum($data['sha']), base64_decode($data['content']));
+        /* contents api does not return data > 1M, documented and tested to return these values */
+        if ($data['content'] == '' && $data['encoding'] == 'none')
+            $content = null;
+        else
+            $content = base64_decode($data['content']); // use it if returned
+
+        return new GitFile($this, new Location($path), new Checksum($data['sha']), $content);
     }
 
     /**
@@ -97,6 +101,7 @@ class GitHubAdapter extends GitAdapter
         if (!($path = $this->resolvePath($path)))
             throw new RuntimeException("cannot get contents without a path");
 
+        /* github blocks files > 100M, plenty for cinch. Must use Git Large File Storage (Git LFS) */
         return $this->getContentsByUri("$this->baseUri/contents/$path", [
             'headers' => ['Accept' => self::RAW],
             'query' => ['ref' => $this->branch]

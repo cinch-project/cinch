@@ -48,9 +48,9 @@ class AzureAdapter extends GitAdapter
     /**
      * @throws GuzzleException
      */
-    public function addFile(string $path, string $content, string $message): FileId
+    public function addFile(string $path, string $content, string $message): void
     {
-        $r = $this->client->post("$this->baseUri/pushes?api-version=" . self::API_VERSION, [
+        $this->client->post("$this->baseUri/pushes?api-version=" . self::API_VERSION, [
             'json' => [
                 "refUpdates" => [
                     [
@@ -75,21 +75,19 @@ class AzureAdapter extends GitAdapter
                 ]
             ]
         ]);
-
-        return new FileId($this->toJson($r)['commits'][0]['commitId']);
     }
 
     /**
      * @throws GuzzleException
      */
-    public function deleteFile(string $path, string $message, FileId $fileId): void
+    public function deleteFile(string $path, string $message): void
     {
         $this->client->post("$this->baseUri/pushes?api-version=" . self::API_VERSION, [
             'json' => [
                 "refUpdates" => [
                     [
                         "name" => "refs/heads/$this->branch",
-                        "oldObjectId" => $fileId->value
+                        "oldObjectId" => $this->getLastCommitId()
                     ]
                 ],
                 'commits' => [
@@ -114,7 +112,7 @@ class AzureAdapter extends GitAdapter
     {
         $query = $this->getItemsQueryString($path);
         $data = $this->getFileByUri("$this->baseUri/items?$query", [
-            'headers' => ['Content-Type' => 'application/json'] // metadata and content
+            'headers' => ['Accept' => 'application/json'] // metadata and content
         ]);
 
         return new GitFile(
@@ -132,7 +130,7 @@ class AzureAdapter extends GitAdapter
     {
         $query = $this->getItemsQueryString($path);
         return $this->getContentsByUri("$this->baseUri/items?$query", [
-            'headers' => ['Content-Type' => 'text/plain'] // only content
+            'headers' => ['Accept' => 'text/plain'] // only content
         ]);
     }
 
@@ -143,7 +141,7 @@ class AzureAdapter extends GitAdapter
 
         return http_build_query([
             'api-version' => self::API_VERSION,
-            'path' => rawurlencode($path),
+            'path' => $path,
             'includeContent' => 'true',
             ...$this->branchInfo
         ]);
@@ -173,7 +171,7 @@ class AzureAdapter extends GitAdapter
         Assert::equals($dsn->getScheme(), 'azure', "expected azure dsn");
         Assert::empty($dsn->getHost(), 'gitlab host not supported');
 
-        $parts = explode('/', trim($dsn->getPath(), '/'), 3);
+        $parts = explode('/', trim($dsn->getPath(), '/'), 4);
 
         /* azure limits org name to ASCII letters and digits for the first and last character and allows
          * ASCII letters, digits and hyphen for middle characters.

@@ -7,7 +7,6 @@ use Cinch\Common\Description;
 use Cinch\Common\Location;
 use Cinch\Common\MigratePolicy;
 use Cinch\Component\Assert\Assert;
-use Cinch\MigrationStore\Adapter\FileId;
 use Cinch\MigrationStore\Adapter\MigrationStoreAdapter;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use DateTimeInterface;
@@ -27,10 +26,10 @@ class MigrationStore
     /** @var Directory[] */
     private array|null $directories = null;
 
-    /* track ID for deletes (rollbacks). This is really designed for remote stores where an ID is needed for
-     * deletes (avoids expensive REST calls). Not all adapters need this, in which case the ID is empty.
+    /* only used to know if we created store.yml as part of create-project or add-env. If something fails
+     * during those commands, we need to delete the store.yml just created.
      */
-    private FileId|null $storeId = null;
+    private bool|null $createdStoreConfig = null;
 
     public function __construct(
         private readonly MigrationStoreAdapter $storeAdapter,
@@ -43,28 +42,29 @@ class MigrationStore
     /**
      * @throws Exception
      */
-    public function create(): void
+    public function createConfig(): void
     {
-        if (!$this->exists())
-            $this->storeId = $this->storeAdapter->addFile(
+        if (!$this->exists()) {
+            $this->storeAdapter->addFile(
                 self::FILENAME,
                 slurp(Path::join($this->resourceDir, self::FILENAME)),
                 'created ' . self::FILENAME
             );
+
+            $this->createdStoreConfig = true;
+        }
+        else {
+            $this->createdStoreConfig = false;
+        }
     }
 
-    /** Deletes the store file, not the directory. Only deletes if created with MigrationStore::create().
+    /** Deletes the store file, not the directory.
      * @return void
      */
-    public function delete(): void
+    public function deleteConfig(): void
     {
-        /* only delete if cinch created it, existing store.yml files are never deleted. */
-        if ($this->storeId !== null)
-            $this->storeAdapter->deleteFile(
-                self::FILENAME,
-                'deleted ' . self::FILENAME,
-                $this->storeId
-            );
+        if ($this->createdStoreConfig === null || $this->createdStoreConfig)
+            $this->storeAdapter->deleteFile(self::FILENAME, 'deleted ' . self::FILENAME);
     }
 
     /**
@@ -72,7 +72,7 @@ class MigrationStore
      * @return Migration
      * @throws Exception
      */
-    public function getMigration(Location $location): Migration
+    public function get(Location $location): Migration
     {
         return $this->getDirectoryFor($location)->getMigration($location);
     }
@@ -80,7 +80,7 @@ class MigrationStore
     /**
      * @throws Exception
      */
-    public function addMigration(Location $location, MigratePolicy $migratePolicy, Author $author,
+    public function add(Location $location, MigratePolicy $migratePolicy, Author $author,
         DateTimeInterface $authoredAt, Description $description): void
     {
         $content = $this->twig->render($location->isSql() ? 'sql.twig' : 'php.twig', [
@@ -90,14 +90,19 @@ class MigrationStore
             'description' => $description->value,
         ]);
 
-        $this->storeAdapter->addFile($location->value, $content, 'added migration script from template');
+        $this->storeAdapter->addFile($location->value, $content, 'add migration request');
+    }
+
+    public function remove(Location $location): void
+    {
+        $this->storeAdapter->deleteFile($location->value, 'remove migration request');
     }
 
     /** Iterates through all migrations in directory migrate order.
      * @return Generator<Migration>
      * @throws Exception
      */
-    public function iterateMigrations(): Generator
+    public function iterate(): Generator
     {
         if (!$this->exists())
             throw new Exception(self::FILENAME . ' does not exist');

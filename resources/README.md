@@ -28,7 +28,7 @@ the latest deployment record's `tag` is updated.
 
 ## Columns
 
-* `tag varchar(128)` primary key for a deployment
+* `tag varchar(64)` primary key for a deployment
 * `deployer varchar(64)` who initiated the deployment
 * `tag varchar(64)` tag name, can be `null`
 * `command varchar(16)` command executed: `'commit'` or `'revert'`
@@ -59,7 +59,7 @@ etc. The only requirement is that this value uniquely identify the script.
 > This is a very wide field, allowing for 760 characters (not bytes). Due to database key length
 > constraints, this is the widest it can be.
 
-### tag varchar(128)
+### tag varchar(64)
 
 The deployment tag this change belongs to -- foreign key.
 

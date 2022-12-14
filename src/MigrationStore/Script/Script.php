@@ -3,6 +3,7 @@
 namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
+use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
 use Cinch\Database\Session;
@@ -17,7 +18,8 @@ abstract class Script
         private readonly MigratePolicy $migratePolicy,
         private readonly Author $author,
         private readonly DateTimeInterface $authoredAt,
-        private readonly Description $description)
+        private readonly Description $description,
+        private readonly Labels $labels)
     {
     }
 
@@ -54,6 +56,14 @@ abstract class Script
     public function getDescription(): Description
     {
         return $this->description;
+    }
+
+    /**
+     * @return Labels
+     */
+    public function getLabels(): Labels
+    {
+        return $this->labels;
     }
 
     protected function setVariables(array $variables): void

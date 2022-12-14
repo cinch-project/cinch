@@ -80,7 +80,7 @@ insert into {{ cinch }} values (
 
 create table {{ deployment }}
 (
-    {{ 'tag'|nvarchar(128) }} {{ collate_utf8ci }} primary key not null,
+    {{ 'tag'|nvarchar(64) }} {{ collate_utf8ci }} primary key not null,
     {{ 'deployer'|nvarchar(64) }} {{ collate_utf8ci }} not null,
     {{ 'command'|varchar(16) }} {{ collate_ascii }} not null,
     error {{ json }} null default null,
@@ -105,12 +105,13 @@ create index {{ index_prefix }}deployment_schema_version_idx on {{ deployment|st
 create table {{ change }}
 (
     {{ 'location'|nvarchar(512) }} {{ collate_utf8ci }} not null,
-    {{ 'tag'|nvarchar(128) }} not null references {{ deployment|strip_schema }} (tag) on delete {{ restrict }},
+    {{ 'tag'|nvarchar(64) }} not null references {{ deployment|strip_schema }} (tag) on delete {{ restrict }},
     {{ 'migrate_policy'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'status'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'author'|nvarchar(64) }} {{ collate_utf8ci }} not null,
     {{ 'checksum'|varchar(64) }} {{ collate_ascii }} not null,
     {{ 'description'|nvarchar(255) }} {{ collate_utf8ci }} not null,
+    {{ 'labels'|nvarchar(512) }} {{ collate_utf8ci }} null default null,
     authored_at {{ datetime }} not null,
     deployed_at {{ datetime }} not null,
     {{ location_pkindex }} (location, tag),
@@ -127,6 +128,7 @@ create table {{ change }}
 create index {{ index_prefix }}change_tag_idx on {{ change|strip_schema }} (tag);
 {% endif %}
 
+create index {{ index_prefix }}change_labels_idx on {{ change|strip_schema }} (labels);
 create index {{ index_prefix }}change_status_idx on {{ change|strip_schema }} (status);
 {# most common use case is reading in desc order #}
 create unique index {{ index_prefix }}change_deployed_at_idx on {{ change|strip_schema }} (deployed_at desc);
