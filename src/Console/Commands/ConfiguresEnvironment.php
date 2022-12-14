@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
 use Cinch\Common\Dsn;
 use Cinch\Common\Environment;
@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 
-trait EnvironmentOptions
+trait ConfiguresEnvironment
 {
     protected function addEnvironmentOptions(): static
     {

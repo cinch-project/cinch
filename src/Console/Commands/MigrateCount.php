@@ -1,11 +1,10 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
-use Cinch\Command\Migrate\Migrate;
 use Cinch\Command\Migrate\MigrateOptions;
 use Cinch\Common\Author;
-use Cinch\Common\Location;
+use Cinch\Component\Assert\Assert;
 use Cinch\History\DeploymentTag;
 use Cinch\Project\ProjectRepository;
 use Exception;
@@ -14,8 +13,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate:script', 'Migrates one or more migration scripts')]
-class MigrateScriptCommand extends AbstractCommand
+#[AsCommand('migrate:count', 'Migrates the next count migrations')]
+class MigrateCount extends AbstractCommand
 {
     public function __construct(private readonly ProjectRepository $projectRepository)
     {
@@ -28,13 +27,13 @@ class MigrateScriptCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $locations = array_map(fn(string $l) => new Location($l), $input->getArgument('locations'));
+        $count = (int) Assert::digit($input->getArgument('count'), 'count argument');
 
-        $this->commandBus->handle(new Migrate(
+        $this->commandBus->handle(new \Cinch\Command\Migrate\Migrate(
             $project,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),
-            new MigrateOptions($locations),
+            new MigrateOptions($count),
             $this->getEnvironmentName($project)
         ));
 
@@ -45,15 +44,16 @@ class MigrateScriptCommand extends AbstractCommand
     {
         $this
             ->addProjectArgument()
-            ->addArgument('locations', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'One or more locations')
+            ->addArgument('number', InputArgument::REQUIRED, 'The number of eligible migrations to migrate')
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
-The locations are deployed in the order they are specified.
+This will deploy the next <info><number></info> eligible migrations. They are selected based on the sorting 
+policy of the migration store's directory configuration. 
 
-<code-comment># deploy 2 migrations in the given order</code-comment>
-<code>cinch migrate project-name 2022/create-pricing.php 2022/drop-old-pricing.sql --tag=pricing-2.0</code>
+<code-comment># limit to the first 4 eligible migrations</code-comment>
+<code>cinch migrate project-name 4 --tag=hotfix-72631</code>
 HELP
             );
     }

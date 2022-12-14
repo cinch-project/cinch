@@ -1,15 +1,15 @@
 parameters:
     commands: # used to lazy-load commands (CommandLoader)
-        'create': Cinch\Console\CreateCommand
-        'migration': Cinch\Console\MigrationCommand
-        'migration:add': Cinch\Console\MigrationAddCommand
-        'migration:remove': Cinch\Console\MigrationRemoveCommand
-        'env': Cinch\Console\EnvCommand
-        'env:add': Cinch\Console\EnvAddCommand
-        'env:remove': Cinch\Console\EnvRemoveCommand
-        'migrate': Cinch\Console\MigrateCommand
-        'migrate:count': Cinch\Console\MigrateCountCommand
-        'migrate:script': Cinch\Console\MigrateScriptCommand
+        'create': Cinch\Console\Commands\Create
+        'migration': Cinch\Console\Commands\Migration
+        'migration:add': Cinch\Console\Commands\MigrationAdd
+        'migration:remove': Cinch\Console\Commands\MigrationRemove
+        'env': Cinch\Console\Commands\Env
+        'env:add': Cinch\Console\Commands\EnvAdd
+        'env:remove': Cinch\Console\Commands\EnvRemove
+        'migrate': Cinch\Console\Commands\Migrate
+        'migrate:count': Cinch\Console\Commands\MigrateCount
+        'migrate:script': Cinch\Console\Commands\MigrateScript
 
 services:
     _defaults:
@@ -20,7 +20,7 @@ services:
         Cinch\Command\CommandHandler:
             public: true
 
-        Cinch\Console\AbstractCommand:
+        Cinch\Console\Commands\AbstractCommand:
             public: true
             calls:
                 -   setLogger: [ '@logger' ]
@@ -42,7 +42,7 @@ services:
             $version: '%cinch.version%'
 
     # log.file points to a temp file during create. inject path so it can be moved to projectDir after create
-    Cinch\Console\CreateCommand:
+    Cinch\Console\Commands\Create:
         arguments:
             $tempLogFile: '%log.file%'
 

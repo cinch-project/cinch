@@ -1,8 +1,7 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
-use Cinch\Command\Migrate\Migrate;
 use Cinch\Command\Migrate\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\History\DeploymentTag;
@@ -13,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate', 'Migrates all eligible migrations')]
-class MigrateCommand extends AbstractCommand
+class Migrate extends AbstractCommand
 {
     public function __construct(private readonly ProjectRepository $projectRepository)
     {
@@ -26,7 +25,7 @@ class MigrateCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $this->commandBus->handle(new Migrate(
+        $this->commandBus->handle(new \Cinch\Command\Migrate\Migrate(
             $project,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),

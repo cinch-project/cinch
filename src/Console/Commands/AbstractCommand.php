@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
 use Cinch\Component\Assert\Assert;
 use Cinch\Project\Project;

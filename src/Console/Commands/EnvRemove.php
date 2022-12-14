@@ -1,23 +1,30 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
-use Cinch\Command\Environment\AddEnvironment;
+use Cinch\Command\Environment\RemoveEnvironment;
 use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('env:add', 'Adds an environment')]
-class EnvAddCommand extends AbstractCommand
+#[AsCommand('env:remove', 'Removes an environment')]
+class EnvRemove extends AbstractCommand
 {
-    use EnvironmentOptions;
-
     public function __construct(private readonly ProjectRepository $projectRepository)
     {
         parent::__construct();
+    }
+
+    protected function configure()
+    {
+        $this->setHelp('This does cool stuff')
+            ->addProjectArgument()
+            ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
+            ->addOption('drop-history', 'D', InputOption::VALUE_NONE, 'Drop history schema');
     }
 
     /**
@@ -26,11 +33,13 @@ class EnvAddCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $name = $input->getArgument('name');
-        $environment = $this->getEnvironmentFromInput($input, $project->getName());
 
-        $this->logger->info("adding environment $name to project {$project->getName()}");
-        $this->commandBus->handle(new AddEnvironment($project, $name, $environment));
+        $name = $input->getArgument('name');
+        $drop = $input->getOption('drop-history');
+
+        $dropMsg = $drop ? 'and dropping history schema' : '';
+        $this->logger->info("deleting environment $name $dropMsg");
+        $this->commandBus->handle(new RemoveEnvironment($project, $name, $drop));
 
         return self::SUCCESS;
     }
@@ -39,13 +48,5 @@ class EnvAddCommand extends AbstractCommand
     {
         echo "delete project\n";
         parent::handleSignal($signal);
-    }
-
-    protected function configure()
-    {
-        $this->setHelp('This does cool stuff')
-            ->addProjectArgument()
-            ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
-            ->addEnvironmentOptions();
     }
 }

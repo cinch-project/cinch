@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
 use Cinch\Command\Migration\RemoveMigration;
 use Cinch\Common\Location;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migration:remove', 'Removes a migration')]
-class MigrationRemoveCommand extends AbstractCommand
+class MigrationRemove extends AbstractCommand
 {
     public function __construct(private readonly ProjectRepository $projectRepository)
     {

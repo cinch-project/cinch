@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
 use Cinch\Command\Project\CreateProject;
 use Cinch\Common\Dsn;
@@ -15,9 +15,9 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 
 #[AsCommand('create', 'Creates a project')]
-class CreateCommand extends AbstractCommand
+class Create extends AbstractCommand
 {
-    use EnvironmentOptions;
+    use ConfiguresEnvironment;
 
     public function __construct(private readonly string $tempLogFile)
     {

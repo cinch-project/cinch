@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
 use Cinch\Command\Migration\AddMigration;
 use Cinch\Common\Author;
@@ -18,7 +18,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migration:add', 'Adds a migration')]
-class MigrationAddCommand extends AbstractCommand
+class MigrationAdd extends AbstractCommand
 {
     public function __construct(private readonly ProjectRepository $projectRepository)
     {

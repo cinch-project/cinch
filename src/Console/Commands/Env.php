@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Console\Commands;
 
 use Cinch\Project\ProjectRepository;
 use Exception;
@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Twig\Environment as Twig;
 
 #[AsCommand('env', 'Lists all environments')]
-class EnvCommand extends AbstractCommand
+class Env extends AbstractCommand
 {
     public function __construct(
         private readonly ProjectRepository $projectRepository,
