@@ -37,6 +37,32 @@ class Deployment
     /**
      * @throws Exception
      */
+    private function open(DeploymentCommand $command, Author $deployer, string $application): void
+    {
+        $this->schema->lock();
+
+        try {
+            $table = $this->schema->table('deployment');
+
+            $this->session->insert($table, [
+                'tag' => $this->tag->value,
+                'deployer' => $deployer->value,
+                'command' => $command->value,
+                'application' => $application,
+                'schema_version' => $this->schema->version()->version,
+                'started_at' => $this->session->getPlatform()->formatDateTime()
+            ]);
+        }
+        catch (Exception $e) {
+            ignoreException($this->schema->unlock(...));
+            $this->clear();
+            throw $e;
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
     public function addChange(ChangeStatus $status, Migration $migration): void
     {
         $this->session->insert($this->schema->table('change'), [
@@ -67,32 +93,6 @@ class Deployment
         finally {
             ignoreException($this->schema->unlock(...));
             $this->clear();
-        }
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function open(DeploymentCommand $command, Author $deployer, string $application): void
-    {
-        $this->schema->lock();
-
-        try {
-            $table = $this->schema->table('deployment');
-
-            $this->session->insert($table, [
-                'tag' => $this->tag->value,
-                'deployer' => $deployer->value,
-                'command' => $command->value,
-                'application' => $application,
-                'schema_version' => $this->schema->version()->version,
-                'started_at' => $this->session->getPlatform()->formatDateTime()
-            ]);
-        }
-        catch (Exception $e) {
-            ignoreException($this->schema->unlock(...));
-            $this->clear();
-            throw $e;
         }
     }
 

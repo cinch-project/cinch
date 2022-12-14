@@ -4,19 +4,24 @@ namespace Cinch\Project;
 
 interface ProjectRepository
 {
-    /** Gets a project by name.
+    /** Gets a project.
      * @param ProjectId $id
      * @return Project
      */
     public function get(ProjectId $id): Project;
 
-    /** Creates a project.
+    /** Adds a project.
      * @param Project $project
-     * @return void
      */
     public function add(Project $project): void;
 
+    /** Updates a project.
+     * @param Project $project
+     */
     public function update(Project $project): void;
 
+    /** Removes a project.
+     * @param ProjectId $id
+     */
     public function remove(ProjectId $id): void;
 }
