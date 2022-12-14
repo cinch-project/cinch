@@ -68,15 +68,15 @@ class Project
         return $this->hooks;
     }
 
-    public function normalize(): array
+    public function snapshot(): array
     {
         $hooks = [];
         foreach ($this->hooks as $name => $hook)
-            $hooks[$name] = $hook->normalize();
+            $hooks[$name] = $hook->snapshot();
 
         return [
             'migration_store' => (string) $this->migrationStoreDsn,
-            'environments' => $this->envMap->normalize(),
+            'environments' => $this->envMap->snapshot(),
             'hooks' => (object) $hooks
         ];
     }

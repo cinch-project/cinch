@@ -24,7 +24,7 @@ class Hook
         $this->assertArguments();
     }
 
-    public function normalize(): array
+    public function snapshot(): array
     {
         return [
             'script' => $this->script->value,

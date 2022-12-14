@@ -48,12 +48,12 @@ class Labels
         return $this->values;
     }
 
-    public function normalize(): string|null
+    public function snapshot(): string|null
     {
         return $this->values ? implode(',', $this->values) : null;
     }
 
-    public static function hydrate(string|null $data): Labels
+    public static function restore(string|null $data): Labels
     {
         return new Labels($data ? preg_split('~,~', $data, flags: PREG_SPLIT_NO_EMPTY) : []);
     }

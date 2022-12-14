@@ -28,24 +28,24 @@ class Change
     {
     }
 
-    /** Denormalizes an array to a Change object.
-     * @param array $data
+    /** Restores a Change object.
+     * @param array $snapshot
      * @return Change
      * @throws Exception
      */
-    public static function hydrate(array $data): Change
+    public static function restore(array $snapshot): Change
     {
         return new Change(
-            new Location($data['location']),
-            new DeploymentTag($data['tag']),
-            MigratePolicy::from($data['migrate_policy']),
-            ChangeStatus::from($data['status']),
-            new Author($data['author']),
-            new Checksum($data['checksum']),
-            new Description($data['description']),
-            Labels::hydrate($data['labels']),
-            new DateTimeImmutable($data['authored_at']),
-            new DateTimeImmutable($data['deployed_at']),
+            new Location($snapshot['location']),
+            new DeploymentTag($snapshot['tag']),
+            MigratePolicy::from($snapshot['migrate_policy']),
+            ChangeStatus::from($snapshot['status']),
+            new Author($snapshot['author']),
+            new Checksum($snapshot['checksum']),
+            new Description($snapshot['description']),
+            Labels::restore($snapshot['labels']),
+            new DateTimeImmutable($snapshot['authored_at']),
+            new DateTimeImmutable($snapshot['deployed_at']),
         );
     }
 }

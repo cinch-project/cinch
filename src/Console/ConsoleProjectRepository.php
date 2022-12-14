@@ -73,7 +73,7 @@ class ConsoleProjectRepository implements ProjectRepository
      */
     public function update(Project $project): void
     {
-        $state = Yaml::dump($project->normalize(), 100, flags: Yaml::DUMP_OBJECT_AS_MAP);
+        $state = Yaml::dump($project->snapshot(), 100, flags: Yaml::DUMP_OBJECT_AS_MAP);
         $file = Path::join($project->getId(), self::PROJECT_FILE);
         if (@file_put_contents($file, $state) === false)
             throw new LastErrorException();

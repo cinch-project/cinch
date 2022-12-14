@@ -31,7 +31,7 @@ class Environment
         $this->createSchema = $createSchema;
     }
 
-    public function normalize(): array
+    public function snapshot(): array
     {
         $data = [
             'deploy_timeout' => $this->deployTimeout,

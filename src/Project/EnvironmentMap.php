@@ -17,12 +17,12 @@ class EnvironmentMap
     {
     }
 
-    public function normalize(): array
+    public function snapshot(): array
     {
         $environments = ['default' => $this->default];
 
         foreach ($this->map as $name => $e)
-            $environments[$name] = $e->normalize();
+            $environments[$name] = $e->snapshot();
 
         return $environments;
     }
