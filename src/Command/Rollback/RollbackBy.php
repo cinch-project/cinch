@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Rollback;
 
 use Cinch\Common\Location;
 use Cinch\Component\Assert\Assert;

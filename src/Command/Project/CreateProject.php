@@ -1,10 +1,10 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Project;
 
 use Cinch\Project\Project;
 
-class CreateProjectCommand
+class CreateProject
 {
     public function __construct(public readonly Project $project, public readonly string $envName = '')
     {

@@ -57,9 +57,4 @@ class Labels
     {
         return new Labels($data ? preg_split('~,~', $data, flags: PREG_SPLIT_NO_EMPTY) : []);
     }
-
-    public function __toString(): string
-    {
-        return json_encode($this->values, flags: JSON_UNESCAPED_SLASHES);
-    }
 }

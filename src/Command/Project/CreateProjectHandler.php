@@ -1,11 +1,13 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Project;
 
+use Cinch\Command\CommandHandler;
+use Cinch\Command\DataStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class CreateProjectCommandHandler implements CommandHandler
+class CreateProjectHandler implements CommandHandler
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,
@@ -16,7 +18,7 @@ class CreateProjectCommandHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function handle(CreateProjectCommand $c): void
+    public function handle(CreateProject $c): void
     {
         $rollback = [];
         $environment = $c->project->getEnvironmentMap()->get($c->envName);

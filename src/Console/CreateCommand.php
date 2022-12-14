@@ -2,7 +2,7 @@
 
 namespace Cinch\Console;
 
-use Cinch\Command\CreateProjectCommand;
+use Cinch\Command\Project\CreateProject;
 use Cinch\Common\Dsn;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
@@ -41,7 +41,7 @@ class CreateCommand extends AbstractCommand
         );
 
         $this->logger->info("creating project");
-        $this->commandBus->handle(new CreateProjectCommand($project, $envName));
+        $this->commandBus->handle(new CreateProject($project, $envName));
 
         /* move temp log to project log dir, now that project dir exists */
         $logFile = Path::join($this->projectId, 'log', basename($this->tempLogFile));

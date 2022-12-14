@@ -2,7 +2,7 @@
 
 namespace Cinch\Console;
 
-use Cinch\Command\RemoveMigrationCommand;
+use Cinch\Command\Migration\RemoveMigration;
 use Cinch\Common\Location;
 use Cinch\Project\ProjectRepository;
 use Exception;
@@ -26,7 +26,7 @@ class MigrationRemoveCommand extends AbstractCommand
     {
         $project = $this->projectRepository->get($this->projectId);
 
-        $this->commandBus->handle(new RemoveMigrationCommand(
+        $this->commandBus->handle(new RemoveMigration(
             $project->getMigrationStoreDsn(),
             $project->getEnvironmentMap()->get($this->getEnvironmentName($project)),
             new Location($input->getArgument('location'))

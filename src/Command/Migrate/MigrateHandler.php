@@ -1,7 +1,9 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Migrate;
 
+use Cinch\Command\CommandHandler;
+use Cinch\Command\DataStoreFactory;
 use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
 use Cinch\History\ChangeStatus;
@@ -15,7 +17,7 @@ use Cinch\MigrationStore\MigrationStore;
 use Exception;
 use Generator;
 
-class MigrateCommandHandler implements CommandHandler
+class MigrateHandler implements CommandHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {
@@ -24,7 +26,7 @@ class MigrateCommandHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function handle(MigrateCommand $c): void
+    public function handle(Migrate $c): void
     {
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
         $target = $this->dataStoreFactory->createSession($environment->targetDsn);

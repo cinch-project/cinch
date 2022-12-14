@@ -2,7 +2,7 @@
 
 namespace Cinch\Console;
 
-use Cinch\Command\AddEnvironmentCommand;
+use Cinch\Command\Environment\AddEnvironment;
 use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -20,14 +20,6 @@ class EnvAddCommand extends AbstractCommand
         parent::__construct();
     }
 
-    protected function configure()
-    {
-        $this->setHelp('This does cool stuff')
-            ->addProjectArgument()
-            ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
-            ->addEnvironmentOptions();
-    }
-
     /**
      * @throws Exception
      */
@@ -38,7 +30,7 @@ class EnvAddCommand extends AbstractCommand
         $environment = $this->getEnvironmentFromInput($input, $project->getName());
 
         $this->logger->info("adding environment $name to project {$project->getName()}");
-        $this->commandBus->handle(new AddEnvironmentCommand($project, $name, $environment));
+        $this->commandBus->handle(new AddEnvironment($project, $name, $environment));
 
         return self::SUCCESS;
     }
@@ -47,5 +39,13 @@ class EnvAddCommand extends AbstractCommand
     {
         echo "delete project\n";
         parent::handleSignal($signal);
+    }
+
+    protected function configure()
+    {
+        $this->setHelp('This does cool stuff')
+            ->addProjectArgument()
+            ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
+            ->addEnvironmentOptions();
     }
 }

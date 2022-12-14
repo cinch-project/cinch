@@ -1,10 +1,12 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Migration;
 
+use Cinch\Command\CommandHandler;
+use Cinch\Command\DataStoreFactory;
 use Exception;
 
-class AddMigrationCommandHandler implements CommandHandler
+class AddMigrationHandler implements CommandHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {
@@ -13,7 +15,7 @@ class AddMigrationCommandHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function handle(AddMigrationCommand $c): void
+    public function handle(AddMigration $c): void
     {
         $this->dataStoreFactory
             ->createMigrationStore($c->migrationStoreDsn)

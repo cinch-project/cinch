@@ -1,10 +1,10 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Environment;
 
 use Cinch\Project\Project;
 
-class RemoveEnvironmentCommand
+class RemoveEnvironment
 {
     public function __construct(
         public readonly Project $project,

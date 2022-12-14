@@ -1,12 +1,12 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Migration;
 
 use Cinch\Common\Dsn;
 use Cinch\Common\Environment;
 use Cinch\Common\Location;
 
-class RemoveMigrationCommand
+class RemoveMigration
 {
     public function __construct(
         public readonly Dsn $migrationStoreDsn,

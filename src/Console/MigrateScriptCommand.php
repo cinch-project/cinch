@@ -2,7 +2,8 @@
 
 namespace Cinch\Console;
 
-use Cinch\Command\MigrateOptions;
+use Cinch\Command\Migrate\Migrate;
+use Cinch\Command\Migrate\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\Common\Location;
 use Cinch\History\DeploymentTag;
@@ -29,7 +30,7 @@ class MigrateScriptCommand extends AbstractCommand
         $project = $this->projectRepository->get($this->projectId);
         $locations = array_map(fn(string $l) => new Location($l), $input->getArgument('locations'));
 
-        $this->commandBus->handle(new \Cinch\Command\MigrateCommand(
+        $this->commandBus->handle(new Migrate(
             $project,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),

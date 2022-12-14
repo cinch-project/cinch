@@ -1,11 +1,13 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Environment;
 
+use Cinch\Command\CommandHandler;
+use Cinch\Command\DataStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class RemoveEnvironmentCommandHandler implements CommandHandler
+class RemoveEnvironmentHandler implements CommandHandler
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,
@@ -16,7 +18,7 @@ class RemoveEnvironmentCommandHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function handle(RemoveEnvironmentCommand $c): void
+    public function handle(RemoveEnvironment $c): void
     {
         if ($c->dropHistory) {
             $env = $c->project->getEnvironmentMap()->get($c->name);

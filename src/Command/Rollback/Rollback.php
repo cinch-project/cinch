@@ -1,12 +1,12 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Rollback;
 
 use Cinch\Common\Author;
 use Cinch\History\DeploymentTag;
 use Cinch\Project\Project;
 
-class RollbackCommand
+class Rollback
 {
     /**
      * @param Project $project

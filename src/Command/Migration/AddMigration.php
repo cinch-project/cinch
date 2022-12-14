@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Migration;
 
 use Cinch\Common\Author;
 use Cinch\Common\Description;
@@ -9,7 +9,7 @@ use Cinch\Common\Location;
 use Cinch\Common\MigratePolicy;
 use DateTimeInterface;
 
-class AddMigrationCommand
+class AddMigration
 {
     public function __construct(
         public readonly Dsn $migrationStoreDsn,

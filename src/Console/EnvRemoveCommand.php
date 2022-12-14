@@ -2,7 +2,7 @@
 
 namespace Cinch\Console;
 
-use Cinch\Command\RemoveEnvironmentCommand;
+use Cinch\Command\Environment\RemoveEnvironment;
 use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -39,7 +39,7 @@ class EnvRemoveCommand extends AbstractCommand
 
         $dropMsg = $drop ? 'and dropping history schema' : '';
         $this->logger->info("deleting environment $name $dropMsg");
-        $this->commandBus->handle(new RemoveEnvironmentCommand($project, $name, $drop));
+        $this->commandBus->handle(new RemoveEnvironment($project, $name, $drop));
 
         return self::SUCCESS;
     }

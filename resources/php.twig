@@ -16,7 +16,7 @@ return new class extends Script {
             new Author('{{ author }}'),
             new DateTimeImmutable('{{ authored_at }}'),
             new Description('{{ description }}'),
-            new Labels({{ labels }})
+            new Labels({{ labels|json_encode() }})
         );
     }}
 

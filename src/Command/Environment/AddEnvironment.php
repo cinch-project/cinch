@@ -1,11 +1,11 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Environment;
 
 use Cinch\Common\Environment;
 use Cinch\Project\Project;
 
-class AddEnvironmentCommand
+class AddEnvironment
 {
     public function __construct(
         public readonly Project $project,

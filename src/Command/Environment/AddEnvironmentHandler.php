@@ -1,11 +1,13 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Environment;
 
+use Cinch\Command\CommandHandler;
+use Cinch\Command\DataStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class AddEnvironmentCommandHandler implements CommandHandler
+class AddEnvironmentHandler implements CommandHandler
 {
     public function __construct(
         private readonly DataStoreFactory $dataStoreFactory,
@@ -16,7 +18,7 @@ class AddEnvironmentCommandHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function handle(AddEnvironmentCommand $c): void
+    public function handle(AddEnvironment $c): void
     {
         /* fails if $name exists */
         $c->project->addEnvironment($c->name, $c->environment);

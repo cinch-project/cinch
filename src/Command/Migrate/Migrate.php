@@ -1,12 +1,12 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Migrate;
 
 use Cinch\Common\Author;
 use Cinch\History\DeploymentTag;
 use Cinch\Project\Project;
 
-class MigrateCommand
+class Migrate
 {
     /**
      * @param Project $project

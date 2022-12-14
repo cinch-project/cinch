@@ -1,7 +1,9 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Rollback;
 
+use Cinch\Command\CommandHandler;
+use Cinch\Command\DataStoreFactory;
 use Cinch\Database\Session;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
@@ -11,7 +13,7 @@ use Cinch\History\DeploymentError;
 use Cinch\MigrationStore\MigrationStore;
 use Exception;
 
-class RollbackCommandHandler implements CommandHandler
+class RollbackHandler implements CommandHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {
@@ -20,7 +22,7 @@ class RollbackCommandHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function handle(RollbackCommand $c): void
+    public function handle(Rollback $c): void
     {
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
         $history = $this->dataStoreFactory->createHistory($environment);

@@ -2,7 +2,7 @@
 
 namespace Cinch\Console;
 
-use Cinch\Command\AddMigrationCommand;
+use Cinch\Command\Migration\AddMigration;
 use Cinch\Common\Author;
 use Cinch\Common\Description;
 use Cinch\Common\Location;
@@ -25,6 +25,23 @@ class MigrationAddCommand extends AbstractCommand
         parent::__construct();
     }
 
+    /**
+     * @throws Exception
+     */
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $this->commandBus->handle(new AddMigration(
+            $this->projectRepository->get($this->projectId)->getMigrationStoreDsn(),
+            new Location($input->getArgument('location')),
+            MigratePolicy::from($input->getOption('migrate-policy')),
+            new Author($input->getOption('author') ?: get_system_user()),
+            new DateTimeImmutable(timezone: new DateTimeZone('UTC')),
+            new Description($input->getArgument('description'))
+        ));
+
+        return self::SUCCESS;
+    }
+
     protected function configure()
     {
         $defaultPolicy = MigratePolicy::ONCE->value;
@@ -38,22 +55,5 @@ class MigrationAddCommand extends AbstractCommand
             ->addOption('migrate-policy', 'm', InputOption::VALUE_REQUIRED, "Migrate policy: $policies", $defaultPolicy)
             ->addOption('author', 'a', InputOption::VALUE_REQUIRED, 'Migration author [default: current system user]')
             ->addOptionByName('env');
-    }
-
-    /**
-     * @throws Exception
-     */
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $this->commandBus->handle(new AddMigrationCommand(
-            $this->projectRepository->get($this->projectId)->getMigrationStoreDsn(),
-            new Location($input->getArgument('location')),
-            MigratePolicy::from($input->getOption('migrate-policy')),
-            new Author($input->getOption('author') ?: get_system_user()),
-            new DateTimeImmutable(timezone: new DateTimeZone('UTC')),
-            new Description($input->getArgument('description'))
-        ));
-
-        return self::SUCCESS;
     }
 }

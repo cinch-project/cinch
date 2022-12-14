@@ -2,7 +2,8 @@
 
 namespace Cinch\Console;
 
-use Cinch\Command\MigrateOptions;
+use Cinch\Command\Migrate\Migrate;
+use Cinch\Command\Migrate\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\Component\Assert\Assert;
 use Cinch\History\DeploymentTag;
@@ -11,7 +12,6 @@ use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate:count', 'Migrates the next count migrations')]
@@ -30,7 +30,7 @@ class MigrateCountCommand extends AbstractCommand
         $project = $this->projectRepository->get($this->projectId);
         $count = (int) Assert::digit($input->getArgument('count'), 'count argument');
 
-        $this->commandBus->handle(new \Cinch\Command\MigrateCommand(
+        $this->commandBus->handle(new Migrate(
             $project,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),

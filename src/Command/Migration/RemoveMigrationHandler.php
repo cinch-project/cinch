@@ -1,10 +1,12 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Command\Migration;
 
+use Cinch\Command\CommandHandler;
+use Cinch\Command\DataStoreFactory;
 use Exception;
 
-class RemoveMigrationCommandHandler implements CommandHandler
+class RemoveMigrationHandler implements CommandHandler
 {
     public function __construct(private readonly DataStoreFactory $dataStoreFactory)
     {
@@ -13,7 +15,7 @@ class RemoveMigrationCommandHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    public function handle(RemoveMigrationCommand $c): void
+    public function handle(RemoveMigration $c): void
     {
         $changes = $this->dataStoreFactory
             ->createHistory($c->environment)
