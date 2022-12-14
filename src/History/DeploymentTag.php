@@ -11,7 +11,7 @@ class DeploymentTag extends SingleValue
     public function __construct(string|null $tag = null)
     {
         if ($tag === null)
-            $tag = Uuid::uuid7()->toString();
+            $tag = (string) Uuid::uuid7();
         parent::__construct(Assert::betweenLength($tag, 1, 64, message: 'tag'));
     }
 }

@@ -6,7 +6,6 @@
     {% endif %}
 {% endif %}
 
-{% set location_type = 'text' %}
 {% set length = 'length' %}
 {% set restrict = 'restrict' %}
 {% set bigint = 'bigint' %}
@@ -46,14 +45,13 @@
     {% set datetime = 'text' %} {# stored in ISO 8601 format #}
 {% elseif db.name == 'mssql' %}
     {% set table_options = '' %}
-    {% set location_type = 'nvarchar(max)' %}
     {% set length = 'len' %}
     {% set restrict = 'no action' %}
     {# location(512) is 1024 bytes (USC2), mssql PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}
     {% set location_pkindex = 'unique' %}
     {% set collate_ascii = 'collate Latin1_General_100_BIN' %}
     {% set collate_utf8ci = 'collate Latin1_General_100_CI_AI' %}
-    {% set json = 'nvarchar' %}
+    {% set json = 'nvarchar(max)' %}
     {% set bool = 'tinyint' %}
     {% set datetime = 'datetimeoffset(7)' %} {# precision is 100ns #}
 {% endif %}
@@ -83,20 +81,25 @@ create table {{ deployment }}
     {{ 'tag'|nvarchar(64) }} {{ collate_utf8ci }} primary key not null,
     {{ 'deployer'|nvarchar(64) }} {{ collate_utf8ci }} not null,
     {{ 'command'|varchar(16) }} {{ collate_ascii }} not null,
-    error {{ json }} null default null,
     {{ 'application'|nvarchar(128) }} {{ collate_utf8ci }} not null,
     {{ 'schema_version'|varchar(32) }} {{ collate_ascii }} not null
         references {{ cinch|strip_schema }} (schema_version) on delete {{ restrict }},
+    {{ 'error'|nvarchar(512) }} {{ collate_utf8ci }} null default null,
+    error_details {{ json }} null default null,
     started_at {{ datetime }} not null,
     ended_at {{ datetime }} null default null,
     constraint {{ 'tag cannot be empty'|quote }} check (tag <> ''),
     constraint {{ 'unknown command'|quote }} check (command in ({{ "'" ~ commands|join("','") ~ "'" }})),
     constraint {{ 'deployer cannot be empty'|quote }} check (deployer <> ''),
-    constraint {{ 'application cannot be empty'|quote }} check (application <> '')
+    constraint {{ 'application cannot be empty'|quote }} check (application <> ''),
+    constraint {{ 'error must be null or not empty'|quote }} check (error is null or error <> ''),
+    constraint {{ 'error_details must be null when error is null'|quote }}
+        check (error is not null or error_details is null)
 ) {{ table_options }};
 
 create index {{ index_prefix }}deployment_deployer_idx on {{ deployment|strip_schema }} (deployer);
 create index {{ index_prefix }}deployment_command_idx on {{ deployment|strip_schema }} (command);
+create index {{ index_prefix }}deployment_error_idx on {{ deployment|strip_schema }} (error);
 
 {% if requires_fkindex %}
 create index {{ index_prefix }}deployment_schema_version_idx on {{ deployment|strip_schema }} (schema_version);

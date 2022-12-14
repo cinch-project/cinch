@@ -4,7 +4,6 @@ namespace Cinch\History;
 
 use Cinch\Common\Author;
 use Cinch\Database\Session;
-use Cinch\MigrationStore\Migration;
 use Exception;
 use RuntimeException;
 
@@ -32,6 +31,11 @@ class Deployment
         $this->session = $schema->session();
 
         $this->open($command, $deployer, $application);
+    }
+
+    public function getTag(): DeploymentTag|null
+    {
+        return $this->tag;
     }
 
     /**
@@ -63,20 +67,10 @@ class Deployment
     /**
      * @throws Exception
      */
-    public function addChange(ChangeStatus $status, Migration $migration): void
+    public function addChange(Change $change): void
     {
-        $this->session->insert($this->schema->table('change'), [
-            'location' => $migration->location->value,
-            'tag' => $this->tag->value,
-            'migrate_policy' => $migration->script->getMigratePolicy()->value,
-            'status' => $status->value,
-            'author' => $migration->script->getAuthor()->value,
-            'checksum' => $migration->checksum->value,
-            'description' => $migration->script->getDescription()->value,
-            'labels' => $migration->script->getLabels()->snapshot(),
-            'authored_at' => $this->session->getPlatform()->formatDateTime($migration->script->getAuthoredAt()),
-            'deployed_at' => $this->session->getPlatform()->formatDateTime()
-        ]);
+        $formatDateTime = $this->session->getPlatform()->formatDateTime(...);
+        $this->session->insert($this->schema->table('change'), $change->snapshot($formatDateTime));
     }
 
     /**
@@ -86,7 +80,8 @@ class Deployment
     {
         try {
             $this->session->update($this->schema->table('deployment'), [
-                'error' => $error ? json_encode($error, JSON_UNESCAPED_SLASHES) : null,
+                'error' => $error?->message,
+                'error_details' => $error ? json_encode($error, JSON_UNESCAPED_SLASHES) : null,
                 'ended_at' => $this->session->getPlatform()->formatDateTime()
             ], ['tag' => $this->tag->value]);
         }

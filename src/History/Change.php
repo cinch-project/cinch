@@ -28,6 +28,22 @@ class Change
     {
     }
 
+    public function snapshot(callable $formatDateTime): array
+    {
+        return [
+            'location' => $this->location->value,
+            'tag' => $this->tag->value,
+            'migrate_policy' => $this->migratePolicy->value,
+            'status' => $this->status->value,
+            'author' => $this->author->value,
+            'checksum' => $this->checksum->value,
+            'description' => $this->description->value,
+            'labels' => $this->labels->snapshot(),
+            'authored_at' => $formatDateTime($this->authoredAt),
+            'deployed_at' => $formatDateTime($this->deployedAt)
+        ];
+    }
+
     /** Restores a Change object.
      * @param array $snapshot
      * @return Change

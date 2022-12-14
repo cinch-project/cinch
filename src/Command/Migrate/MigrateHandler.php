@@ -2,109 +2,72 @@
 
 namespace Cinch\Command\Migrate;
 
-use Cinch\Command\CommandHandler;
-use Cinch\Command\DataStoreFactory;
+use Cinch\Command\DeploymentHandler;
 use Cinch\Common\MigratePolicy;
-use Cinch\Database\Session;
 use Cinch\History\ChangeStatus;
-use Cinch\History\ChangeView;
-use Cinch\History\Deployment;
-use Cinch\History\DeploymentCommand;
-use Cinch\History\DeploymentError;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationOutOfSyncException;
-use Cinch\MigrationStore\MigrationStore;
 use Exception;
 use Generator;
 
-class MigrateHandler implements CommandHandler
+class MigrateHandler extends DeploymentHandler
 {
-    public function __construct(private readonly DataStoreFactory $dataStoreFactory)
-    {
-    }
+    private MigrateOptions $options;
 
     /**
      * @throws Exception
      */
     public function handle(Migrate $c): void
     {
-        $environment = $c->project->getEnvironmentMap()->get($c->envName);
-        $target = $this->dataStoreFactory->createSession($environment->targetDsn);
-        $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStoreDsn());
-        $history = $this->dataStoreFactory->createHistory($environment);
-
-        $error = null;
-        $deployment = $history->openDeployment(DeploymentCommand::MIGRATE, $c->tag, $c->deployer);
-
-        try {
-            $this->migrate($deployment, $target, $migrationStore, $history->getChangeView(), $c->options);
-        }
-        catch (Exception $e) {
-            $error = DeploymentError::fromException($e);
-            throw $e;
-        }
-        finally {
-            ignoreException($deployment->close(...), $error);
-        }
+        $this->options = $c->options;
+        $this->prepare($c->project, $c->envName);
+        $this->deploy($c->tag, $c->deployer);
     }
 
     /**
      * @throws Exception
      */
-    private function migrate(Deployment $deployment, Session $target, MigrationStore $migrationStore,
-        ChangeView $changeView, MigrateOptions $options): void
+    protected function run(): void
     {
-        $count = $options->getCount();
+        $count = $this->options->getCount();
 
-        foreach ($this->next($migrationStore, $options) as $migration) {
+        foreach ($this->iterate() as $migration) {
             if ($migration->script->getMigratePolicy() == MigratePolicy::NEVER ||
-                !($status = $this->getStatus($changeView, $migration))) {
+                !($status = $this->getStatus($migration))) {
                 continue;
             }
 
-            $target->beginTransaction();
+            $this->execute($migration, $status);
 
-            try {
-                $migration->script->migrate($target);
-                $deployment->addChange($status, $migration);
-                $target->commit();
-                if ($count !== null && --$count == 0)
-                    break;
-            }
-            catch (Exception $e) {
-                ignoreException($target->rollBack(...));
-                throw $e;
-            }
+            if ($count !== null && --$count == 0)
+                break;
         }
     }
 
     /**
-     * @param MigrationStore $migrationStore
-     * @param MigrateOptions $options
      * @return Generator
      * @throws Exception
      */
-    private function next(MigrationStore $migrationStore, MigrateOptions $options): Generator
+    private function iterate(): Generator
     {
         /* migrate specific scripts */
-        if ($locations = $options->getLocations()) {
+        if ($locations = $this->options->getLocations()) {
             foreach ($locations as $location)
-                yield $migrationStore->get($location);
+                yield $this->migrationStore->get($location);
         }
         else {
-            return $migrationStore->iterate();
+            return $this->migrationStore->iterate();
         }
     }
 
     /**
-     * @param ChangeView $changeView
      * @param Migration $migration
      * @return ChangeStatus|null change status or null if migration should be skipped
      * @throws Exception
      */
-    private function getStatus(ChangeView $changeView, Migration $migration): ChangeStatus|null
+    private function getStatus(Migration $migration): ChangeStatus|null
     {
-        $changes = $changeView->getMostRecentChanges([$migration->location]);
+        $changes = $this->history->getChangeView()->getMostRecentChanges([$migration->location]);
 
         /* doesn't exist yet, migrate it */
         if (!$changes)

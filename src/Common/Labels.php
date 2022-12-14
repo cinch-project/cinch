@@ -20,8 +20,8 @@ class Labels
 
     public function add(string $value): self
     {
-        /* allow any unicode letter or number and basic separators: space, hyphen, underscore, period, slash */
-        Assert::regex(mb_strtolower($value, 'UTF-8'), '~^[\-_./ \p{L}\p{N}]{1,64}$~u', 'label');
+        /* allow any unicode letter or number and basic separators: hyphen, underscore, period, slash */
+        Assert::regex(mb_strtolower($value, 'UTF-8'), '~^[\-_./\p{L}\p{N}]{1,64}$~u', 'label');
 
         if (!$this->has($value))
             $this->values[] = $value;
@@ -53,8 +53,9 @@ class Labels
         return $this->values ? implode(',', $this->values) : null;
     }
 
-    public static function restore(string|null $data): Labels
+    public static function restore(string|null $snapshot): Labels
     {
-        return new Labels($data ? preg_split('~,~', $data, flags: PREG_SPLIT_NO_EMPTY) : []);
+        $snapshot = $snapshot ? preg_split('~\s*,\s*~', $snapshot, flags: PREG_SPLIT_NO_EMPTY) : [];
+        return new Labels($snapshot);
     }
 }
