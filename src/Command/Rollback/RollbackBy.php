@@ -2,7 +2,7 @@
 
 namespace Cinch\Command\Rollback;
 
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\History\DeploymentTag;
 use DateTimeInterface;
@@ -12,7 +12,7 @@ class RollbackBy
     const TAG = 'tag';
     const DATE = 'date';
     const COUNT = 'count';
-    const SCRIPT = 'script';
+    const PATHS = 'paths';
 
     public static function tag(string $tag): self
     {
@@ -29,12 +29,12 @@ class RollbackBy
         return new self(self::COUNT, Assert::between($count, 1, 100, 'rollback-by-count'));
     }
 
-    public static function scripts(array $locations): self
+    public static function paths(array $paths): self
     {
-        Assert::notEmpty($locations, 'rollback-by-script location(s)');
-        foreach ($locations as $i => $s)
-            Assert::class($s, Location::class, "rollback-by-script locations[$i]");
-        return new self(self::SCRIPT, $locations);
+        Assert::notEmpty($paths, 'rollback-by-script paths');
+        foreach ($paths as $i => $p)
+            Assert::class($p, StorePath::class, "rollback-by-script paths[$i]");
+        return new self(self::PATHS, $paths);
     }
 
     private function __construct(

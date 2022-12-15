@@ -4,7 +4,7 @@ namespace Cinch\MigrationStore;
 
 use Cinch\Common\Author;
 use Cinch\Common\Description;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Common\MigratePolicy;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Adapter\MigrationStoreAdapter;
@@ -13,7 +13,7 @@ use DateTimeInterface;
 use Exception;
 use Generator;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Filesystem\Path as PathUtils;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 use Symfony\Component\Yaml\Yaml;
 use Twig\Environment as Twig;
@@ -47,7 +47,7 @@ class MigrationStore
         if (!$this->exists()) {
             $this->storeAdapter->addFile(
                 self::FILENAME,
-                slurp(Path::join($this->resourceDir, self::FILENAME)),
+                slurp(PathUtils::join($this->resourceDir, self::FILENAME)),
                 'created ' . self::FILENAME
             );
 
@@ -68,34 +68,34 @@ class MigrationStore
     }
 
     /**
-     * @param Location $location
+     * @param StorePath $path
      * @return Migration
      * @throws Exception
      */
-    public function get(Location $location): Migration
+    public function get(StorePath $path): Migration
     {
-        return $this->getDirectoryFor($location)->getMigration($location);
+        return $this->getDirectoryFor($path)->getMigration($path);
     }
 
     /**
      * @throws Exception
      */
-    public function add(Location $location, MigratePolicy $migratePolicy, Author $author,
+    public function add(StorePath $path, MigratePolicy $migratePolicy, Author $author,
         DateTimeInterface $authoredAt, Description $description): void
     {
-        $content = $this->twig->render($location->isSql() ? 'sql.twig' : 'php.twig', [
+        $content = $this->twig->render($path->isSql() ? 'sql.twig' : 'php.twig', [
             'migrate_policy' => $migratePolicy->value,
             'author' => $author->value,
             'authored_at' => $authoredAt->format('Y-m-d H:i:sP'),
             'description' => $description->value,
         ]);
 
-        $this->storeAdapter->addFile($location->value, $content, 'add migration request');
+        $this->storeAdapter->addFile($path->value, $content, 'add migration request');
     }
 
-    public function remove(Location $location): void
+    public function remove(StorePath $path): void
     {
-        $this->storeAdapter->deleteFile($location->value, 'remove migration request');
+        $this->storeAdapter->deleteFile($path->value, 'remove migration request');
     }
 
     /** Iterates through all migrations in directory migrate order.
@@ -115,12 +115,12 @@ class MigrationStore
     /**
      * @throws Exception
      */
-    private function getDirectoryFor(Location $location): Directory
+    private function getDirectoryFor(StorePath $storePath): Directory
     {
         $dir = null;
-        $path = dirname($location->value) . '/'; // remove filename, append '/' to avoid false positives: /a, /ab
+        $path = dirname($storePath->value) . '/'; // remove filename, append '/' to avoid false positives: /a, /ab
 
-        /* find the deepest directory that is a base-path of location */
+        /* find the deepest directory that is a base-path of store-path */
         foreach ($this->getDirectories() as $d) {
             if (mb_strpos($path, rtrim($d->path, '/') . '/', encoding: 'UTF-8') === 0) {
                 if (!$dir || strlen($d->path) > strlen($dir->path))

@@ -12,7 +12,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Filesystem\Path as PathUtils;
 
 #[AsCommand('create', 'Creates a project')]
 class Create extends AbstractCommand
@@ -44,7 +44,7 @@ class Create extends AbstractCommand
         $this->commandBus->handle(new CreateProject($project, $envName));
 
         /* move temp log to project log dir, now that project dir exists */
-        $logFile = Path::join($this->projectId, 'log', basename($this->tempLogFile));
+        $logFile = PathUtils::join($this->projectId, 'log', basename($this->tempLogFile));
         (new Filesystem())->rename($this->tempLogFile, $logFile);
 
         return self::SUCCESS;

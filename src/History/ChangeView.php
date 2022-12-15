@@ -2,7 +2,7 @@
 
 namespace Cinch\History;
 
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Database\Session;
 use DateTimeInterface;
 use Doctrine\DBAL\Result;
@@ -17,23 +17,23 @@ class ChangeView
         $this->session = $this->schema->session();
     }
 
-    /** Gets the most recent change for one or more locations.
-     * @param Location[] $locations
+    /** Gets the most recent change for one or more paths.
+     * @param StorePath[] $paths
      * @param bool $excludeRollbacked indicates if rollbacked changes should be excluded
      * @return array ordered by deployed time descending
      * @throws Exception
      */
-    public function getMostRecentChanges(array $locations, bool $excludeRollbacked = false): array
+    public function getMostRecentChanges(array $paths, bool $excludeRollbacked = false): array
     {
-        if (!$locations)
+        if (!$paths)
             return [];
 
         $placeholders = '';
         $params = [];
         $whereStatus = '';
 
-        foreach ($locations as $l) {
-            $params[] = $l->value;
+        foreach ($paths as $p) {
+            $params[] = $p->value;
             $placeholders .= ($placeholders ? ',' : '') . '?';
         }
 
@@ -46,7 +46,7 @@ class ChangeView
 
         $result = $this->session->executeQuery("
             select c.* from $change c join (
-                select max(deployed_at) as deployed_at from $change where location in ($placeholders) group by location
+                select max(deployed_at) as deployed_at from $change where path in ($placeholders) group by path
             ) c2 on c.deployed_at = c2.deployed_at $whereStatus order by c.deployed_at desc", $params
         );
 
@@ -68,7 +68,7 @@ class ChangeView
         return $this->getChangesFromResult($this->session->executeQuery("
             select c.* from $change c join (
                 select max(c1.deployed_at) as deployed_at from $change c1, $deployment d
-                where d.tag = ? and c1.deployed_at > d.ended_at group by c1.location
+                where d.tag = ? and c1.deployed_at > d.ended_at group by c1.path
             ) t on c.deployed_at = t.deployed_at where status <> ? order by c.deployed_at desc", $params
         ));
     }
@@ -86,7 +86,7 @@ class ChangeView
 
         return $this->getChangesFromResult($this->session->executeQuery("
             select c.* from $change c join (
-                select max(deployed_at) as deployed_at from $change where deployed_at > ? group by location
+                select max(deployed_at) as deployed_at from $change where deployed_at > ? group by path
             ) t on c.deployed_at = t.deployed_at where status <> ? order by c.deployed_at desc", $params
         ));
     }
@@ -108,12 +108,12 @@ class ChangeView
         if ($this->session->getPlatform()->getName() == 'mssql')
             $query = "
                 select top $count c.* from $change c join (
-                    select max(deployed_at) as deployed_at from $change group by location
+                    select max(deployed_at) as deployed_at from $change group by path
                 ) c2 on c.deployed_at = c2.deployed_at where status <> ? order by c.deployed_at desc;";
         else
             $query = "
                 select c.* from $change c left join $change c2 
-                on c.location = c2.location and c.deployed_at < c2.deployed_at
+                on c.path = c2.path and c.deployed_at < c2.deployed_at
                 where c2.deployed_at is null and status <> ? order by c.deployed_at desc limit $count";
 
         return $this->getChangesFromResult($this->session->executeQuery($query, [ChangeStatus::ROLLBACKED]));

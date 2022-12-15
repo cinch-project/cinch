@@ -24,7 +24,7 @@ class RollbackHandler extends DeploymentHandler
             RollbackBy::COUNT => $view->getMostRecentChangesByCount($c->rollbackBy->value),
             RollbackBy::TAG => $view->getMostRecentChangesSinceTag($c->rollbackBy->value),
             RollbackBy::DATE => $view->getMostRecentChangesSinceDate($c->rollbackBy->value),
-            RollbackBy::SCRIPT => $view->getMostRecentChanges($c->rollbackBy->value, excludeRollbacked: true)
+            RollbackBy::PATHS => $view->getMostRecentChanges($c->rollbackBy->value, excludeRollbacked: true)
         };
 
         if (count($this->changes) == 0)
@@ -39,10 +39,10 @@ class RollbackHandler extends DeploymentHandler
     protected function run(): void
     {
         foreach ($this->changes as $change) {
-            $migration = $this->migrationStore->get($change->location);
+            $migration = $this->migrationStore->get($change->path);
 
             if (!$change->checksum->equals($migration->checksum))
-                throw new Exception("rollback '$change->location' failed: script changed since last migrated");
+                throw new Exception("rollback '$change->path' failed: script changed since last migrated");
 
             $this->execute($migration, ChangeStatus::ROLLBACKED);
         }

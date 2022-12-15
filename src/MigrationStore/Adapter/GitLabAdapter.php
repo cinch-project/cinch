@@ -4,7 +4,7 @@ namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
 use Cinch\Common\Dsn;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Directory;
 use Exception;
@@ -110,7 +110,7 @@ class GitLabAdapter extends GitAdapter
 
         return new GitFile(
             $this,
-            new Location($path),
+            new StorePath($path),
             new Checksum($data['blob_id']),
             base64_decode($data['content'])
         );

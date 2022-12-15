@@ -2,7 +2,7 @@
 
 namespace Cinch\MigrationStore\Script;
 
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Component\Assert\AssertException;
 use Cinch\MigrationStore\Adapter\File;
 use Cinch\MigrationStore\Adapter\LocalFile;
@@ -23,7 +23,7 @@ class ScriptLoader
      */
     public function load(File $file, array $variables, bool $environment): Script
     {
-        if ($file->getLocation()->isSql())
+        if ($file->getPath()->isSql())
             $script = $this->parseSql($file, $variables, $environment);
         else if ($file instanceof LocalFile)
             $script = $this->requireFile($file);
@@ -54,19 +54,19 @@ class ScriptLoader
 
     private function requireFile(LocalFile $file): Script
     {
-        return $this->assertScript(require $file->getAbsolutePath(), $file->getLocation());
+        return $this->assertScript(require $file->getAbsolutePath(), $file->getPath());
     }
 
     private function evalFile(File $file): Script
     {
-        return $this->assertScript(eval('?>' . $file->getContents()), $file->getLocation());
+        return $this->assertScript(eval('?>' . $file->getContents()), $file->getPath());
     }
 
-    private function assertScript(mixed $script, Location $location): Script
+    private function assertScript(mixed $script, StorePath $path): Script
     {
         if ($script instanceof Script)
             return $script;
 
-        throw new AssertException("$location must be a " . Script::class);
+        throw new AssertException("$path must be a " . Script::class);
     }
 }

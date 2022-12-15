@@ -5,7 +5,7 @@ namespace Cinch\Console\Commands;
 use Cinch\Command\Migration\AddMigration;
 use Cinch\Common\Author;
 use Cinch\Common\Description;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Common\MigratePolicy;
 use Cinch\Project\ProjectRepository;
 use DateTimeImmutable;
@@ -32,7 +32,7 @@ class MigrationAdd extends AbstractCommand
     {
         $this->commandBus->handle(new AddMigration(
             $this->projectRepository->get($this->projectId)->getMigrationStoreDsn(),
-            new Location($input->getArgument('location')),
+            new StorePath($input->getArgument('path')),
             MigratePolicy::from($input->getOption('migrate-policy')),
             new Author($input->getOption('author') ?: get_system_user()),
             new DateTimeImmutable(timezone: new DateTimeZone('UTC')),
@@ -47,10 +47,10 @@ class MigrationAdd extends AbstractCommand
         $defaultPolicy = MigratePolicy::ONCE->value;
         $policies = "'" . implode("', '", array_map(fn($v) => $v->value, MigratePolicy::cases())) . "'";
 
-        // cinch add <project> <location> <description> --author= --migrate-policy=
+        // cinch add <project> <path> <description> --author= --migrate-policy=
         $this
             ->addProjectArgument()
-            ->addArgument('location', InputArgument::REQUIRED, 'Migration location (relative to migration store)')
+            ->addArgument('path', InputArgument::REQUIRED, 'Migration store path (relative to migration store root)')
             ->addArgument('description', InputArgument::REQUIRED, 'Migration description')
             ->addOption('migrate-policy', 'm', InputOption::VALUE_REQUIRED, "Migrate policy: $policies", $defaultPolicy)
             ->addOption('author', 'a', InputOption::VALUE_REQUIRED, 'Migration author [default: current system user]')

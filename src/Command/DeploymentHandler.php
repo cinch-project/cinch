@@ -94,7 +94,7 @@ abstract class DeploymentHandler implements CommandHandler
     private function addChange(ChangeStatus $status, Migration $migration): void
     {
         $this->deployment->addChange(new Change(
-            $migration->location,
+            $migration->path,
             $this->deployment->getTag(),
             $migration->script->getMigratePolicy(),
             $status,

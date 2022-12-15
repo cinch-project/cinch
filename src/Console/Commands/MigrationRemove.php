@@ -3,7 +3,7 @@
 namespace Cinch\Console\Commands;
 
 use Cinch\Command\Migration\RemoveMigration;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -29,7 +29,7 @@ class MigrationRemove extends AbstractCommand
         $this->commandBus->handle(new RemoveMigration(
             $project->getMigrationStoreDsn(),
             $project->getEnvironmentMap()->get($this->getEnvironmentName($project)),
-            new Location($input->getArgument('location'))
+            new StorePath($input->getArgument('path'))
         ));
 
         return self::SUCCESS;
@@ -37,10 +37,10 @@ class MigrationRemove extends AbstractCommand
 
     protected function configure()
     {
-        // cinch migration:remove <project> <location>
+        // cinch migration:remove <project> <path>
         $this
             ->addProjectArgument()
-            ->addArgument('location', InputArgument::REQUIRED, 'Migration location (relative to migration store)')
+            ->addArgument('path', InputArgument::REQUIRED, 'Migration store path (relative to migration store root)')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
 This command cannot remove migrations that have already been deployed. For migrations with an 'always' 

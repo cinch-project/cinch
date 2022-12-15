@@ -2,7 +2,7 @@
 
 namespace Cinch\MigrationStore;
 
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Component\Assert\AssertException;
 use Cinch\MigrationStore\Adapter\File;
 use Cinch\MigrationStore\Adapter\MigrationStoreAdapter;
@@ -40,13 +40,13 @@ class Directory
     }
 
     /**
-     * @return Migration|null null is returned if the location is not found
+     * @return Migration|null null is returned if the path is not found
      * @throws Exception
      */
-    public function getMigration(Location $location): Migration|null
+    public function getMigration(StorePath $path): Migration|null
     {
         try {
-            return $this->createMigration($this->storeAdapter->getFile($location->value));
+            return $this->createMigration($this->storeAdapter->getFile($path->value));
         }
         catch (FileNotFoundException) {
             return null;
@@ -78,7 +78,7 @@ class Directory
     private function createMigration(File $file): Migration
     {
         $script = $this->scriptLoader->load($file, $this->variables, $this->flags & self::ENVIRONMENT);
-        return new Migration($file->getLocation(), $file->getChecksum(), $script);
+        return new Migration($file->getPath(), $file->getChecksum(), $script);
     }
 
     /**
@@ -99,7 +99,7 @@ class Directory
 
         /* build tree using path components as nodes */
         foreach ($files as $file) {
-            $components = explode('/', $file->getLocation()->value);
+            $components = explode('/', $file->getPath()->value);
             $filename = array_pop($components);
 
             for ($node = $root; $name = array_shift($components);)

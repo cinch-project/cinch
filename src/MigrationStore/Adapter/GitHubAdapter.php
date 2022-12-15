@@ -4,7 +4,7 @@ namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
 use Cinch\Common\Dsn;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Directory;
 use Exception;
@@ -90,7 +90,7 @@ class GitHubAdapter extends GitAdapter
         else
             $content = base64_decode($data['content']); // use it if returned
 
-        return new GitFile($this, new Location($path), new Checksum($data['sha']), $content);
+        return new GitFile($this, new StorePath($path), new Checksum($data['sha']), $content);
     }
 
     /**

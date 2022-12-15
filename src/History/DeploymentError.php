@@ -5,7 +5,7 @@ namespace Cinch\History;
 use Cinch\Component\Assert\Assert;
 use Exception;
 use JsonSerializable;
-use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Filesystem\Path as PathUtils;
 
 class DeploymentError implements JsonSerializable
 {
@@ -17,12 +17,12 @@ class DeploymentError implements JsonSerializable
 
         /* replace each trace path with a relative path */
         foreach ($trace as &$t)
-            $t = preg_replace_callback('~^#\d+ (/.+)\(\d+\)~', fn($m) => Path::makeRelative($m[1], $base), $t);
+            $t = preg_replace_callback('~^#\d+ (/.+)\(\d+\)~', fn($m) => PathUtils::makeRelative($m[1], $base), $t);
 
         return new static(
             $e->getMessage() ?: '[no message provided]',
             get_class($e),
-            Path::makeRelative($e->getFile(), $base),
+            PathUtils::makeRelative($e->getFile(), $base),
             $e->getLine(),
             $trace
         );

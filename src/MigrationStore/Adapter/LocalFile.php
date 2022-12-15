@@ -3,16 +3,16 @@
 namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 
 class LocalFile extends File
 {
     private string|null $content = null;
     private Checksum|null $checksum = null;
 
-    public function __construct(private readonly string $absolutePath, Location $location)
+    public function __construct(private readonly string $absolutePath, StorePath $path)
     {
-        parent::__construct($location);
+        parent::__construct($path);
     }
 
     public function getAbsolutePath(): string

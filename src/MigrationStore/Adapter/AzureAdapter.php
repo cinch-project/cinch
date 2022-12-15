@@ -4,7 +4,7 @@ namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
 use Cinch\Common\Dsn;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Directory;
 use Exception;
@@ -117,7 +117,7 @@ class AzureAdapter extends GitAdapter
 
         return new GitFile(
             $this,
-            new Location($path),
+            new StorePath($path),
             new Checksum($data['objectId']),
             $data['content']
         );

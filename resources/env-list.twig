@@ -1,7 +1,7 @@
 {% for name, env in environments %}
 {{ name ~ (name == default ? ' (default)' : '') }}
-  deploy_lock_timeout {{ env.deployTimeout }}
+  deploy_timeout {{ env.deployTimeout }}
   target '{{ env.targetDsn }}'
   history '{{ env.historyDsn }}'
-    - schema '{{ env.schema }}', table_prefix '{{ env.tablePrefix }}', auto_create_schema {{ env.autoCreateSchema ? 'true' : 'false' }}
+    - schema '{{ env.schema }}', table_prefix '{{ env.tablePrefix }}', create_schema {{ env.createSchema ? 'true' : 'false' }}
 {% endfor %}

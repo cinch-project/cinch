@@ -9,7 +9,7 @@ parameters:
         'env:remove': Cinch\Console\Commands\EnvRemove
         'migrate': Cinch\Console\Commands\Migrate
         'migrate:count': Cinch\Console\Commands\MigrateCount
-        'migrate:script': Cinch\Console\Commands\MigrateScript
+        'migrate:paths': Cinch\Console\Commands\MigrateScript
 
 services:
     _defaults:

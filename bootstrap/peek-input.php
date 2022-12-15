@@ -2,7 +2,7 @@
 
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Exception\InvalidOptionException;
-use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Filesystem\Path as PathUtils;
 
 return new class {
     public readonly string $projectDir;
@@ -51,8 +51,8 @@ return new class {
         if (!$projectName)
             throw new InvalidArgumentException('missing project argument');
 
-        $workingDir = $workingDir ? Path::makeAbsolute($workingDir, getcwd()) : getcwd();
-        $this->projectDir = Path::join($workingDir, $projectName);
+        $workingDir = $workingDir ? PathUtils::makeAbsolute($workingDir, getcwd()) : getcwd();
+        $this->projectDir = PathUtils::join($workingDir, $projectName);
         $this->command = $argv[1];
         $this->timeZone = $timeZone ?? get_system_time_zone();
         $this->envName = $envName;

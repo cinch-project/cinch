@@ -49,11 +49,11 @@ The original `COMMITTED` record remains. This is a log.
 
 ## change columns
 
-The primary key of this table is `(location, tag)`.
+The primary key of this table is `(path, tag)`.
 
-### location varchar(760)
+### path varchar(760)
 
-The accent and case-insensitive location of this change script. For the cinch CLI, this is the script path
+The accent and case-insensitive path of this change script. For the cinch CLI, this is the script path
 relative to the project. For other client applications, this could be an HTTP url, database access information,
 etc. The only requirement is that this value uniquely identify the script.
 > This is a very wide field, allowing for 760 characters (not bytes). Due to database key length

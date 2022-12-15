@@ -11,7 +11,7 @@
 {% set bigint = 'bigint' %}
 {% set release_date_type = 'date not null' %}
 {% set index_prefix = '' %}
-{% set location_pkindex = 'primary key' %}
+{% set path_pkindex = 'primary key' %}
 {% set requires_fkindex = true %}
 
 {% if db.name == 'pgsql' %}
@@ -47,8 +47,8 @@
     {% set table_options = '' %}
     {% set length = 'len' %}
     {% set restrict = 'no action' %}
-    {# location(512) is 1024 bytes (USC2), mssql PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}
-    {% set location_pkindex = 'unique' %}
+    {# path(512) is 1024 bytes (USC2), mssql PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}
+    {% set path_pkindex = 'unique' %}
     {% set collate_ascii = 'collate Latin1_General_100_BIN' %}
     {% set collate_utf8ci = 'collate Latin1_General_100_CI_AI' %}
     {% set json = 'nvarchar(max)' %}
@@ -107,7 +107,7 @@ create index {{ index_prefix }}deployment_schema_version_idx on {{ deployment|st
 
 create table {{ change }}
 (
-    {{ 'location'|nvarchar(512) }} {{ collate_utf8ci }} not null,
+    {{ 'path'|nvarchar(512) }} {{ collate_utf8ci }} not null,
     {{ 'tag'|nvarchar(64) }} not null references {{ deployment|strip_schema }} (tag) on delete {{ restrict }},
     {{ 'migrate_policy'|varchar(16) }} {{ collate_ascii }} not null,
     {{ 'status'|varchar(16) }} {{ collate_ascii }} not null,
@@ -117,8 +117,8 @@ create table {{ change }}
     {{ 'labels'|nvarchar(512) }} {{ collate_utf8ci }} null default null,
     authored_at {{ datetime }} not null,
     deployed_at {{ datetime }} not null,
-    {{ location_pkindex }} (location, tag),
-    constraint {{ 'location cannot be empty'|quote }} check (location <> ''),
+    {{ path_pkindex }} (path, tag),
+    constraint {{ 'path cannot be empty'|quote }} check (path <> ''),
     constraint {{ 'checksum must be between 32 and 64 lowercase hex'|quote }} check ({{ length }}(checksum) >= 32),
     constraint {{ 'unknown status'|quote }} check (status in ({{ "'" ~ statuses|join("','") ~ "'" }})),
     constraint {{ 'author cannot be empty'|quote }} check (author <> ''),

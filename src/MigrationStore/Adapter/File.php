@@ -3,17 +3,17 @@
 namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 
 abstract class File
 {
-    public function __construct(protected readonly Location $location)
+    public function __construct(protected readonly StorePath $path)
     {
     }
 
-    public function getLocation(): Location
+    public function getPath(): StorePath
     {
-        return $this->location;
+        return $this->path;
     }
 
     public abstract function getChecksum(): Checksum;

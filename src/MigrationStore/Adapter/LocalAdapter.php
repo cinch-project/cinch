@@ -3,7 +3,7 @@
 namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Dsn;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Cinch\LastErrorException;
@@ -11,7 +11,7 @@ use Cinch\MigrationStore\Directory;
 use Exception;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Filesystem\Path as PathUtils;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
@@ -23,11 +23,11 @@ class LocalAdapter extends MigrationStoreAdapter
 
         $dir = $dsn->getPath();
 
-        if (Path::isRelative($dir)) {
+        if (PathUtils::isRelative($dir)) {
             Assert::notEmpty($defaultBaseDir, 'migration store requires baseDir for relative URIs');
-            if (Path::isRelative($defaultBaseDir))
+            if (PathUtils::isRelative($defaultBaseDir))
                 throw new AssertException("baseDir must be absolute, found '$defaultBaseDir'");
-            $dir = Path::makeAbsolute($dir, $defaultBaseDir);
+            $dir = PathUtils::makeAbsolute($dir, $defaultBaseDir);
         }
 
         return new self(Assert::directory($dir, 'migration store directory'));
@@ -54,8 +54,8 @@ class LocalAdapter extends MigrationStoreAdapter
          * @var SplFileInfo $file
          */
         foreach ($finder as $file) {
-            $location = new Location(Path::makeRelative($file->getRealPath(), $this->storeDir));
-            $files[] = new LocalFile($file->getRealPath(), $location);
+            $path = new StorePath(PathUtils::makeRelative($file->getRealPath(), $this->storeDir));
+            $files[] = new LocalFile($file->getRealPath(), $path);
         }
 
         return $files;
@@ -82,7 +82,7 @@ class LocalAdapter extends MigrationStoreAdapter
 
     public function getFile(string $path): File
     {
-        return new LocalFile($this->resolvePath($path), new Location($path));
+        return new LocalFile($this->resolvePath($path), new StorePath($path));
     }
 
     public function getContents(string $path): string

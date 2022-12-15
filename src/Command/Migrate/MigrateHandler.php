@@ -51,9 +51,9 @@ class MigrateHandler extends DeploymentHandler
     private function iterate(): Generator
     {
         /* migrate specific scripts */
-        if ($locations = $this->options->getLocations()) {
-            foreach ($locations as $location)
-                yield $this->migrationStore->get($location);
+        if ($paths = $this->options->getPaths()) {
+            foreach ($paths as $path)
+                yield $this->migrationStore->get($path);
         }
         else {
             return $this->migrationStore->iterate();
@@ -67,7 +67,7 @@ class MigrateHandler extends DeploymentHandler
      */
     private function getStatus(Migration $migration): ChangeStatus|null
     {
-        $changes = $this->history->getChangeView()->getMostRecentChanges([$migration->location]);
+        $changes = $this->history->getChangeView()->getMostRecentChanges([$migration->path]);
 
         /* doesn't exist yet, migrate it */
         if (!$changes)
@@ -80,7 +80,7 @@ class MigrateHandler extends DeploymentHandler
             /* error: migrate once policy cannot change */
             if ($scriptChanged)
                 throw new MigrationOutOfSyncException(
-                    "once migration '$migration->location' no longer matches history");
+                    "once migration '$migration->path' no longer matches history");
 
             return null;
         }
@@ -89,7 +89,7 @@ class MigrateHandler extends DeploymentHandler
             /* error: rollbacked script cannot change */
             if ($scriptChanged)
                 throw new MigrationOutOfSyncException(
-                    "rollbacked migration '$migration->location' no longer matches history");
+                    "rollbacked migration '$migration->path' no longer matches history");
 
             return null;
         }

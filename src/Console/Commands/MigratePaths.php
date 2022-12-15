@@ -4,7 +4,7 @@ namespace Cinch\Console\Commands;
 
 use Cinch\Command\Migrate\MigrateOptions;
 use Cinch\Common\Author;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\History\DeploymentTag;
 use Cinch\Project\ProjectRepository;
 use Exception;
@@ -13,8 +13,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate:script', 'Migrates one or more migration scripts')]
-class MigrateScript extends AbstractCommand
+#[AsCommand('migrate:paths', 'Migrates one or more migration store paths')]
+class MigratePaths extends AbstractCommand
 {
     public function __construct(private readonly ProjectRepository $projectRepository)
     {
@@ -27,13 +27,13 @@ class MigrateScript extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $project = $this->projectRepository->get($this->projectId);
-        $locations = array_map(fn(string $l) => new Location($l), $input->getArgument('locations'));
+        $paths = array_map(fn(string $l) => new StorePath($l), $input->getArgument('paths'));
 
         $this->commandBus->handle(new \Cinch\Command\Migrate\Migrate(
             $project,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),
-            new MigrateOptions($locations),
+            new MigrateOptions($paths),
             $this->getEnvironmentName($project)
         ));
 
@@ -44,12 +44,12 @@ class MigrateScript extends AbstractCommand
     {
         $this
             ->addProjectArgument()
-            ->addArgument('locations', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'One or more locations')
+            ->addArgument('paths', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'One or more migration store paths')
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
-The locations are deployed in the order they are specified.
+The <info><paths></info> are deployed in the order they are specified.
 
 <code-comment># deploy 2 migrations in the given order</code-comment>
 <code>cinch migrate project-name 2022/create-pricing.php 2022/drop-old-pricing.sql --tag=pricing-2.0</code>

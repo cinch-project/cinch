@@ -3,18 +3,18 @@
 namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Exception;
 
 class GitFile extends File
 {
     public function __construct(
         private readonly GitAdapter $git,
-        Location $location,
+        StorePath $path,
         private readonly Checksum $sha,
         private string|null $content = null)
     {
-        parent::__construct($location);
+        parent::__construct($path);
     }
 
     /**
@@ -23,7 +23,7 @@ class GitFile extends File
     public function getContents(): string
     {
         if ($this->content === null)
-            $this->content = $this->git->getContents($this->location->value);
+            $this->content = $this->git->getContents($this->path->value);
         return $this->content;
     }
 

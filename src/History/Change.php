@@ -6,7 +6,7 @@ use Cinch\Common\Author;
 use Cinch\Common\Checksum;
 use Cinch\Common\Description;
 use Cinch\Common\Labels;
-use Cinch\Common\Location;
+use Cinch\Common\StorePath;
 use Cinch\Common\MigratePolicy;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -15,7 +15,7 @@ use Exception;
 class Change
 {
     public function __construct(
-        public readonly Location $location,
+        public readonly StorePath $path,
         public readonly DeploymentTag $tag,
         public readonly MigratePolicy $migratePolicy,
         public readonly ChangeStatus $status,
@@ -31,7 +31,7 @@ class Change
     public function snapshot(callable $formatDateTime): array
     {
         return [
-            'location' => $this->location->value,
+            'path' => $this->path->value,
             'tag' => $this->tag->value,
             'migrate_policy' => $this->migratePolicy->value,
             'status' => $this->status->value,
@@ -52,7 +52,7 @@ class Change
     public static function restore(array $snapshot): Change
     {
         return new Change(
-            new Location($snapshot['location']),
+            new StorePath($snapshot['path']),
             new DeploymentTag($snapshot['tag']),
             MigratePolicy::from($snapshot['migrate_policy']),
             ChangeStatus::from($snapshot['status']),
