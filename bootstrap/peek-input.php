@@ -101,12 +101,15 @@ return new class {
         $count = count($argv);
 
         /* first condition is running cinch with no arguments `cinch`, which runs symfony "list" */
-        if ($count < 2 || $argv[1] == 'help')
+        if ($count < 2 || $argv[1] == 'help' || $argv[1] == 'list')
             return true;
 
-        for ($i = 1; $i < $count; $i++)
-            if ($argv[$i] == '--help' || $this->hasShortcut($argv[$i], 'h'))
+        for ($i = 1; $i < $count; $i++) {
+            if ($argv[$i] == '--help' || $this->hasShortcut($argv[$i], 'h') ||
+                $argv[$i] == '--version' || $this->hasShortcut($argv[$i], 'V')) {
                 return true;
+            }
+        }
 
         return false;
     }

@@ -43,6 +43,6 @@ class Application extends SymfonyApplication
 
     protected function getDefaultCommands(): array
     {
-        return [new HelpCommand(), (new ListCommand())->setHidden(), new CompleteCommand()];
+        return [new HelpCommand(), new ListCommand(), new CompleteCommand()];
     }
 }
