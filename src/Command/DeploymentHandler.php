@@ -32,6 +32,7 @@ abstract class DeploymentHandler implements CommandHandler
         $this->command = DeploymentCommand::from(strtolower($command));
     }
 
+    /** Called by deploy() after opening a deployment. */
     protected abstract function run(): void;
 
     /**
@@ -69,7 +70,7 @@ abstract class DeploymentHandler implements CommandHandler
         }
     }
 
-    /**
+    /** Executes a migration (rollback or migrate) within a transaction.
      * @throws Exception
      */
     protected function execute(Migration $migration, ChangeStatus $status): void
@@ -77,8 +78,7 @@ abstract class DeploymentHandler implements CommandHandler
         $this->target->beginTransaction();
 
         try {
-            $action = $this->command->value;
-            $migration->script->$action($this->target);
+            $migration->script->{$this->command->value}($this->target);
             $this->addChange($status, $migration);
             $this->target->commit();
         }

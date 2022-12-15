@@ -22,7 +22,7 @@ abstract class AbstractCommand extends Command implements SignalableCommandInter
     /* lookup table for commonly used options: see getOptionByName() */
     private const OPTIONS = [
         'env' => [null, InputOption::VALUE_REQUIRED, 'Sets the environment [default: environments.default]'],
-        'tag' => [null, 'Deployment tag [default: version 7 UUID]'],
+        'tag' => [null, InputOption::VALUE_REQUIRED, 'Deployment tag [default: version 7 UUID]'],
         'deployer' => [null, InputOption::VALUE_REQUIRED, 'User or application performing deployment [default: current user]'],
         'migration-store' => ['m', InputOption::VALUE_REQUIRED, 'Migration Store DSN', '.'],
     ];
