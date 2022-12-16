@@ -30,14 +30,11 @@ the latest deployment record's `tag` is updated.
 
 * `tag varchar(64)` primary key for a deployment
 * `deployer varchar(64)` who initiated the deployment
-* `tag varchar(64)` tag name, can be `null`
 * `command varchar(16)` command executed: `'commit'` or `'revert'`
-* `environment json | jsonb` configuration, options, etc. of client application that executed the deployment
-* `error_code int` zero for success and non-zero when an error occurred
+* `error int` zero for success and non-zero when an error occurred
 * `error_message varchar(255)` non-empty error message when `error_code` is non-zero and `null` otherwise
-* `error_trace json | jsonb` optional application stack trace, that is always `null` when `error_code` is zero
-* `app_name varchar(64)` name of client application that executed the deployment
-* `app_version varchar(16)` version of the client application that executed the deployment, using [semantic versioning 2.0.0](https://semver.org/)
+* `error_details json | jsonb` optional application stack trace, that is always `null` when `error_code` is zero
+* `application varchar(64)` name of client application that executed the deployment
 * `started_at datetime(6) | timestamptz(6)` UTC time when deployment started
 * `ended_at datetime(6) | timestamptz(6)` UTC time when deployment ended
 

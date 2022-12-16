@@ -20,12 +20,14 @@ class RemoveEnvironmentHandler implements CommandHandler
      */
     public function handle(RemoveEnvironment $c): void
     {
+        $project = $this->projectRepository->get($c->projectId);
+
         if ($c->dropHistory) {
-            $env = $c->project->getEnvironmentMap()->get($c->name);
+            $env = $project->getEnvironmentMap()->get($c->name);
             $this->dataStoreFactory->createHistory($env)->delete();
         }
 
-        $c->project->removeEnvironment($c->name);
-        $this->projectRepository->update($c->project);
+        $project->removeEnvironment($c->name);
+        $this->projectRepository->update($project);
     }
 }

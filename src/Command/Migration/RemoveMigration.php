@@ -2,15 +2,14 @@
 
 namespace Cinch\Command\Migration;
 
-use Cinch\Common\Dsn;
-use Cinch\Common\Environment;
 use Cinch\Common\StorePath;
+use Cinch\Project\ProjectId;
 
 class RemoveMigration
 {
     public function __construct(
-        public readonly Dsn $migrationStoreDsn,
-        public readonly Environment $environment,
+        public readonly ProjectId $projectId,
+        public readonly string $envName,
         public readonly StorePath $path)
     {
     }

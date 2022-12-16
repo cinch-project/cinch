@@ -17,7 +17,7 @@ use Cinch\Project\ProjectName;
 use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Filesystem\Path as PathUtils;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Yaml\Yaml;
 
 class ConsoleProjectRepository implements ProjectRepository
@@ -29,7 +29,7 @@ class ConsoleProjectRepository implements ProjectRepository
      */
     public function get(ProjectId $id): Project
     {
-        $file = PathUtils::join($id, self::PROJECT_FILE);
+        $file = Path::join($id, self::PROJECT_FILE);
 
         if (!file_exists($file))
             throw new Exception("project '$id' does not exist");
@@ -57,7 +57,7 @@ class ConsoleProjectRepository implements ProjectRepository
 
         /* create project directory */
         $fs = new Filesystem();
-        $fs->mkdir(PathUtils::join($projectDir, 'log')); // creates all parents
+        $fs->mkdir(Path::join($projectDir, 'log')); // creates all parents
 
         try {
             $this->update($project);
@@ -74,7 +74,7 @@ class ConsoleProjectRepository implements ProjectRepository
     public function update(Project $project): void
     {
         $state = Yaml::dump($project->snapshot(), 100, flags: Yaml::DUMP_OBJECT_AS_MAP);
-        $file = PathUtils::join($project->getId(), self::PROJECT_FILE);
+        $file = Path::join($project->getId(), self::PROJECT_FILE);
         if (@file_put_contents($file, $state) === false)
             throw new LastErrorException();
     }

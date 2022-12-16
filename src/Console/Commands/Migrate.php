@@ -5,32 +5,25 @@ namespace Cinch\Console\Commands;
 use Cinch\Command\Migrate\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\History\DeploymentTag;
-use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate', 'Migrates all eligible migrations')]
-class Migrate extends AbstractCommand
+class Migrate extends ConsoleCommand
 {
-    public function __construct(private readonly ProjectRepository $projectRepository)
-    {
-        parent::__construct();
-    }
-
     /**
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $this->projectRepository->get($this->projectId);
-        $this->commandBus->handle(new \Cinch\Command\Migrate\Migrate(
-            $project,
+        $this->dispatch(new \Cinch\Command\Migrate\Migrate(
+            $this->projectId,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),
             new MigrateOptions(),
-            $this->getEnvironmentName($project)
+            $this->envName
         ));
 
         // cinch create <project> <target>
@@ -63,13 +56,13 @@ class Migrate extends AbstractCommand
     protected function configure()
     {
         $this
-            ->addProjectArgument()
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
 <code-comment># migrate all eligible migrations</code-comment>
 <code>cinch migrate project-name --tag=v12.9.3</code>
-HELP);
+HELP
+            );
     }
 }

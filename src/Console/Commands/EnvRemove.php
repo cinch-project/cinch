@@ -3,7 +3,6 @@
 namespace Cinch\Console\Commands;
 
 use Cinch\Command\Environment\RemoveEnvironment;
-use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,26 +11,20 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('env:remove', 'Removes an environment')]
-class EnvRemove extends AbstractCommand
+class EnvRemove extends ConsoleCommand
 {
-    public function __construct(private readonly ProjectRepository $projectRepository)
-    {
-        parent::__construct();
-    }
-
     /**
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $this->projectRepository->get($this->projectId);
-
         $name = $input->getArgument('name');
         $drop = $input->getOption('drop-history');
 
         $dropMsg = $drop ? 'and dropping history schema' : '';
         $this->logger->info("deleting environment $name $dropMsg");
-        $this->commandBus->handle(new RemoveEnvironment($project, $name, $drop));
+
+        $this->dispatch(new RemoveEnvironment($this->projectId, $name, $drop));
 
         return self::SUCCESS;
     }
@@ -45,7 +38,6 @@ class EnvRemove extends AbstractCommand
     protected function configure()
     {
         $this
-            ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
             ->addOption('drop-history', 'D', InputOption::VALUE_NONE, 'Drop history schema');
     }

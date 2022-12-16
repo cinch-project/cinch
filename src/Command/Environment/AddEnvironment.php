@@ -3,15 +3,14 @@
 namespace Cinch\Command\Environment;
 
 use Cinch\Common\Environment;
-use Cinch\Project\Project;
+use Cinch\Project\ProjectId;
 
 class AddEnvironment
 {
     public function __construct(
-        public readonly Project $project,
-        public readonly string $name,
-        public readonly Environment $environment
-    )
+        public readonly ProjectId $projectId,
+        public readonly string $newName,
+        public readonly Environment $newEnvironment)
     {
     }
 }

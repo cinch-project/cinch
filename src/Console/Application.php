@@ -3,7 +3,6 @@
 namespace Cinch\Console;
 
 use Symfony\Component\Console\Application as SymfonyApplication;
-use Symfony\Component\Console\Command\CompleteCommand;
 use Symfony\Component\Console\Command\HelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
@@ -36,13 +35,24 @@ class Application extends SymfonyApplication
             new InputOption('dry-run', null, InputOption::VALUE_NONE, 'Performs all actions and logging without executing [default: off]'),
             new InputOption('help', 'h', InputOption::VALUE_NONE, 'Display help for the given command'),
             new InputOption('quiet', 'q', InputOption::VALUE_NONE, 'Do not output any message'),
-            new InputOption('version', 'V', InputOption::VALUE_NONE, 'Display this application version'),
-            new InputOption('ansi', '', InputOption::VALUE_NEGATABLE, 'Force (or disable --no-ansi) ANSI output', null)
+            new InputOption('version', 'V', InputOption::VALUE_NONE, 'Display this application version')
         ]);
     }
 
     protected function getDefaultCommands(): array
     {
-        return [new HelpCommand(), new ListCommand(), new CompleteCommand()];
+        return [
+            new HelpCommand(), // symfony
+            new ListCommand(), // symfony
+            new Commands\Create(),
+            new Commands\Env(),
+            new Commands\EnvAdd(),
+            new Commands\EnvRemove(),
+            new Commands\Migrate(),
+            new Commands\MigrateCount(),
+            new Commands\MigratePaths(),
+            new Commands\MigrationAdd(),
+            new Commands\MigrationRemove()
+        ];
     }
 }

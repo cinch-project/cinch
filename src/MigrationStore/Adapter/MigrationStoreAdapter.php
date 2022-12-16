@@ -4,7 +4,7 @@ namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\MigrationStore\Directory;
 use Exception;
-use Symfony\Component\Filesystem\Path as PathUtils;
+use Symfony\Component\Filesystem\Path;
 
 abstract class MigrationStoreAdapter
 {
@@ -46,6 +46,6 @@ abstract class MigrationStoreAdapter
 
     protected function resolvePath(string $path): string
     {
-        return PathUtils::join($this->storeDir, trim($path, '/'));
+        return Path::join($this->storeDir, trim($path, '/'));
     }
 }

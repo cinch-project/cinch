@@ -20,7 +20,7 @@ class MigrateHandler extends DeploymentHandler
     public function handle(Migrate $c): void
     {
         $this->options = $c->options;
-        $this->prepare($c->project, $c->envName);
+        $this->prepare($c->projectId, $c->envName);
         $this->deploy($c->tag, $c->deployer);
     }
 

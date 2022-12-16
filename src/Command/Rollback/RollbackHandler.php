@@ -17,7 +17,7 @@ class RollbackHandler extends DeploymentHandler
      */
     public function handle(Rollback $c): void
     {
-        $this->prepare($c->project, $c->envName);
+        $this->prepare($c->projectId, $c->envName);
         $view = $this->history->getChangeView();
 
         $this->changes = match ($c->rollbackBy->type) {

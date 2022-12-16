@@ -3,7 +3,6 @@
 namespace Cinch\Console\Commands;
 
 use Cinch\Command\Environment\AddEnvironment;
-use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,26 +10,25 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('env:add', 'Adds an environment')]
-class EnvAdd extends AbstractCommand
+class EnvAdd extends ConsoleCommand
 {
     use AddsEnvironment;
-
-    public function __construct(private readonly ProjectRepository $projectRepository)
-    {
-        parent::__construct();
-    }
 
     /**
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $this->projectRepository->get($this->projectId);
-        $name = $input->getArgument('name');
-        $environment = $this->getEnvironmentFromInput($input, $project->getName());
+        $project = $input->getArgument('project');
+        $newEnvName = $input->getArgument('name');
 
-        $this->logger->info("adding environment $name to project {$project->getName()}");
-        $this->commandBus->handle(new AddEnvironment($project, $name, $environment));
+        $this->logger->info("adding environment $newEnvName to project $project");
+
+        $this->dispatch(new AddEnvironment(
+            $this->projectId,
+            $newEnvName,
+            $this->getEnvironmentFromInput($input)
+        ));
 
         return self::SUCCESS;
     }
@@ -44,8 +42,8 @@ class EnvAdd extends AbstractCommand
     protected function configure()
     {
         $this
-            ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
+            ->addTargetArgument()
             ->addEnvironmentOptions();
     }
 }

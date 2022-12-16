@@ -14,7 +14,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use Symfony\Component\Filesystem\Path as PathUtils;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 
 abstract class GitAdapter extends MigrationStoreAdapter
@@ -133,7 +133,7 @@ abstract class GitAdapter extends MigrationStoreAdapter
 
         foreach ($tree as $entry) {
             /* make relative to storeDir */
-            $path = substr(ltrim(PathUtils::normalize($entry[$pathKey]), '/'), $this->storeDirLen);
+            $path = substr(ltrim(Path::normalize($entry[$pathKey]), '/'), $this->storeDirLen);
 
             if ($this->accept($path, $entry[$typeKey], $exclude))
                 $files[] = new GitFile($this, new StorePath($path), new Checksum($entry[$shaKey]));

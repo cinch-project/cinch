@@ -20,7 +20,7 @@ class Labels
 
     public function add(string $value): self
     {
-        /* allow any unicode letter or number and basic separators: hyphen, underscore, period, slash */
+        /* any unicode letter or number and hyphens, underscores, periods, forward slashes */
         Assert::regex(mb_strtolower($value, 'UTF-8'), '~^[\-_./\p{L}\p{N}]{1,64}$~u', 'label');
 
         if (!$this->has($value))

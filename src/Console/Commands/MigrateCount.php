@@ -6,7 +6,6 @@ use Cinch\Command\Migrate\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\Component\Assert\Assert;
 use Cinch\History\DeploymentTag;
-use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -14,27 +13,21 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate:count', 'Migrates the next count migrations')]
-class MigrateCount extends AbstractCommand
+class MigrateCount extends ConsoleCommand
 {
-    public function __construct(private readonly ProjectRepository $projectRepository)
-    {
-        parent::__construct();
-    }
-
     /**
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $this->projectRepository->get($this->projectId);
         $count = (int) Assert::digit($input->getArgument('count'), 'count argument');
 
-        $this->commandBus->handle(new \Cinch\Command\Migrate\Migrate(
-            $project,
+        $this->dispatch(new \Cinch\Command\Migrate\Migrate(
+            $this->projectId,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),
             new MigrateOptions($count),
-            $this->getEnvironmentName($project)
+            $this->envName
         ));
 
         return self::SUCCESS;
@@ -43,7 +36,6 @@ class MigrateCount extends AbstractCommand
     protected function configure()
     {
         $this
-            ->addProjectArgument()
             ->addArgument('number', InputArgument::REQUIRED, 'The number of eligible migrations to migrate')
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
@@ -54,6 +46,7 @@ policy of the migration store's directory configuration.
 
 <code-comment># limit to the first 4 eligible migrations</code-comment>
 <code>cinch migrate project-name 4 --tag=hotfix-72631</code>
-HELP);
+HELP
+            );
     }
 }

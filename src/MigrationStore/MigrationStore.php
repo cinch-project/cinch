@@ -13,7 +13,7 @@ use DateTimeInterface;
 use Exception;
 use Generator;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use Symfony\Component\Filesystem\Path as PathUtils;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 use Symfony\Component\Yaml\Yaml;
 use Twig\Environment as Twig;
@@ -47,7 +47,7 @@ class MigrationStore
         if (!$this->exists()) {
             $this->storeAdapter->addFile(
                 self::FILENAME,
-                slurp(PathUtils::join($this->resourceDir, self::FILENAME)),
+                slurp(Path::join($this->resourceDir, self::FILENAME)),
                 'created ' . self::FILENAME
             );
 
@@ -131,7 +131,7 @@ class MigrationStore
         if ($dir)
             return $dir;
 
-        throw new DirectoryNotFoundException("Cannot find directory for \"$path\"");
+        throw new DirectoryNotFoundException("Cannot find directory for \"$storePath\"");
     }
 
     /**

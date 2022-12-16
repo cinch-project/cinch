@@ -4,11 +4,14 @@ namespace Cinch\Command\Migration;
 
 use Cinch\Command\CommandHandler;
 use Cinch\Command\DataStoreFactory;
+use Cinch\Project\ProjectRepository;
 use Exception;
 
 class RemoveMigrationHandler implements CommandHandler
 {
-    public function __construct(private readonly DataStoreFactory $dataStoreFactory)
+    public function __construct(
+        private readonly DataStoreFactory $dataStoreFactory,
+        private readonly ProjectRepository $projectRepository)
     {
     }
 
@@ -17,8 +20,10 @@ class RemoveMigrationHandler implements CommandHandler
      */
     public function handle(RemoveMigration $c): void
     {
+        $project = $this->projectRepository->get($c->projectId);
+
         $changes = $this->dataStoreFactory
-            ->createHistory($c->environment)
+            ->createHistory($project->getEnvironmentMap()->get($c->envName))
             ->getChangeView()
             ->getMostRecentChanges([$c->path]);
 
@@ -31,6 +36,7 @@ class RemoveMigrationHandler implements CommandHandler
                 $changes[0]->tag->value,
             ));
 
-        $this->dataStoreFactory->createMigrationStore($c->migrationStoreDsn)->remove($c->path);
+        $dsn = $this->projectRepository->get($c->projectId)->getMigrationStoreDsn();
+        $this->dataStoreFactory->createMigrationStore($dsn)->remove($c->path);
     }
 }

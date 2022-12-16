@@ -5,9 +5,9 @@ namespace Cinch\Console\Commands;
 use Cinch\Command\Migration\AddMigration;
 use Cinch\Common\Author;
 use Cinch\Common\Description;
+use Cinch\Common\Labels;
 use Cinch\Common\StorePath;
 use Cinch\Common\MigratePolicy;
-use Cinch\Project\ProjectRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
@@ -18,25 +18,21 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migration:add', 'Adds a migration')]
-class MigrationAdd extends AbstractCommand
+class MigrationAdd extends ConsoleCommand
 {
-    public function __construct(private readonly ProjectRepository $projectRepository)
-    {
-        parent::__construct();
-    }
-
     /**
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->commandBus->handle(new AddMigration(
-            $this->projectRepository->get($this->projectId)->getMigrationStoreDsn(),
+        $this->dispatch(new AddMigration(
+            $this->projectId,
             new StorePath($input->getArgument('path')),
             MigratePolicy::from($input->getOption('migrate-policy')),
             new Author($input->getOption('author') ?: get_system_user()),
             new DateTimeImmutable(timezone: new DateTimeZone('UTC')),
-            new Description($input->getArgument('description'))
+            new Description($input->getArgument('description')),
+            new Labels($input->getOption('label'))
         ));
 
         return self::SUCCESS;
@@ -49,11 +45,26 @@ class MigrationAdd extends AbstractCommand
 
         // cinch add <project> <path> <description> --author= --migrate-policy=
         $this
-            ->addProjectArgument()
-            ->addArgument('path', InputArgument::REQUIRED, 'Migration store path (relative to migration store root)')
+            ->addArgument('path', InputArgument::REQUIRED, 'Migration store path (relative to store root)')
             ->addArgument('description', InputArgument::REQUIRED, 'Migration description')
             ->addOption('migrate-policy', 'm', InputOption::VALUE_REQUIRED, "Migrate policy: $policies", $defaultPolicy)
             ->addOption('author', 'a', InputOption::VALUE_REQUIRED, 'Migration author [default: current system user]')
-            ->addOptionByName('env');
+            ->addOption('label', 'l', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'One or more labels')
+            ->addOptionByName('env')
+            ->setHelp(<<<HELP
+This command adds skeleton migration to the migration store. You cannot add a pre-existing migration 
+using this command. The <info><path></info> must be relative and end with a .sql or .php extension. Directories 
+will automatically be created. 
+
+<code-comment># adds an 'onchange' migration</code-comment>
+<code>cinch add project-name alter-user-table.sql "add phone column" --migrate-policy=onchange</code>
+
+<code-comment># adds a migration with two labels (migrate-policy set to default 'once')</code-comment>
+<code>cinch add project-name 2022/05/alter-user-table.php "add phone column" -l label0 -l label1</code>
+
+After creation, the migration can be edited or removed. Once migrated, only 'onchange' and 'always'
+migrations can be edited and no migration can be removed. 'always' and 'onchange' migrations can 
+change their policies to 'never', which means they will never run again.
+HELP);
     }
 }

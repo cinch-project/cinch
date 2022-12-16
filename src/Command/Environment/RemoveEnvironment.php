@@ -2,12 +2,12 @@
 
 namespace Cinch\Command\Environment;
 
-use Cinch\Project\Project;
+use Cinch\Project\ProjectId;
 
 class RemoveEnvironment
 {
     public function __construct(
-        public readonly Project $project,
+        public readonly ProjectId $projectId,
         public readonly string $name,
         public readonly bool $dropHistory)
     {

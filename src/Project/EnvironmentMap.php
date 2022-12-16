@@ -32,6 +32,9 @@ class EnvironmentMap
      */
     public function add(string $name, Environment $env): EnvironmentMap
     {
+        if (!$name)
+            throw new Exception("environment name cannot be empty");
+
         if ($this->has($name))
             throw new Exception("cannot add environment '$name': already exists");
 
@@ -64,12 +67,17 @@ class EnvironmentMap
     }
 
     /**
+     * @param string $name if empty, the default is returned
      * @throws Exception
      */
     public function get(string $name): Environment
     {
+        if (!$name)
+            return $this->getDefault();
+
         if (!$this->has($name))
             throw new Exception("environment '$name' does not exist");
+
         return $this->map[$name];
     }
 

@@ -14,6 +14,8 @@ use Cinch\History\History;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\Project\Project;
+use Cinch\Project\ProjectId;
+use Cinch\Project\ProjectRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
@@ -26,7 +28,9 @@ abstract class DeploymentHandler implements CommandHandler
     private Deployment $deployment;
     private DeploymentCommand $command;
 
-    public function __construct(private readonly DataStoreFactory $dataStoreFactory)
+    public function __construct(
+        private readonly DataStoreFactory $dataStoreFactory,
+        private readonly ProjectRepository $projectRepository)
     {
         $command = substr(classname(static::class), 0, -strlen('Handler'));
         $this->command = DeploymentCommand::from(strtolower($command));
@@ -38,8 +42,9 @@ abstract class DeploymentHandler implements CommandHandler
     /**
      * @throws Exception
      */
-    protected function prepare(Project $project, string $envName): void
+    protected function prepare(ProjectId $projectId, string $envName): void
     {
+        $project = $this->projectRepository->get($projectId);
         $environment = $project->getEnvironmentMap()->get($envName);
         $this->target = $this->dataStoreFactory->createSession($environment->targetDsn);
         $this->migrationStore = $this->dataStoreFactory->createMigrationStore($project->getMigrationStoreDsn());

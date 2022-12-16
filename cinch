@@ -2,14 +2,18 @@
 <?php
 
 use Cinch\Console\Application;
-use Symfony\Component\Console\CommandLoader\ContainerCommandLoader;
+use Symfony\Component\Dotenv\Dotenv;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
 if (PHP_SAPI !== 'cli')
     throw new RuntimeException("cinch CLI only supports 'cli' SAPI");
 
-$container = require_once __DIR__ . '/bootstrap/container.php';
-$app = $container->get(Application::class);
-$app->setCommandLoader(new ContainerCommandLoader($container, $container->getParameter('commands')));
+/* Use .env.local if it exists, since build-cli.php only bundles .env.prod in phar. */
+$dotEnv = (new Dotenv())->usePutenv();
+$env = file_exists(".env.local") ? 'local' : 'prod';
+$dotEnv->populate(['CINCH_ENV' => $env], overrideExistingVars: true);
+$dotEnv->load(".env.$env");
+
+$app = new Application(getenv('CINCH_VERSION'));
 $app->run();

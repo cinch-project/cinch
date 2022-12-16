@@ -11,7 +11,7 @@ use Cinch\MigrationStore\Directory;
 use Exception;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Filesystem\Path as PathUtils;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
@@ -23,11 +23,11 @@ class LocalAdapter extends MigrationStoreAdapter
 
         $dir = $dsn->getPath();
 
-        if (PathUtils::isRelative($dir)) {
+        if (Path::isRelative($dir)) {
             Assert::notEmpty($defaultBaseDir, 'migration store requires baseDir for relative URIs');
-            if (PathUtils::isRelative($defaultBaseDir))
+            if (Path::isRelative($defaultBaseDir))
                 throw new AssertException("baseDir must be absolute, found '$defaultBaseDir'");
-            $dir = PathUtils::makeAbsolute($dir, $defaultBaseDir);
+            $dir = Path::makeAbsolute($dir, $defaultBaseDir);
         }
 
         return new self(Assert::directory($dir, 'migration store directory'));
@@ -54,7 +54,7 @@ class LocalAdapter extends MigrationStoreAdapter
          * @var SplFileInfo $file
          */
         foreach ($finder as $file) {
-            $path = new StorePath(PathUtils::makeRelative($file->getRealPath(), $this->storeDir));
+            $path = new StorePath(Path::makeRelative($file->getRealPath(), $this->storeDir));
             $files[] = new LocalFile($file->getRealPath(), $path);
         }
 

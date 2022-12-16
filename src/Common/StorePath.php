@@ -4,7 +4,7 @@ namespace Cinch\Common;
 
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
-use Symfony\Component\Filesystem\Path as PathUtils;
+use Symfony\Component\Filesystem\Path;
 
 class StorePath extends SingleValue
 {
@@ -14,7 +14,7 @@ class StorePath extends SingleValue
 
     public function __construct(string $path)
     {
-        if (PathUtils::isAbsolute($path))
+        if (Path::isAbsolute($path))
             throw new AssertException("path must be a relative path, found $path");
 
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
