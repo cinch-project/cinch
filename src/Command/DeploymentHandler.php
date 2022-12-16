@@ -4,6 +4,7 @@ namespace Cinch\Command;
 
 use Cinch\Common\Author;
 use Cinch\Database\Session;
+use Cinch\Database\SessionFactory;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
 use Cinch\History\Deployment;
@@ -11,9 +12,10 @@ use Cinch\History\DeploymentCommand;
 use Cinch\History\DeploymentError;
 use Cinch\History\DeploymentTag;
 use Cinch\History\History;
+use Cinch\History\HistoryFactory;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationStore;
-use Cinch\Project\Project;
+use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectId;
 use Cinch\Project\ProjectRepository;
 use DateTimeImmutable;
@@ -29,7 +31,9 @@ abstract class DeploymentHandler implements CommandHandler
     private DeploymentCommand $command;
 
     public function __construct(
-        private readonly DataStoreFactory $dataStoreFactory,
+        private readonly SessionFactory $sessionFactory,
+        private readonly MigrationStoreFactory $migrationStoreFactory,
+        private readonly HistoryFactory $historyFactory,
         private readonly ProjectRepository $projectRepository)
     {
         $command = substr(classname(static::class), 0, -strlen('Handler'));
@@ -46,9 +50,9 @@ abstract class DeploymentHandler implements CommandHandler
     {
         $project = $this->projectRepository->get($projectId);
         $environment = $project->getEnvironmentMap()->get($envName);
-        $this->target = $this->dataStoreFactory->createSession($environment->targetDsn);
-        $this->migrationStore = $this->dataStoreFactory->createMigrationStore($project->getMigrationStoreDsn());
-        $this->history = $this->dataStoreFactory->createHistory($environment);
+        $this->target = $this->sessionFactory->create($environment->targetDsn);
+        $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
+        $this->history = $this->historyFactory->create($environment);
     }
 
     /**

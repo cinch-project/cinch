@@ -23,12 +23,7 @@ class EnvAdd extends ConsoleCommand
         $newEnvName = $input->getArgument('name');
 
         $this->logger->info("adding environment $newEnvName to project $project");
-
-        $this->dispatch(new AddEnvironment(
-            $this->projectId,
-            $newEnvName,
-            $this->getEnvironmentFromInput($input)
-        ));
+        $this->dispatch(new AddEnvironment($this->projectId, $newEnvName, $this->getEnvironmentFromInput($input)));
 
         return self::SUCCESS;
     }

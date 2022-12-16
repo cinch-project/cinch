@@ -3,14 +3,16 @@
 namespace Cinch\Command\Environment;
 
 use Cinch\Command\CommandHandler;
-use Cinch\Command\DataStoreFactory;
+use Cinch\Database\SessionFactory;
+use Cinch\History\HistoryFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
 class AddEnvironmentHandler implements CommandHandler
 {
     public function __construct(
-        private readonly DataStoreFactory $dataStoreFactory,
+        private readonly SessionFactory $sessionFactory,
+        private readonly HistoryFactory $historyFactory,
         private readonly ProjectRepository $projectRepository)
     {
     }
@@ -26,10 +28,10 @@ class AddEnvironmentHandler implements CommandHandler
         $project->addEnvironment($c->newName, $c->newEnvironment);
 
         /* test connection */
-        $this->dataStoreFactory->createSession($c->newEnvironment->targetDsn)->close();
+        $this->sessionFactory->create($c->newEnvironment->targetDsn)->close();
 
         /* fails if history exists. can't share history between environments or projects */
-        $history = $this->dataStoreFactory->createHistory($c->newEnvironment);
+        $history = $this->historyFactory->create($c->newEnvironment);
         $history->create();
 
         try {

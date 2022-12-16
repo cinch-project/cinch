@@ -20,7 +20,7 @@ class MigratePaths extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $paths = array_map(fn(string $l) => new StorePath($l), $input->getArgument('paths'));
+        $paths = array_map(fn(string $p) => new StorePath($p), $input->getArgument('paths'));
 
         $this->dispatch(new \Cinch\Command\Migrate\Migrate(
             $this->projectId,

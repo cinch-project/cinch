@@ -15,6 +15,7 @@ class Env extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+
         $map = $this->getProject()->getEnvironmentMap();
         $default = $map->getDefaultName();
 

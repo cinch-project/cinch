@@ -18,12 +18,8 @@ class MigrationRemove extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->dispatch(new RemoveMigration(
-            $this->projectId,
-            $this->envName,
-            new StorePath($input->getArgument('path'))
-        ));
-
+        $path = new StorePath($input->getArgument('path'));
+        $this->dispatch(new RemoveMigration($this->projectId, $this->envName, $path));
         return self::SUCCESS;
     }
 
@@ -36,6 +32,7 @@ class MigrationRemove extends ConsoleCommand
             ->setHelp(<<<HELP
 This command cannot remove migrations that have already been deployed. For migrations with an 'always' 
 or 'onchange' migrate policy, update their policy to 'never'. 
-HELP);
+HELP
+            );
     }
 }

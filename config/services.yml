@@ -10,61 +10,24 @@ services:
         Symfony\Component\EventDispatcher\EventSubscriberInterface:
             tags: [ 'subscriber' ]
 
-    Cinch\:
+    Cinch\Command\:
         lazy: true
-        resource: '../src'
-        exclude: [ '../src/helpers.php' ]
+        resource: '../src/Command'
 
-    #    Cinch\Console\Application:
-    #        public: true
-    #        arguments:
-    #            $version: '%cinch.version%'
-
-    # log.file points to a temp file during create. inject path so it can be moved to projectDir after create
-    #    Cinch\Console\Commands\Create:
-    #        arguments:
-    #            $tempLogFile: '%log.file%'
-
-    #    log.time_zone:
-    #        class: DateTimeZone
-    #        arguments:
-    #            - '%log.time_zone%'
-
-    #   log.formatter:
-    #       class: Monolog\Formatter\LineFormatter
-    #       arguments:
-    #           $dateFormat: 'Y-m-d\TH:i:sO'
-    #           $ignoreEmptyContextAndExtra: true
-
-    #    log.stream_handler:
-    #        public: true
-    #        class: Monolog\Handler\StreamHandler
-    #        arguments:
-    #            $stream: '%log.file%'
-    #        calls:
-    #            -   setFormatter: [ '@log.formatter' ]
-
-    #    log.noop_handler:
-    #        public: true
-    #        class: Monolog\Handler\NoopHandler
-
-    #    logger:
-    #        public: true
-    #        class: Monolog\Logger
-    #        arguments:
-    #            $name: '%project.name%'
-    #            $handlers:
-    #                - "@=parameter('log.enabled') ? service('log.stream_handler') : service('log.noop_handler')"
-    #            $timezone: '@log.time_zone'
+    Cinch\MigrationStore\Script\:
+        lazy: true
+        resource: '../src/MigrationStore/Script'
 
     Psr\Log\LoggerInterface: '@logger'
+
+    Cinch\Database\SessionFactory: ~
 
     Cinch\Console\ConsoleProjectRepository: ~
     Cinch\Project\ProjectRepository:
         public: true
         class: Cinch\Console\ConsoleProjectRepository
 
-    Cinch\Command\DataStoreFactory:
+    Cinch\History\HistoryFactory:
         arguments:
             $application: 'cinch-cli/%cinch.version%'
 
@@ -110,3 +73,57 @@ services:
         public: true
         arguments:
             - [ '@League\Tactician\Handler\CommandHandlerMiddleware' ]
+
+
+
+    #    Cinch\:
+    #        lazy: true
+    #        resource: '../src'
+    #        exclude:
+    #            - '../src/helpers.php'
+    #            - '../src/Common/'
+    #            - '../src/Component/'
+    #            - '../src/Console/'
+    #            - '../src/Project/'
+
+    #    Cinch\Console\Application:
+    #        public: true
+    #        arguments:
+    #            $version: '%cinch.version%'
+
+    # log.file points to a temp file during create. inject path so it can be moved to projectDir after create
+    #    Cinch\Console\Commands\Create:
+    #        arguments:
+    #            $tempLogFile: '%log.file%'
+
+    #    log.time_zone:
+    #        class: DateTimeZone
+    #        arguments:
+    #            - '%log.time_zone%'
+
+    #   log.formatter:
+    #       class: Monolog\Formatter\LineFormatter
+    #       arguments:
+    #           $dateFormat: 'Y-m-d\TH:i:sO'
+    #           $ignoreEmptyContextAndExtra: true
+
+    #    log.stream_handler:
+    #        public: true
+    #        class: Monolog\Handler\StreamHandler
+    #        arguments:
+    #            $stream: '%log.file%'
+    #        calls:
+    #            -   setFormatter: [ '@log.formatter' ]
+
+    #    log.noop_handler:
+    #        public: true
+    #        class: Monolog\Handler\NoopHandler
+
+    #    logger:
+    #        public: true
+    #        class: Monolog\Logger
+    #        arguments:
+    #            $name: '%project.name%'
+    #            $handlers:
+    #                - "@=parameter('log.enabled') ? service('log.stream_handler') : service('log.noop_handler')"
+    #            $timezone: '@log.time_zone'

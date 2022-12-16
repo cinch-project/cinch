@@ -3,14 +3,14 @@
 namespace Cinch\Command\Environment;
 
 use Cinch\Command\CommandHandler;
-use Cinch\Command\DataStoreFactory;
+use Cinch\History\HistoryFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
 class RemoveEnvironmentHandler implements CommandHandler
 {
     public function __construct(
-        private readonly DataStoreFactory $dataStoreFactory,
+        private readonly HistoryFactory $historyFactory,
         private readonly ProjectRepository $projectRepository)
     {
     }
@@ -24,7 +24,7 @@ class RemoveEnvironmentHandler implements CommandHandler
 
         if ($c->dropHistory) {
             $env = $project->getEnvironmentMap()->get($c->name);
-            $this->dataStoreFactory->createHistory($env)->delete();
+            $this->historyFactory->create($env)->delete();
         }
 
         $project->removeEnvironment($c->name);

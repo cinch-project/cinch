@@ -3,14 +3,18 @@
 namespace Cinch\Command\Project;
 
 use Cinch\Command\CommandHandler;
-use Cinch\Command\DataStoreFactory;
+use Cinch\Database\SessionFactory;
+use Cinch\History\HistoryFactory;
+use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
 class CreateProjectHandler implements CommandHandler
 {
     public function __construct(
-        private readonly DataStoreFactory $dataStoreFactory,
+        private readonly MigrationStoreFactory $migrationStoreFactory,
+        private readonly SessionFactory $sessionFactory,
+        private readonly HistoryFactory $historyFactory,
         private readonly ProjectRepository $projectRepository)
     {
     }
@@ -23,17 +27,17 @@ class CreateProjectHandler implements CommandHandler
         $rollback = [];
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
 
-        $this->dataStoreFactory->createSession($environment->targetDsn)->close(); // test connection
+        $this->sessionFactory->create($environment->targetDsn)->close(); // test connection
 
         try {
             $this->projectRepository->add($c->project);
             $rollback['project directory'] = fn() => $this->projectRepository->remove($c->project->getId());
 
-            $migrationStore = $this->dataStoreFactory->createMigrationStore($c->project->getMigrationStoreDsn());
+            $migrationStore = $this->migrationStoreFactory->create($c->project->getMigrationStoreDsn());
             $migrationStore->createConfig();
             $rollback['migration store'] = $migrationStore->deleteConfig(...);
 
-            $this->dataStoreFactory->createHistory($environment)->create();
+            $this->historyFactory->create($environment)->create();
         }
         catch (Exception $e) {
             foreach ($rollback as $name => $action) {
