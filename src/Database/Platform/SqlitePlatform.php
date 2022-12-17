@@ -47,7 +47,7 @@ class SqlitePlatform implements Platform
     public function lockSession(Session $session, string $name, int $timeout): bool
     {
         if ($this->lockStream) {
-            // TODO: $this->logger->debug()
+            // TODO: debug()
             fprintf(STDERR, "warning: attempt to lock $name while it is already locked\n");
             return true;
         }
@@ -94,7 +94,7 @@ class SqlitePlatform implements Platform
             $this->lockStream = null;
         }
         else {
-            // TODO: $this->logger->debug()
+            // TODO: debug()
             fprintf(STDERR, "locked file is '$path', given wrong name '$name'\n");
         }
     }

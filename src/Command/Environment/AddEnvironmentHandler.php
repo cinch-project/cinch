@@ -23,12 +23,8 @@ class AddEnvironmentHandler implements CommandHandler
     public function handle(AddEnvironment $c): void
     {
         $project = $this->projectRepository->get($c->projectId);
-
-        /* fails if $name exists */
         $project->addEnvironment($c->newName, $c->newEnvironment);
-
-        /* test connection */
-        $this->sessionFactory->create($c->newEnvironment->targetDsn)->close();
+        $this->sessionFactory->create($c->newEnvironment->targetDsn)->close(); /* test connection */
 
         /* fails if history exists. can't share history between environments or projects */
         $history = $this->historyFactory->create($c->newEnvironment);
