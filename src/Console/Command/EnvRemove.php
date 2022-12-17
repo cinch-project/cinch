@@ -1,29 +1,30 @@
 <?php
 
-namespace Cinch\Console\Commands;
+namespace Cinch\Console\Command;
 
-use Cinch\Command\Environment\AddEnvironment;
+use Cinch\Command\Environment\RemoveEnvironment;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('env:add', 'Adds an environment')]
-class EnvAdd extends ConsoleCommand
+#[AsCommand('env:remove', 'Removes an environment')]
+class EnvRemove extends ConsoleCommand
 {
-    use AddsEnvironment;
-
     /**
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $input->getArgument('project');
-        $newEnvName = $input->getArgument('name');
+        $name = $input->getArgument('name');
+        $drop = $input->getOption('drop-history');
 
-        $this->logger->info("adding environment $newEnvName to project $project");
-        $this->dispatch(new AddEnvironment($this->projectId, $newEnvName, $this->getEnvironmentFromInput($input)));
+        $dropMsg = $drop ? 'and dropping history schema' : '';
+        $this->io->info("deleting environment $name $dropMsg");
+
+        $this->executeCommand(new RemoveEnvironment($this->projectId, $name, $drop));
 
         return self::SUCCESS;
     }
@@ -38,7 +39,6 @@ class EnvAdd extends ConsoleCommand
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
-            ->addTargetArgument()
-            ->addEnvironmentOptions();
+            ->addOption('drop-history', 'D', InputOption::VALUE_NONE, 'Drop history schema');
     }
 }

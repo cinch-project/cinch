@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console\Commands;
+namespace Cinch\Console\Command;
 
 use Cinch\Command\Migration\RemoveMigration;
 use Cinch\Common\StorePath;
@@ -19,7 +19,7 @@ class MigrationRemove extends ConsoleCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $path = new StorePath($input->getArgument('path'));
-        $this->dispatch(new RemoveMigration($this->projectId, $this->envName, $path));
+        $this->executeCommand(new RemoveMigration($this->projectId, $this->envName, $path));
         return self::SUCCESS;
     }
 

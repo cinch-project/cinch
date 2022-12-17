@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console\Commands;
+namespace Cinch\Console\Command;
 
 use Cinch\Common\Dsn;
 use Cinch\Common\Environment;

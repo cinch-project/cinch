@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console\Commands;
+namespace Cinch\Console\Command;
 
 use Cinch\Command\Migrate\MigrateOptions;
 use Cinch\Common\Author;
@@ -18,7 +18,7 @@ class Migrate extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->dispatch(new \Cinch\Command\Migrate\Migrate(
+        $this->executeCommand(new \Cinch\Command\Migrate\Migrate(
             $this->projectId,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),
@@ -60,8 +60,8 @@ class Migrate extends ConsoleCommand
             ->addOptionByName('tag')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
-<code-comment># migrate all eligible migrations</code-comment>
-<code>cinch migrate project-name --tag=v12.9.3</code>
+<code-comment># migrate all eligible migrations</>
+<code>cinch migrate project-name --tag=v12.9.3</>
 HELP
             );
     }

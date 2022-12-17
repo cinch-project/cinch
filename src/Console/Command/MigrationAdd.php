@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console\Commands;
+namespace Cinch\Console\Command;
 
 use Cinch\Command\Migration\AddMigration;
 use Cinch\Common\Author;
@@ -25,7 +25,7 @@ class MigrationAdd extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->dispatch(new AddMigration(
+        $this->executeCommand(new AddMigration(
             $this->projectId,
             new StorePath($input->getArgument('path')),
             MigratePolicy::from($input->getOption('migrate-policy')),
@@ -53,14 +53,14 @@ class MigrationAdd extends ConsoleCommand
             ->addOptionByName('env')
             ->setHelp(<<<HELP
 This command adds skeleton migration to the migration store. You cannot add a pre-existing migration 
-using this command. The <info><path></info> must be relative and end with a .sql or .php extension. Directories 
+using this command. The <info><path></> must be relative and end with a .sql or .php extension. Directories 
 will automatically be created. 
 
-<code-comment># adds an 'onchange' migration</code-comment>
-<code>cinch add project-name alter-user-table.sql "add phone column" --migrate-policy=onchange</code>
+<code-comment># adds an 'onchange' migration</>
+<code>cinch add project-name alter-user-table.sql "add phone column" --migrate-policy=onchange</>
 
-<code-comment># adds a migration with two labels (migrate-policy set to default 'once')</code-comment>
-<code>cinch add project-name 2022/05/alter-user-table.php "add phone column" -l label0 -l label1</code>
+<code-comment># adds a migration with two labels (migrate-policy set to default 'once')</>
+<code>cinch add project-name 2022/05/alter-user-table.php "add phone column" -l label0 -l label1</>
 
 After creation, the migration can be edited or removed. Once migrated, only 'onchange' and 'always'
 migrations can be edited and no migration can be removed. 'always' and 'onchange' migrations can 

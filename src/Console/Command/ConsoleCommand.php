@@ -1,19 +1,14 @@
 <?php
 
-namespace Cinch\Console\Commands;
+namespace Cinch\Console\Command;
 
 use Cinch\Component\Assert\Assert;
-use Cinch\Project\Project;
 use Cinch\Project\ProjectId;
-use Cinch\Project\ProjectRepository;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use League\Tactician\CommandBus;
-use Monolog\Handler\NoopHandler;
-use Monolog\Logger;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
@@ -21,6 +16,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class ConsoleCommand extends Command implements SignalableCommandInterface
 {
@@ -32,13 +28,16 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
         'migration-store' => ['m', InputOption::VALUE_REQUIRED, 'Migration Store DSN', '.'],
     ];
 
-    protected readonly LoggerInterface $logger;
     protected readonly ProjectId $projectId;
     protected readonly string $envName;
-    private CommandBus $commandBus;
+    protected readonly SymfonyStyle $io;
+    private readonly CommandBus $commandBus;
 
     public function mergeApplicationDefinition(bool $mergeArgs = true): void
     {
+        if ($this->getDefinition()->hasArgument('project'))
+            return;
+
         /* sneak in project argument, mandatory for every "cinch" command */
         $args = $this->getDefinition()->getArguments();
         array_unshift($args, new InputArgument('project', InputArgument::REQUIRED, 'Project name'));
@@ -51,8 +50,8 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
      */
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
+        $this->io = new SymfonyStyle($input, $output);
         $this->envName = $input->hasOption('env') ? ($input->getOption('env') ?? '') : '';
-        $this->logger = new Logger($input->getArgument('project'), [new NoopHandler()]);
     }
 
     public function setProjectDir(string $projectDir): void
@@ -68,9 +67,17 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
     /**
      * @throws Exception
      */
-    protected function dispatch(object $command): void
+    protected function executeCommand(object $command): void
     {
         $this->commandBus->handle($command);
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function executeQuery(object $query): mixed
+    {
+        return $this->commandBus->handle($query);
     }
 
     protected function addOptionByName(string $name, string $description = ''): static
@@ -121,7 +128,8 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
 
     protected function getIntOption(InputInterface $input, string $name, int $default = 0): int
     {
-        if (($value = $input->getOption($name)) === false)
+        $value = $input->getOption($name);
+        if ($value === null || $value === false)
             return $default;
         return is_int($value) ? $value : Assert::digit($value, $name);
     }

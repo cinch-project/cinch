@@ -1,7 +1,9 @@
 <?php
 
-namespace Cinch\Console\Commands;
+namespace Cinch\Console\Command;
 
+use Cinch\Console\Query\GetProject;
+use Cinch\Project\Project;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,14 +17,15 @@ class Env extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-
-        $map = $this->getProject()->getEnvironmentMap();
+        /** @var Project $project */
+        $project = $this->executeQuery(new GetProject($this->projectId));
+        $map = $project->getEnvironmentMap();
         $default = $map->getDefaultName();
 
         foreach ($map->all() as $name => $env) {
             $createSchema = $env->createSchema ? 'true' : 'false';
             $output->writeln([
-                "<info>$name" . ($name == $default ? ' (default)' : '') . "</info>",
+                "<info>$name" . ($name == $default ? ' (default)' : '') . "</>",
                 "  deploy_timeout $env->deployTimeout",
                 "  target '$env->targetDsn'",
                 "  history '$env->historyDsn'",

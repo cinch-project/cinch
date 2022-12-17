@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Console\Commands;
+namespace Cinch\Console\Command;
 
 use Cinch\Command\Project\CreateProject;
 use Cinch\Common\Dsn;
@@ -33,8 +33,9 @@ class Create extends ConsoleCommand
             new EnvironmentMap($envName, [$envName => $environment])
         );
 
-        $this->logger->info("creating project");
-        $this->dispatch(new CreateProject($project, $envName));
+        $this->io->section("creating project $projectName");
+        $this->io->writeln('testing');
+        $this->executeCommand(new CreateProject($project, $envName));
 
         /* move temp log to project log dir, now that project dir exists */
         //$logFile = Path::join($this->projectId, 'log', basename($this->tempLogFile));
