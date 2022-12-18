@@ -7,6 +7,7 @@ use Cinch\Console\Command\ConsoleCommand;
 use Cinch\Project\ProjectName;
 use Exception;
 use League\Tactician\CommandBus;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Command\HelpCommand;
@@ -84,7 +85,7 @@ class Application extends BaseApplication
     /**
      * @throws Exception
      */
-    private static function compileContainer(string $projectDir): Container
+    private static function compileContainer(OutputInterface $output, string $projectDir): Container
     {
         $rootDir = dirname(__DIR__, 2);
         $resourceDir = "$rootDir/resources";
@@ -99,6 +100,7 @@ class Application extends BaseApplication
         $container->setParameter('twig.debug', getenv('CINCH_DEBUG') === '1');
         $container->setParameter('twig.template_dir', $resourceDir);
         $container->setParameter('project.dir', $projectDir);
+        $container->set(LoggerInterface::class, new ConsoleLogger($output));
 
         $loader = new YamlFileLoader($container, new FileLocator("$rootDir/config"));
         $loader->load('services.yml');
@@ -117,17 +119,17 @@ class Application extends BaseApplication
         if (!($command instanceof ConsoleCommand))
             return;
 
-        /* need projectDir to compile container */
         $input = $event->getInput();
         $workingDir = $input->getOption('working-dir') ?? getcwd();
         $workingDir = Assert::directory(Path::makeAbsolute($workingDir, getcwd()), 'working-dir');
         $projectDir = Path::join($workingDir, new ProjectName($input->getArgument('project')));
-        $container = self::compileContainer($projectDir);
+        $container = self::compileContainer($event->getOutput(), $projectDir);
 
         /* command bus drives the DI for all Command And Query handlers. They are resolved through the
          * container with autowire enabled: see Cinch\Console\ContainerHandlerLocator and services.yml.
          */
         $command->setProjectDir($projectDir);
         $command->setCommandBus($container->get(CommandBus::class));
+        $command->setLogger($container->get(LoggerInterface::class));
     }
 }

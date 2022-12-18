@@ -9,6 +9,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use League\Tactician\CommandBus;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
@@ -16,7 +17,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class ConsoleCommand extends Command implements SignalableCommandInterface
 {
@@ -30,7 +30,7 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
 
     protected readonly ProjectId $projectId;
     protected readonly string $envName;
-    protected readonly SymfonyStyle $io;
+    protected readonly LoggerInterface $logger;
     private readonly CommandBus $commandBus;
 
     /**
@@ -38,7 +38,6 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
      */
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $this->io = new SymfonyStyle($input, $output);
         $this->envName = $input->hasOption('env') ? ($input->getOption('env') ?? '') : '';
     }
 
@@ -50,6 +49,11 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
     public function setCommandBus(CommandBus $commandBus): void
     {
         $this->commandBus = $commandBus;
+    }
+
+    public function setLogger(LoggerInterface $logger): void
+    {
+        $this->logger = $logger;
     }
 
     /**

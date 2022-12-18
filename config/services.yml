@@ -21,6 +21,10 @@ services:
             - '../src/Console/Command/'
             - '../src/Project/'
 
+    # created by Cinch\Console\Application, needed since a logger instance is set on container pre-compile.
+    Psr\Log\LoggerInterface:
+        public: true
+
     Cinch\Database\SessionFactory: ~
     Cinch\Project\ProjectRepository:
         class: Cinch\Console\ConsoleProjectRepository

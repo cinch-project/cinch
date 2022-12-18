@@ -33,8 +33,7 @@ class Create extends ConsoleCommand
             new EnvironmentMap($envName, [$envName => $environment])
         );
 
-        $this->io->section("creating project $projectName");
-        $this->io->writeln('testing');
+        $this->logger->info("creating project $projectName");
         $this->executeCommand(new CreateProject($project, $envName));
 
         /* move temp log to project log dir, now that project dir exists */
