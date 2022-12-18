@@ -76,7 +76,7 @@ class MySql extends Platform
         $this->version = (float) $version;
 
         if ($this->version < $minVersion)
-            throw new UnsupportedVersionException($this->name, $version, $minVersion);
+            throw new UnsupportedVersionException($this->name, $this->version, $minVersion);
 
         $charset = $session->quoteString($dsn->getOption('charset', 'utf8mb4'));
         $session->executeStatement("
