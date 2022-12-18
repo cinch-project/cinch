@@ -7,11 +7,13 @@ use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Directory;
+use Cinch\MigrationStore\File;
+use Cinch\MigrationStore\GitFile;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
 
-class GitHubAdapter extends GitAdapter
+class GitHub extends Git
 {
     const RAW = 'application/vnd.github.raw';
     const JSON = 'application/vnd.github+json';

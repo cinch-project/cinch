@@ -1,12 +1,11 @@
 <?php
 
-namespace Cinch\MigrationStore\Adapter;
+namespace Cinch\MigrationStore;
 
-use Cinch\MigrationStore\Directory;
 use Exception;
 use Symfony\Component\Filesystem\Path;
 
-abstract class MigrationStoreAdapter
+abstract class Adapter
 {
     const FILENAME_PATTERN = '~\.(?:sql|php)$~i';
 

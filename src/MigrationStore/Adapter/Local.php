@@ -7,7 +7,10 @@ use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Cinch\LastErrorException;
+use Cinch\MigrationStore\Adapter;
 use Cinch\MigrationStore\Directory;
+use Cinch\MigrationStore\File;
+use Cinch\MigrationStore\LocalFile;
 use Exception;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Filesystem;
@@ -15,7 +18,7 @@ use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
-class LocalAdapter extends MigrationStoreAdapter
+class Local extends Adapter
 {
     public static function fromDsn(Dsn $dsn, string $defaultBaseDir): self
     {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\MigrationStore\Adapter;
+namespace Cinch\MigrationStore;
 
 use Cinch\Common\Checksum;
 use Cinch\Common\StorePath;

@@ -7,6 +7,9 @@ use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
+use Cinch\MigrationStore\Adapter;
+use Cinch\MigrationStore\File;
+use Cinch\MigrationStore\GitFile;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
@@ -17,7 +20,7 @@ use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 
-abstract class GitAdapter extends MigrationStoreAdapter
+abstract class Git extends Adapter
 {
     const TOKEN_ENV_NAME = '';
 

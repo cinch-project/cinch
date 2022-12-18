@@ -4,8 +4,6 @@ namespace Cinch\MigrationStore;
 
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\AssertException;
-use Cinch\MigrationStore\Adapter\File;
-use Cinch\MigrationStore\Adapter\MigrationStoreAdapter;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
 use Generator;
@@ -28,7 +26,7 @@ class Directory
      * @throws Exception
      */
     public function __construct(
-        private readonly MigrationStoreAdapter $storeAdapter,
+        private readonly Adapter $adapter,
         private readonly ScriptLoader $scriptLoader,
         public readonly string $path,
         public readonly array $variables,
@@ -46,7 +44,7 @@ class Directory
     public function getMigration(StorePath $path): Migration|null
     {
         try {
-            return $this->createMigration($this->storeAdapter->getFile($path->value));
+            return $this->createMigration($this->adapter->getFile($path->value));
         }
         catch (FileNotFoundException) {
             return null;
@@ -59,7 +57,7 @@ class Directory
      */
     public function search(): Generator
     {
-        $files = $this->storeAdapter->search($this);
+        $files = $this->adapter->search($this);
 
         if (($this->flags & self::ERROR_IF_EMPTY) && !$files)
             throw new Exception("migration store directory '$this->path' is empty");

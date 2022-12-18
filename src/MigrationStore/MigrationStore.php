@@ -4,10 +4,9 @@ namespace Cinch\MigrationStore;
 
 use Cinch\Common\Author;
 use Cinch\Common\Description;
-use Cinch\Common\StorePath;
 use Cinch\Common\MigratePolicy;
+use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
-use Cinch\MigrationStore\Adapter\MigrationStoreAdapter;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use DateTimeInterface;
 use Exception;
@@ -32,7 +31,7 @@ class MigrationStore
     private bool|null $createdStoreConfig = null;
 
     public function __construct(
-        private readonly MigrationStoreAdapter $storeAdapter,
+        private readonly Adapter $adapter,
         private readonly ScriptLoader $scriptLoader,
         private readonly Twig $twig,
         private readonly string $resourceDir)
@@ -45,7 +44,7 @@ class MigrationStore
     public function createConfig(): void
     {
         if (!$this->exists()) {
-            $this->storeAdapter->addFile(
+            $this->adapter->addFile(
                 self::FILENAME,
                 slurp(Path::join($this->resourceDir, self::FILENAME)),
                 'created ' . self::FILENAME
@@ -64,7 +63,7 @@ class MigrationStore
     public function deleteConfig(): void
     {
         if ($this->createdStoreConfig === null || $this->createdStoreConfig)
-            $this->storeAdapter->deleteFile(self::FILENAME, 'deleted ' . self::FILENAME);
+            $this->adapter->deleteFile(self::FILENAME, 'deleted ' . self::FILENAME);
     }
 
     /**
@@ -90,12 +89,12 @@ class MigrationStore
             'description' => $description->value,
         ]);
 
-        $this->storeAdapter->addFile($path->value, $content, 'add migration request');
+        $this->adapter->addFile($path->value, $content, 'add migration request');
     }
 
     public function remove(StorePath $path): void
     {
-        $this->storeAdapter->deleteFile($path->value, 'remove migration request');
+        $this->adapter->deleteFile($path->value, 'remove migration request');
     }
 
     /** Iterates through all migrations in directory migrate order.
@@ -157,7 +156,7 @@ class MigrationStore
         if ($this->directories !== null)
             return $this->directories;
 
-        $contents = $this->storeAdapter->getContents(self::FILENAME);
+        $contents = $this->adapter->getContents(self::FILENAME);
         $store = Yaml::parse($contents, self::PARSE_FLAGS);
         $variables = $this->parseVariables($store, 'store.variables'); // top-level (global) variables
 
@@ -168,7 +167,7 @@ class MigrationStore
             $subPath = "{$docPath}[$i]";
             $dirPath = Assert::thatProp($dir, 'path', "$subPath.path")->string()->notEmpty()->value();
             $directories[$dirPath] = new Directory(
-                $this->storeAdapter,
+                $this->adapter,
                 $this->scriptLoader,
                 $dirPath,
                 [...$variables, ...$this->parseVariables($dir, "$subPath.variables")],

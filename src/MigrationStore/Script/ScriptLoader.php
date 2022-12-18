@@ -4,8 +4,8 @@ namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\AssertException;
-use Cinch\MigrationStore\Adapter\File;
-use Cinch\MigrationStore\Adapter\LocalFile;
+use Cinch\MigrationStore\File;
+use Cinch\MigrationStore\LocalFile;
 use Exception;
 use ReflectionMethod;
 use Twig\Environment as Twig;

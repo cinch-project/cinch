@@ -1,15 +1,16 @@
 <?php
 
-namespace Cinch\MigrationStore\Adapter;
+namespace Cinch\MigrationStore;
 
 use Cinch\Common\Checksum;
 use Cinch\Common\StorePath;
+use Cinch\MigrationStore\Adapter\Git;
 use Exception;
 
 class GitFile extends File
 {
     public function __construct(
-        private readonly GitAdapter $git,
+        private readonly Git $git,
         StorePath $path,
         private readonly Checksum $sha,
         private string|null $content = null)

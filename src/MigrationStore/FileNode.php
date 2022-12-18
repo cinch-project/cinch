@@ -2,7 +2,6 @@
 
 namespace Cinch\MigrationStore;
 
-use Cinch\MigrationStore\Adapter\File;
 use RuntimeException;
 
 /** Used to build a tree of migration store directory files for the purpose of sorting.

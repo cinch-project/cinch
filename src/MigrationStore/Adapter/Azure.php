@@ -7,12 +7,14 @@ use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Directory;
+use Cinch\MigrationStore\File;
+use Cinch\MigrationStore\GitFile;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
 
 /** This supports Azure DevOps Services (cloud), not Azure DevOps Server (on-premise). */
-class AzureAdapter extends GitAdapter
+class Azure extends Git
 {
     const TOKEN_ENV_NAME = 'CINCH_AZURE_TOKEN';
 
