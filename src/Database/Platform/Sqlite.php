@@ -4,15 +4,14 @@ namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
+use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
 use Cinch\LastErrorException;
 use PDO;
 
-class SqlitePlatform implements Platform
+class Sqlite extends Platform
 {
-    use PlatformHelpers;
-
     /** use a file lock to lock session. concurrent deployments using a sqlite history are only
      * possible on the same machine. Also, there is no good mechanism within sqlite itself.
      * @var resource|null

@@ -5,11 +5,6 @@ namespace Cinch\Database;
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
-use Cinch\Database\Platform\MsSqlPlatform;
-use Cinch\Database\Platform\MySqlPlatform;
-use Cinch\Database\Platform\PgSqlPlatform;
-use Cinch\Database\Platform\Platform;
-use Cinch\Database\Platform\SqlitePlatform;
 use Cinch\Io;
 use Doctrine\DBAL\DriverManager;
 use Exception;
@@ -26,12 +21,11 @@ class SessionFactory
      */
     public function create(Dsn $dsn): Session
     {
-        /** @var Platform $platform */
         $platform = match ($driver = $dsn->getScheme()) {
-            'pgsql' => new PgSqlPlatform,
-            'mysql' => new MySqlPlatform,
-            'mssql' => new MsSqlPlatform,
-            'sqlite' => new SqlitePlatform,
+            'pgsql' => new Platform\PgSql,
+            'mysql' => new Platform\MySql,
+            'mssql' => new Platform\MsSql,
+            'sqlite' => new Platform\Sqlite,
             default => throw new AssertException("unknown database platform '$driver'")
         };
 

@@ -4,16 +4,15 @@ namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
+use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
 use Exception;
 use PDO;
 use RuntimeException;
 
-class MsSqlPlatform implements Platform
+class MsSql extends Platform
 {
-    use PlatformHelpers;
-
     public function assertIdentifier(string $value): string
     {
         return Assert::regex($value, '~^[\x{0001}-\x{ffff}]{1,128}$~u', 'identifier');

@@ -4,6 +4,7 @@ namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
+use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
 use DateTime;
@@ -13,10 +14,8 @@ use Exception;
 use PDO;
 use RuntimeException;
 
-class MySqlPlatform implements Platform
+class MySql extends Platform
 {
-    use PlatformHelpers;
-
     private readonly string $dateTimeFormat;
 
     public function getName(): string

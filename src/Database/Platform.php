@@ -1,54 +1,74 @@
 <?php
 
-namespace Cinch\Database\Platform;
+namespace Cinch\Database;
 
 use Cinch\Common\Dsn;
-use Cinch\Database\Session;
-use Cinch\Database\UnsupportedVersionException;
+use DateTime;
 use DateTimeInterface;
+use DateTimeZone;
 use Exception;
 
-interface Platform
+abstract class Platform
 {
     const DATETIME_FORMAT = 'Y-m-d H:i:s.uP';
+
+    protected float $version;
+    protected string $name;
 
     /** Gets the platform name.
      * @return string
      */
-    public function getName(): string;
+    public function getName(): string
+    {
+        if (!isset($this->name))
+            $this->name = strtolower(classname(static::class));
+        return $this->name;
+    }
 
-    public function supportsTransactionalDDL(): bool;
+    public function supportsTransactionalDDL(): bool
+    {
+        return true; /* default, since most have support */
+    }
 
     /** Formats a platform-aware datetime.
      * @param DateTimeInterface|null $dt
      * @return string
+     * @throws Exception
      */
-    public function formatDateTime(DateTimeInterface|null $dt = null): string;
+    public function formatDateTime(DateTimeInterface|null $dt = null): string
+    {
+        if (!$dt)
+            $dt = new DateTime(timezone: new DateTimeZone('UTC'));
+        return $dt->format(self::DATETIME_FORMAT);
+    }
 
     /** Gets the platform version: major.minor only.
      * @return float
      */
-    public function getVersion(): float;
+    public function getVersion(): float
+    {
+        return $this->version;
+    }
 
     /** Asserts a platform identifier: database, schema, table, column, etc.
      * @param string $value
      * @return string
      */
-    public function assertIdentifier(string $value): string;
+    public abstract function assertIdentifier(string $value): string;
 
     /** Adds platform-specific connection parameters.
      * @param Dsn $dsn
      * @param array $params current parameters
      * @return array updated version of $params
      */
-    public function addParams(Dsn $dsn, array $params): array;
+    public abstract function addParams(Dsn $dsn, array $params): array;
 
     /** Initializes a session. All platforms should perform version checking.
      * @param Session $session
      * @param Dsn $dsn
      * @throws Exception|UnsupportedVersionException
      */
-    public function initSession(Session $session, Dsn $dsn): Session;
+    public abstract function initSession(Session $session, Dsn $dsn): Session;
 
     /** Locks a session. This is an application (advisory) lock, not a table lock.
      * @param Session $session
@@ -57,12 +77,12 @@ interface Platform
      * @return bool true if lock was acquired and false if not
      * @throws Exception error occurred
      */
-    public function lockSession(Session $session, string $name, int $timeout): bool;
+    public abstract function lockSession(Session $session, string $name, int $timeout): bool;
 
     /** Unlocks a session.
      * @param Session $session
      * @param string $name
      * @throws Exception
      */
-    public function unlockSession(Session $session, string $name): void;
+    public abstract function unlockSession(Session $session, string $name): void;
 }

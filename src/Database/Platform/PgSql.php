@@ -4,15 +4,14 @@ namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
+use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
 use Doctrine\DBAL\Exception;
 use PDO;
 
-class PgSqlPlatform implements Platform
+class PgSql extends Platform
 {
-    use PlatformHelpers;
-
     public function assertIdentifier(string $value): string
     {
         return Assert::that($value, 'identifier')
