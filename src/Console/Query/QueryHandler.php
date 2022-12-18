@@ -2,6 +2,14 @@
 
 namespace Cinch\Console\Query;
 
-interface QueryHandler
+use Cinch\Io;
+
+abstract class QueryHandler
 {
+    protected readonly Io $io;
+
+    public function setIo(Io $io): void
+    {
+        $this->io = $io;
+    }
 }

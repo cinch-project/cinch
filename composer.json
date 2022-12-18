@@ -26,8 +26,7 @@
         "symfony/dotenv": "^6.2",
         "guzzlehttp/guzzle": "^7.5",
         "league/tactician": "^1.1",
-        "symfony/uid": "^6.2",
-        "psr/log": "^3.0"
+        "symfony/uid": "^6.2"
     },
     "require-dev": {
         "symfony/var-dumper": "^6.0"

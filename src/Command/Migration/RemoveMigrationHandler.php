@@ -8,7 +8,7 @@ use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class RemoveMigrationHandler implements CommandHandler
+class RemoveMigrationHandler extends CommandHandler
 {
     public function __construct(
         private readonly MigrationStoreFactory $migrationStoreFactory,

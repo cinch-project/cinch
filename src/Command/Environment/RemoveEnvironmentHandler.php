@@ -7,7 +7,7 @@ use Cinch\History\HistoryFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class RemoveEnvironmentHandler implements CommandHandler
+class RemoveEnvironmentHandler extends CommandHandler
 {
     public function __construct(
         private readonly HistoryFactory $historyFactory,

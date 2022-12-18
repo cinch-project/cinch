@@ -10,12 +10,17 @@ use Cinch\Database\Platform\MySqlPlatform;
 use Cinch\Database\Platform\PgSqlPlatform;
 use Cinch\Database\Platform\Platform;
 use Cinch\Database\Platform\SqlitePlatform;
+use Cinch\Io;
 use Doctrine\DBAL\DriverManager;
 use Exception;
 use PDO;
 
 class SessionFactory
 {
+    public function __construct(Io $io)
+    {
+    }
+
     /**
      * @throws Exception
      */

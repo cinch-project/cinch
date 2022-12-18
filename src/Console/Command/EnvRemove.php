@@ -22,7 +22,7 @@ class EnvRemove extends ConsoleCommand
         $drop = $input->getOption('drop-history');
 
         $dropMsg = $drop ? 'and dropping history schema' : '';
-        $this->logger->info("deleting environment $name $dropMsg");
+        $this->io->text("deleting environment $name $dropMsg");
 
         $this->executeCommand(new RemoveEnvironment($this->projectId, $name, $drop));
 

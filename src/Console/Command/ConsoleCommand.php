@@ -3,13 +3,13 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Component\Assert\Assert;
+use Cinch\Io;
 use Cinch\Project\ProjectId;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use League\Tactician\CommandBus;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
@@ -17,8 +17,9 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-abstract class ConsoleCommand extends Command implements SignalableCommandInterface
+abstract class ConsoleCommand extends Command implements SignalableCommandInterface, EventSubscriberInterface
 {
     /* lookup table for commonly used options: see getOptionByName() */
     private const OPTIONS = [
@@ -30,7 +31,7 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
 
     protected readonly ProjectId $projectId;
     protected readonly string $envName;
-    protected readonly LoggerInterface $logger;
+    protected readonly Io $io;
     private readonly CommandBus $commandBus;
 
     /**
@@ -51,9 +52,14 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
         $this->commandBus = $commandBus;
     }
 
-    public function setLogger(LoggerInterface $logger): void
+    public function setIo(Io $io): void
     {
-        $this->logger = $logger;
+        $this->io = $io;
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [];
     }
 
     /**

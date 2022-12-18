@@ -8,7 +8,7 @@ use Cinch\History\HistoryFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class AddEnvironmentHandler implements CommandHandler
+class AddEnvironmentHandler extends CommandHandler
 {
     public function __construct(
         private readonly SessionFactory $sessionFactory,

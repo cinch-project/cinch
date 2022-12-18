@@ -22,7 +22,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 
-abstract class DeploymentHandler implements CommandHandler
+abstract class DeploymentHandler extends CommandHandler
 {
     protected MigrationStore $migrationStore;
     protected History $history;

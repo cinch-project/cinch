@@ -4,10 +4,11 @@ namespace Cinch\Console;
 
 use Cinch\Component\Assert\Assert;
 use Cinch\Console\Command\ConsoleCommand;
+use Cinch\Io;
 use Cinch\Project\ProjectName;
 use Exception;
 use League\Tactician\CommandBus;
-use Psr\Log\LoggerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Command\HelpCommand;
@@ -100,7 +101,7 @@ class Application extends BaseApplication
         $container->setParameter('twig.debug', getenv('CINCH_DEBUG') === '1');
         $container->setParameter('twig.template_dir', $resourceDir);
         $container->setParameter('project.dir', $projectDir);
-        $container->set(LoggerInterface::class, new ConsoleLogger($output));
+        $container->set('console.output', $output);
 
         $loader = new YamlFileLoader($container, new FileLocator("$rootDir/config"));
         $loader->load('services.yml');
@@ -120,16 +121,18 @@ class Application extends BaseApplication
             return;
 
         $input = $event->getInput();
+        $input->setInteractive(false);
+
         $workingDir = $input->getOption('working-dir') ?? getcwd();
         $workingDir = Assert::directory(Path::makeAbsolute($workingDir, getcwd()), 'working-dir');
         $projectDir = Path::join($workingDir, new ProjectName($input->getArgument('project')));
         $container = self::compileContainer($event->getOutput(), $projectDir);
 
-        /* command bus drives the DI for all Command And Query handlers. They are resolved through the
-         * container with autowire enabled: see Cinch\Console\ContainerHandlerLocator and services.yml.
-         */
         $command->setProjectDir($projectDir);
+
+        /* since commands are not created by the container, manually inject dependencies */
         $command->setCommandBus($container->get(CommandBus::class));
-        $command->setLogger($container->get(LoggerInterface::class));
+        $command->setIo($container->get(Io::class));
+        $container->get(EventDispatcherInterface::class)->addSubscriber($command);
     }
 }

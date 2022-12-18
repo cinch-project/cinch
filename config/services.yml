@@ -6,10 +6,13 @@ services:
     _instanceof:
         Cinch\Command\CommandHandler:
             public: true
+            calls:
+                -   setIo: [ '@Cinch\Io' ]
+                -   setEventDispatcher: [ '@Psr\EventDispatcher\EventDispatcherInterface' ]
         Cinch\Console\Query\QueryHandler:
             public: true
-        Symfony\Component\EventDispatcher\EventSubscriberInterface:
-            tags: [ 'subscriber' ]
+            calls:
+                -   setIo: [ '@Cinch\Io' ]
 
     Cinch\:
         lazy: true
@@ -21,9 +24,16 @@ services:
             - '../src/Console/Command/'
             - '../src/Project/'
 
-    # created by Cinch\Console\Application, needed since a logger instance is set on container pre-compile.
-    Psr\Log\LoggerInterface:
+    Psr\EventDispatcher\EventDispatcherInterface:
         public: true
+        class: Symfony\Component\EventDispatcher\EventDispatcher
+
+    # created by Cinch\Console\Application, needed since an Io instance is set on container pre-compile.
+    Cinch\Io:
+        public: true
+        class: Cinch\Console\ConsoleIo
+        arguments:
+            - '@console.output'
 
     Cinch\Database\SessionFactory: ~
     Cinch\Project\ProjectRepository:

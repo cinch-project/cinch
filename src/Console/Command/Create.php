@@ -33,7 +33,7 @@ class Create extends ConsoleCommand
             new EnvironmentMap($envName, [$envName => $environment])
         );
 
-        $this->logger->info("creating project $projectName");
+        $this->io->text("creating project $projectName");
         $this->executeCommand(new CreateProject($project, $envName));
 
         /* move temp log to project log dir, now that project dir exists */
@@ -57,5 +57,10 @@ class Create extends ConsoleCommand
             ->addEnvironmentOptions()
             ->addOptionByName('migration-store')
             ->addOptionByName('env', 'Sets the project\'s default environment [default: $projectName]');
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [];
     }
 }

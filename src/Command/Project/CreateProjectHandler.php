@@ -9,7 +9,7 @@ use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class CreateProjectHandler implements CommandHandler
+class CreateProjectHandler extends CommandHandler
 {
     public function __construct(
         private readonly MigrationStoreFactory $migrationStoreFactory,
@@ -28,15 +28,19 @@ class CreateProjectHandler implements CommandHandler
         $environment = $c->project->getEnvironmentMap()->get($c->envName);
 
         $this->sessionFactory->create($environment->targetDsn)->close(); // test connection
+        // TargetConnected
 
         try {
+            // ProjectAdded
             $this->projectRepository->add($c->project);
             $rollback['project directory'] = fn() => $this->projectRepository->remove($c->project->getId());
 
+            // MigrationStoreCreated
             $migrationStore = $this->migrationStoreFactory->create($c->project->getMigrationStoreDsn());
             $migrationStore->createConfig();
             $rollback['migration store'] = $migrationStore->deleteConfig(...);
 
+            // HistoryCreated
             $this->historyFactory->create($environment)->create();
         }
         catch (Exception $e) {
