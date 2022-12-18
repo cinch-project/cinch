@@ -3,27 +3,41 @@
 
 use Cinch\Console\Application;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Dotenv\Dotenv;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
 if (PHP_SAPI !== 'cli')
     throw new RuntimeException("cinch CLI only supports 'cli' SAPI");
 
-$application = new Application();
-$application->setAutoExit(false);
-$output = new ConsoleOutput(OutputInterface::VERBOSITY_VERY_VERBOSE);
+$application = new Application('cinch');
+$output = new ConsoleOutput();
 
 try {
+    $appRoot = __DIR__;
+    $dotEnv = (new Dotenv())->usePutenv();
+
+    if (($env = getenv('CINCH_ENV')) !== false && $env != 'local' && $env != 'prod')
+        $env = false;
+
+    if (!$env) {
+        /* prod builds do not include .env.local. So if local exists, use it. */
+        $env = file_exists("$appRoot/.env.local") ? 'local' : 'prod';
+        $dotEnv->populate(['CINCH_ENV' => $env], overrideExistingVars: true);
+    }
+
+    $dotEnv->load("$appRoot/.env.$env");
+
+    $application->setAutoExit(false);
+    $application->setVersion(getenv('CINCH_VERSION'));
     $exitCode = $application->run(output: $output);
 }
 catch (Exception $e) {
-    $exitCode = 255; // uncaught exception, must be from Application since Commands are handled
+    $exitCode = 255;
     $application->renderThrowable($e, $output->getErrorOutput());
 }
 
-$exitCode = min(255, $exitCode);
-if ($exitCode)
+if ($exitCode = min(255, $exitCode))
     $output->writeln("<fg=blue>[application exit code $exitCode]</>");
 
 exit($exitCode);
