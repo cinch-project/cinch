@@ -15,9 +15,7 @@ use Symfony\Component\Console\Command\HelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
-use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputDefinition;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\Container;
@@ -41,13 +39,6 @@ class Application extends BaseApplication
     {
         /* RenderThrowableOutput suppresses previous exceptions */
         parent::doRenderThrowable($e, new RenderThrowableOutput($output));
-    }
-
-    protected function configureIO(InputInterface $input, OutputInterface $output): void
-    {
-        $output->getFormatter()->setStyle('code-comment', new OutputFormatterStyle('gray'));
-        $output->getFormatter()->setStyle('code', new OutputFormatterStyle('blue'));
-        parent::configureIO($input, $output);
     }
 
     protected function getDefaultInputDefinition(): InputDefinition

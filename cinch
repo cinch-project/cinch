@@ -2,6 +2,7 @@
 <?php
 
 use Cinch\Console\Application;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Dotenv\Dotenv;
 
@@ -12,6 +13,8 @@ if (PHP_SAPI !== 'cli')
 
 $application = new Application('cinch');
 $output = new ConsoleOutput();
+$output->getFormatter()->setStyle('code-comment', new OutputFormatterStyle('gray'));
+$output->getFormatter()->setStyle('code', new OutputFormatterStyle('blue'));
 
 try {
     $appRoot = __DIR__;
@@ -38,6 +41,6 @@ catch (Exception $e) {
 }
 
 if ($exitCode = min(255, $exitCode))
-    $output->writeln("<fg=blue>[application exit code $exitCode]</>");
+    $output->writeln("<code>[application exit code $exitCode]</>");
 
 exit($exitCode);
