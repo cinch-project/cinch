@@ -11,22 +11,22 @@
     ],
     "require": {
         "php": "^8.1",
-        "symfony/event-dispatcher": "^6.1",
-        "symfony/yaml": "^6.1",
-        "symfony/console": "^6.1",
-        "symfony/dependency-injection": "^6.1",
-        "symfony/config": "^6.1",
+        "symfony/event-dispatcher": "^6.2",
+        "symfony/yaml": "^6.2",
+        "symfony/console": "^6.2",
+        "symfony/dependency-injection": "^6.2",
+        "symfony/config": "^6.2",
         "ext-pcntl": "*",
-        "symfony/finder": "^6.1",
-        "symfony/expression-language": "^6.1",
+        "symfony/finder": "^6.2",
+        "symfony/expression-language": "^6.2",
         "doctrine/dbal": "^3.5",
         "ext-pdo": "*",
         "ext-mbstring": "*",
         "twig/twig": "^3.4",
-        "symfony/dotenv": "^6.1",
+        "symfony/dotenv": "^6.2",
         "guzzlehttp/guzzle": "^7.5",
         "league/tactician": "^1.1",
-        "ramsey/uuid": "^4.6"
+        "symfony/uid": "^6.2"
     },
     "require-dev": {
         "symfony/var-dumper": "^6.0"

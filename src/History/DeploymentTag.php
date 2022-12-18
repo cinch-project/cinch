@@ -4,14 +4,14 @@ namespace Cinch\History;
 
 use Cinch\Common\SingleValue;
 use Cinch\Component\Assert\Assert;
-use Ramsey\Uuid\Uuid;
+use Symfony\Component\Uid\Uuid;
 
 class DeploymentTag extends SingleValue
 {
     public function __construct(string|null $tag = null)
     {
         if ($tag === null)
-            $tag = (string) Uuid::uuid7();
+            $tag = (string) Uuid::v7();
         parent::__construct(Assert::betweenLength($tag, 1, 64, message: 'tag'));
     }
 }
