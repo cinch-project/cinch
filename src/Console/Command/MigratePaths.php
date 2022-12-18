@@ -36,6 +36,7 @@ class MigratePaths extends ConsoleCommand
     protected function configure()
     {
         $this
+            ->addProjectArgument()
             ->addArgument('paths', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'One or more migration store paths')
             ->addOptionByName('deployer')
             ->addOptionByName('tag')

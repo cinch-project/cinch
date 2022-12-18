@@ -27,6 +27,7 @@ class MigrationRemove extends ConsoleCommand
     {
         // cinch migration:remove <project> <path>
         $this
+            ->addProjectArgument()
             ->addArgument('path', InputArgument::REQUIRED, 'Migration store path (relative to store root)')
             ->addOptionByName('env')
             ->setHelp(<<<HELP

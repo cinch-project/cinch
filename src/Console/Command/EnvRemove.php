@@ -38,6 +38,7 @@ class EnvRemove extends ConsoleCommand
     protected function configure()
     {
         $this
+            ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
             ->addOption('drop-history', 'D', InputOption::VALUE_NONE, 'Drop history schema');
     }

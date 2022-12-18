@@ -41,4 +41,9 @@ class Env extends ConsoleCommand
         echo "delete project\n";
         parent::handleSignal($signal);
     }
+
+    public function configure()
+    {
+        $this->addProjectArgument();
+    }
 }

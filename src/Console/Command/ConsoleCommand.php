@@ -33,18 +33,6 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
     protected readonly SymfonyStyle $io;
     private readonly CommandBus $commandBus;
 
-    public function mergeApplicationDefinition(bool $mergeArgs = true): void
-    {
-        if ($this->getDefinition()->hasArgument('project'))
-            return;
-
-        /* sneak in project argument, mandatory for every "cinch" command */
-        $args = $this->getDefinition()->getArguments();
-        array_unshift($args, new InputArgument('project', InputArgument::REQUIRED, 'Project name'));
-        $this->getDefinition()->setArguments($args);
-        parent::mergeApplicationDefinition($mergeArgs);
-    }
-
     /**
      * @throws Exception
      */
@@ -78,6 +66,11 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
     protected function executeQuery(object $query): mixed
     {
         return $this->commandBus->handle($query);
+    }
+
+    protected function addProjectArgument(): static
+    {
+        return $this->addArgument('project', InputArgument::REQUIRED, 'Project name');
     }
 
     protected function addOptionByName(string $name, string $description = ''): static

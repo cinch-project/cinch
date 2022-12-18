@@ -56,6 +56,7 @@ class Migrate extends ConsoleCommand
     protected function configure()
     {
         $this
+            ->addProjectArgument()
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
             ->addOptionByName('env')

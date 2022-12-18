@@ -45,6 +45,7 @@ class MigrationAdd extends ConsoleCommand
 
         // cinch add <project> <path> <description> --author= --migrate-policy=
         $this
+            ->addProjectArgument()
             ->addArgument('path', InputArgument::REQUIRED, 'Migration store path (relative to store root)')
             ->addArgument('description', InputArgument::REQUIRED, 'Migration description')
             ->addOption('migrate-policy', 'm', InputOption::VALUE_REQUIRED, "Migrate policy: $policies", $defaultPolicy)

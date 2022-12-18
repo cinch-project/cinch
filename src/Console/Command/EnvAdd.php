@@ -37,6 +37,7 @@ class EnvAdd extends ConsoleCommand
     protected function configure()
     {
         $this
+            ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
             ->addTargetArgument()
             ->addEnvironmentOptions();

@@ -53,6 +53,7 @@ class Create extends ConsoleCommand
     protected function configure()
     {
         $this
+            ->addProjectArgument()
             ->addTargetArgument()
             ->addEnvironmentOptions()
             ->addOptionByName('migration-store')

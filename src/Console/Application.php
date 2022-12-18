@@ -2,7 +2,9 @@
 
 namespace Cinch\Console;
 
+use Cinch\Component\Assert\Assert;
 use Cinch\Console\Command\ConsoleCommand;
+use Cinch\Project\ProjectName;
 use Exception;
 use League\Tactician\CommandBus;
 use Symfony\Component\Config\FileLocator;
@@ -12,7 +14,6 @@ use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -20,19 +21,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
-use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
 class Application extends BaseApplication
 {
-    public function __construct()
+    public function __construct(string $name)
     {
-        $this->loadEnvironment();
-
-        parent::__construct('cinch', getenv('CINCH_VERSION'));
-
+        parent::__construct($name);
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(ConsoleEvents::COMMAND, $this->onConsoleCommand(...));
         $this->setDispatcher($dispatcher);
@@ -40,7 +37,7 @@ class Application extends BaseApplication
 
     protected function doRenderThrowable(Throwable $e, OutputInterface $output): void
     {
-        /* RenderThrowableOutput suppresses previous exception write calls */
+        /* RenderThrowableOutput suppresses previous exceptions */
         parent::doRenderThrowable($e, new RenderThrowableOutput($output));
     }
 
@@ -53,16 +50,18 @@ class Application extends BaseApplication
 
     protected function getDefaultInputDefinition(): InputDefinition
     {
-        return new InputDefinition([
-            new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
+        $default = parent::getDefaultInputDefinition();
+        $definition = new InputDefinition();
+
+        $definition->setArguments($default->getArguments());
+        $definition->setOptions([
             new InputOption('working-dir', 'w', InputOption::VALUE_REQUIRED, 'Sets the working directory [default: pwd]'),
             new InputOption('time-zone', 'z', InputOption::VALUE_REQUIRED, 'Sets the time zone for logging and display [default: system]'),
             new InputOption('dry-run', null, InputOption::VALUE_NONE, 'Performs all actions and logging without executing [default: off]'),
-            new InputOption('help', 'h', InputOption::VALUE_NONE, 'Display help for the given command'),
-            new InputOption('quiet', 'q', InputOption::VALUE_NONE, 'Do not output any message'),
-            new InputOption('version', 'V', InputOption::VALUE_NONE, 'Display this application version'),
-            new InputOption('--ansi', '', InputOption::VALUE_NEGATABLE, 'Force (or disable --no-ansi) ANSI output', null)
+            ...array_filter($default->getOptions(), fn($o) => $o->getName() != 'no-interaction')
         ]);
+
+        return $definition;
     }
 
     protected function getDefaultCommands(): array
@@ -96,7 +95,7 @@ class Application extends BaseApplication
         $container->setParameter('schema.version', getenv('CINCH_SCHEMA_VERSION'));
         $container->setParameter('schema.description', getenv('CINCH_SCHEMA_DESCRIPTION'));
         $container->setParameter('schema.release_date', getenv('CINCH_SCHEMA_RELEASE_DATE'));
-        $container->setParameter('twig.auto_reload', getenv('CINCH_ENV') != 'prod');
+        $container->setParameter('twig.auto_reload', getenv('CINCH_ENV') !== 'prod');
         $container->setParameter('twig.debug', getenv('CINCH_DEBUG') === '1');
         $container->setParameter('twig.template_dir', $resourceDir);
         $container->setParameter('project.dir', $projectDir);
@@ -106,15 +105,6 @@ class Application extends BaseApplication
         $container->compile();
 
         return $container;
-    }
-
-    private function loadEnvironment(): void
-    {
-        /* Use .env.local if it exists, since build-cli.php only bundles .env.prod in phar. */
-        $dotEnv = (new Dotenv())->usePutenv();
-        $env = file_exists(".env.local") ? 'local' : 'prod';
-        $dotEnv->populate(['CINCH_ENV' => $env], overrideExistingVars: true);
-        $dotEnv->load(".env.$env");
     }
 
     /** This is dispatched just after binding input and before command.run().
@@ -128,13 +118,14 @@ class Application extends BaseApplication
             return;
 
         /* need projectDir to compile container */
-        $project = $event->getInput()->getArgument('project');
-        $workingDir = $event->getInput()->getOption('working-dir') ?: getcwd();
-        $projectDir = Path::makeAbsolute(Path::join($workingDir, $project), getcwd());
+        $input = $event->getInput();
+        $workingDir = $input->getOption('working-dir') ?? getcwd();
+        $workingDir = Assert::directory(Path::makeAbsolute($workingDir, getcwd()), 'working-dir');
+        $projectDir = Path::join($workingDir, new ProjectName($input->getArgument('project')));
         $container = self::compileContainer($projectDir);
 
-        /* command bus drives the DI for all handlers. Command And Query handlers are resolved through
-         * the container: see Cinch\Console\ContainerHandlerLocator and services.yml.
+        /* command bus drives the DI for all Command And Query handlers. They are resolved through the
+         * container with autowire enabled: see Cinch\Console\ContainerHandlerLocator and services.yml.
          */
         $command->setProjectDir($projectDir);
         $command->setCommandBus($container->get(CommandBus::class));

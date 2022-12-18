@@ -36,6 +36,7 @@ class MigrateCount extends ConsoleCommand
     protected function configure()
     {
         $this
+            ->addProjectArgument()
             ->addArgument('number', InputArgument::REQUIRED, 'The number of eligible migrations to migrate')
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
