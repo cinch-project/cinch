@@ -31,9 +31,6 @@ services:
     # created by Cinch\Console\Application, needed since an Io instance is set on container pre-compile.
     Cinch\Io:
         public: true
-        class: Cinch\Console\ConsoleIo
-        arguments:
-            - '@console.output'
 
     Cinch\Database\SessionFactory: ~
     Cinch\Project\ProjectRepository:

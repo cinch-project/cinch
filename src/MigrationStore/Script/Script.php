@@ -3,9 +3,9 @@
 namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\Author;
+use Cinch\Common\Description;
 use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
-use Cinch\Common\Description;
 use Cinch\Database\Session;
 use DateTimeInterface;
 use Exception;

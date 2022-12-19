@@ -16,6 +16,7 @@ use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\Container;
@@ -27,7 +28,7 @@ use Throwable;
 
 class Application extends BaseApplication
 {
-    public function __construct(string $name)
+    public function __construct(string $name, private readonly Io $io)
     {
         parent::__construct($name);
         $dispatcher = new EventDispatcher();
@@ -39,6 +40,12 @@ class Application extends BaseApplication
     {
         /* RenderThrowableOutput suppresses previous exceptions */
         parent::doRenderThrowable($e, new RenderThrowableOutput($output));
+    }
+
+    public function configureIO(InputInterface $input, OutputInterface $output): void
+    {
+        parent::configureIO($input, $output);
+        $input->setInteractive(false);
     }
 
     protected function getDefaultInputDefinition(): InputDefinition
@@ -77,7 +84,7 @@ class Application extends BaseApplication
     /**
      * @throws Exception
      */
-    private static function compileContainer(OutputInterface $output, string $projectDir): Container
+    private function compileContainer(string $projectDir): Container
     {
         $rootDir = dirname(__DIR__, 2);
         $resourceDir = "$rootDir/resources";
@@ -92,7 +99,7 @@ class Application extends BaseApplication
         $container->setParameter('twig.debug', getenv('CINCH_DEBUG') === '1');
         $container->setParameter('twig.template_dir', $resourceDir);
         $container->setParameter('project.dir', $projectDir);
-        $container->set('console.output', $output);
+        $container->set(Io::class, $this->io);
 
         $loader = new YamlFileLoader($container, new FileLocator("$rootDir/config"));
         $loader->load('services.yml');
@@ -112,18 +119,14 @@ class Application extends BaseApplication
             return;
 
         $input = $event->getInput();
-        $input->setInteractive(false);
-
         $workingDir = $input->getOption('working-dir') ?? getcwd();
         $workingDir = Assert::directory(Path::makeAbsolute($workingDir, getcwd()), 'working-dir');
         $projectDir = Path::join($workingDir, new ProjectName($input->getArgument('project')));
-        $container = self::compileContainer($event->getOutput(), $projectDir);
+        $container = $this->compileContainer($projectDir);
 
+        $command->setIo($this->io);
         $command->setProjectDir($projectDir);
-
-        /* since commands are not created by the container, manually inject dependencies */
         $command->setCommandBus($container->get(CommandBus::class));
-        $command->setIo($container->get(Io::class));
         $container->get(EventDispatcherInterface::class)->addSubscriber($command);
     }
 }

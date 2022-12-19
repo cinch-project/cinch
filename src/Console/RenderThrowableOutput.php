@@ -8,8 +8,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /** Application::doRenderThrowable outputs previous exceptions in verbose mode. There is no way to turn this off.
  * This class detects writeln(array) calls, which only occur as the first writeln() call per exception (including
  * previous). When the second writeln(array) is detected, it is ignored along with all future writes. This is
- * a fragile solution. It will break if future versions change the calling sequence. There **should** be an
- * 'Application::setRenderPreviousThrowables()` method.
+ * a fragile solution. It will break if future versions change the calling sequence.
  */
 class RenderThrowableOutput extends ConsoleOutput
 {

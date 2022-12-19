@@ -5,6 +5,7 @@ namespace Cinch\Console;
 use Cinch\Io;
 use DateTimeInterface;
 use Stringable;
+use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ConsoleIo implements Io
@@ -21,6 +22,8 @@ class ConsoleIo implements Io
 
     public function __construct(private readonly OutputInterface $output)
     {
+        $output->getFormatter()->setStyle('code-comment', new OutputFormatterStyle('gray'));
+        $output->getFormatter()->setStyle('code', new OutputFormatterStyle('blue'));
     }
 
     public function raw(string $message, array $context = [], bool $newLine = true): void

@@ -2,7 +2,8 @@
 <?php
 
 use Cinch\Console\Application;
-use Symfony\Component\Console\Formatter\OutputFormatterStyle;
+use Cinch\Console\ConsoleIo;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Dotenv\Dotenv;
 
@@ -11,10 +12,9 @@ require_once __DIR__ . '/vendor/autoload.php';
 if (PHP_SAPI !== 'cli')
     throw new RuntimeException("cinch CLI only supports 'cli' SAPI");
 
-$application = new Application('cinch');
-$output = new ConsoleOutput();
-$output->getFormatter()->setStyle('code-comment', new OutputFormatterStyle('gray'));
-$output->getFormatter()->setStyle('code', new OutputFormatterStyle('blue'));
+$io = new ConsoleIo($output = new ConsoleOutput());
+$application = new Application('cinch', $io);
+$application->configureIO($input = new ArgvInput(), $output);
 
 try {
     $appRoot = __DIR__;
@@ -30,10 +30,12 @@ try {
     }
 
     $dotEnv->load("$appRoot/.env.$env");
+    $version = getenv('CINCH_VERSION');
+    $io->debug("cinch $version using $env environment");
 
     $application->setAutoExit(false);
-    $application->setVersion(getenv('CINCH_VERSION'));
-    $exitCode = $application->run(output: $output);
+    $application->setVersion($version);
+    $exitCode = $application->run($input, $output);
 }
 catch (Exception $e) {
     $exitCode = 255;
@@ -41,6 +43,6 @@ catch (Exception $e) {
 }
 
 if ($exitCode = min(255, $exitCode))
-    $output->writeln("<code>[application exit code $exitCode]</>");
+    $io->debug("application exit code $exitCode");
 
 exit($exitCode);
