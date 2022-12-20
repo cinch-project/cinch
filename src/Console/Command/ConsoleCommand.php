@@ -2,8 +2,11 @@
 
 namespace Cinch\Console\Command;
 
+use Cinch\Command\Task\TaskEnded;
+use Cinch\Command\Task\TaskStarted;
 use Cinch\Component\Assert\Assert;
-use Cinch\Io;
+use Cinch\Console\ConsoleIo;
+use Cinch\Event\ProgressEvent;
 use Cinch\Project\ProjectId;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -17,6 +20,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Terminal;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 abstract class ConsoleCommand extends Command implements SignalableCommandInterface, EventSubscriberInterface
@@ -31,14 +35,16 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
 
     protected readonly ProjectId $projectId;
     protected readonly string $envName;
-    protected readonly Io $io;
+    protected readonly ConsoleIo $io;
     private readonly CommandBus $commandBus;
+    private readonly Terminal $terminal;
 
     /**
      * @throws Exception
      */
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
+        $this->terminal = new Terminal();
         $this->envName = $input->hasOption('env') ? ($input->getOption('env') ?? '') : '';
     }
 
@@ -52,22 +58,72 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
         $this->commandBus = $commandBus;
     }
 
-    public function setIo(Io $io): void
+    public function setConsoleIo(ConsoleIo $io): void
     {
         $this->io = $io;
     }
 
     public static function getSubscribedEvents(): array
     {
-        return [];
+        return [
+            TaskStarted::class => 'onTaskStarted',
+            TaskEnded::class => 'onTaskEnded',
+        ];
+    }
+
+    public function onTaskStarted(TaskStarted $event): void
+    {
+        static $counter = 0;
+
+        if ($event->rollback)
+            $number = '<error>[00]</>';
+        else
+            $number = sprintf('[%2d]', ++$counter);
+
+        $msgWidth = $this->terminal->getWidth() - $this->io->getIndent() - 60;
+        $message = sprintf("%s %-28s <fg=blue>%-{$msgWidth}s</>",
+            $number,
+            self::strtrunc($event->name, 28),
+            self::strtrunc($event->message, $msgWidth)
+        );
+
+        $this->io->raw($message, newLine: false);
+    }
+
+    public function onTaskEnded(TaskEnded $event): void
+    {
+        $statusColor = $event->success ? 'green' : 'red';
+        $this->io->text(sprintf(' <fg=%s>%s</> <fg=gray>%.3fs</>',
+            $statusColor,
+            $event->success ? 'PASS' : 'FAIL',
+            $event->elapsedSeconds
+        ));
+    }
+
+    protected static function strtrunc(string $s, int $maxLength): string
+    {
+        if (strlen($s) > $maxLength)
+            $s = substr($s, 0, $maxLength - 3) . '<fg=gray>...</>';
+        return $s;
     }
 
     /**
      * @throws Exception
      */
-    protected function executeCommand(object $command): void
+    protected function executeCommand(string $title, object $command): void
     {
-        $this->commandBus->handle($command);
+        $success = false;
+
+        try {
+            $this->io->text("$title\n")->setIndent(2);
+            $this->commandBus->handle($command);
+            $success = true;
+        }
+        finally {
+            $this->io->setIndent();
+            if ($success)
+                $this->io->text("\ncompleted successfully");
+        }
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace Cinch\Command\Environment;
 
 use Cinch\Command\CommandHandler;
+use Cinch\Command\Task;
 use Cinch\Database\SessionFactory;
 use Cinch\History\HistoryFactory;
 use Cinch\Project\ProjectRepository;
@@ -23,19 +24,11 @@ class AddEnvironmentHandler extends CommandHandler
     public function handle(AddEnvironment $c): void
     {
         $project = $this->projectRepository->get($c->projectId);
-        $project->addEnvironment($c->newName, $c->newEnvironment);
-        $this->sessionFactory->create($c->newEnvironment->targetDsn)->close(); /* test connection */
 
-        /* fails if history exists. can't share history between environments or projects */
-        $history = $this->historyFactory->create($c->newEnvironment);
-        $history->create();
-
-        try {
-            $this->projectRepository->update($project);
-        }
-        catch (Exception $e) {
-            ignoreException($history->delete(...));
-            throw $e;
-        }
+        $this->addTask(new Task\AddEnvironment($project, $c->newName, $c->newEnvironment))
+            ->addTask(new Task\TestTarget($c->newEnvironment->targetDsn, $this->sessionFactory))
+            ->addTask(new Task\CreateHistory($c->newEnvironment, $this->historyFactory))
+            ->addTask(new Task\UpdateProject($project, $this->projectRepository))
+            ->runTasks();
     }
 }

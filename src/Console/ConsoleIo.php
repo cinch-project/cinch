@@ -6,6 +6,8 @@ use Cinch\Io;
 use DateTimeInterface;
 use Stringable;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ConsoleIo implements Io
@@ -20,73 +22,112 @@ class ConsoleIo implements Io
         'debug' => ['header' => '<fg=white;bg=magenta> %s </> ', 'message' => '<options=%s>%s</>']
     ];
 
-    public function __construct(private readonly OutputInterface $output)
+    private int $indent = 0;
+    private bool $isNewLine = true;
+
+    public function __construct(private readonly InputInterface $input, private readonly ConsoleOutputInterface $output)
     {
         $output->getFormatter()->setStyle('code-comment', new OutputFormatterStyle('gray'));
         $output->getFormatter()->setStyle('code', new OutputFormatterStyle('blue'));
     }
 
-    public function raw(string $message, array $context = [], bool $newLine = true): void
+    public function getInput(): InputInterface
     {
-        $this->write('raw', $message, $context, $newLine ? self::NEWLINE : 0);
+        return $this->input;
     }
 
-    public function text(string $message, array $context = [], int $options = self::NEWLINE): void
+    public function getOutput(): ConsoleOutputInterface
+    {
+        return $this->output;
+    }
+
+    public function getIndent(): int
+    {
+        return $this->indent;
+    }
+
+    public function setIndent(int $count = 0): static
+    {
+        $this->indent = max(0, $count);
+        return $this;
+    }
+
+    public function blank(int $count = 1): static
+    {
+        return $count < 1 ? $this : $this->raw(str_repeat("\n", $count), newLine: false);
+    }
+
+    public function raw(string $message = '', array $context = [], bool $newLine = true): static
+    {
+        return $this->write('raw', $message, $context, $newLine ? self::NEWLINE : 0);
+    }
+
+    public function text(string $message = '', array $context = [], int $options = self::NEWLINE): static
     {
         /* builtin info style, uses 'green' foreground */
-        $this->write('text', $message, $context, $options);
+        return $this->write('text', $message, $context, $options);
     }
 
-    public function subtext(string $message, array $context = [], int $options = self::NEWLINE): void
+    public function subtext(string $message = '', array $context = [], int $options = self::NEWLINE): static
     {
-        $this->write('subtext', $message, $context, $options);
+        return $this->write('subtext', $message, $context, $options);
     }
 
-    public function warning(string $message, array $context = [], int $options = self::NEWLINE): void
+    public function warning(string $message, array $context = [], int $options = self::NEWLINE): static
     {
-        $this->write('warning', $message, $context, $options);
+        return $this->write('warning', $message, $context, $options);
     }
 
-    public function error(string $message, array $context = [], int $options = self::NEWLINE): void
+    public function error(string $message, array $context = [], int $options = self::NEWLINE): static
     {
         /* builtin error style, white foreground with a red background */
-        $this->write('error', $message, $context, $options);
+        return $this->write('error', $message, $context, $options);
     }
 
-    public function notice(string $message, array $context = [], int $options = self::NEWLINE): void
+    public function notice(string $message, array $context = [], int $options = self::NEWLINE): static
     {
-        $this->write('notice', $message, $context, $options);
+        return $this->write('notice', $message, $context, $options);
     }
 
-    public function debug(string $message, array $context = [], int $options = self::NEWLINE): void
+    public function debug(string $message, array $context = [], int $options = self::NEWLINE): static
     {
-        $this->write('debug', $message, $context, $options);
+        return $this->write('debug', $message, $context, $options);
     }
 
-    private function write(string $style, string $message, array $context, int $options): void
+    private function write(string $style, string $message, array $context, int $options): static
     {
         if ($this->suppress($style))
-            return;
+            return $this;
 
+        $wantsNewLine = $options & self::NEWLINE;
         $message = $this->render($message, $context);
-        if (!$message && !($options & self::NEWLINE))
-            return;
 
-        $this->output->write($this->formatHeader($style) . $this->formatMessage($style, $message, $options));
+        if (!$message && !$wantsNewLine)
+            return $this;
+
+        $indent = $this->isNewLine && $this->indent ? str_repeat(' ', $this->indent) : '';
+
+        /* track new lines for indent formatting */
+        $this->isNewLine = str_ends_with($message, "\n") || $wantsNewLine;
+
+        $message = $this->formatMessage($style, $message, $options);
+        if ($wantsNewLine)
+            $message .= "\n";
+
+        $this->output->write($indent . $this->formatHeader($style) . $message);
+        return $this;
     }
 
     private function formatHeader(string $style): string
     {
-        static $width = 7; // WARNING is the widest header
         if ($format = self::formatMap[$style]['header'])
-            return sprintf($format, str_pad(strtoupper($style), $width));
+            return sprintf($format, strtoupper($style));
         return '';
     }
 
     private function formatMessage(string $style, string $message, int $options): string
     {
-        $message = sprintf(self::formatMap[$style]['message'], $this->formatOptions($options), $message);
-        return $message . (($options & self::NEWLINE) && !str_ends_with($message, "\n") ? "\n" : '');
+        return sprintf(self::formatMap[$style]['message'], $this->formatOptions($options), $message);
     }
 
     private function formatOptions(int $options): string

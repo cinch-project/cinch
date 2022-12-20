@@ -36,7 +36,7 @@ class GitHub extends Git
         /* GitHub sets this to 7MB or 100,000 entries. However: after calculating the approx (small) size of an
          * entry (200 bytes), only ~36,000 entries can fit within 7MB? Should be plenty for cinch though.
          */
-        if ($tree['truncated'] ?? false === true)
+        if (($tree['truncated'] ?? false) === true)
             throw new RuntimeException(sprintf('searching %s exceeded GitHub limits (%d entries retrieved %s)',
                 $dirPath,
                 count($tree['tree']),

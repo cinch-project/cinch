@@ -19,11 +19,12 @@ class EnvAdd extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $project = $input->getArgument('project');
         $newEnvName = $input->getArgument('name');
 
-        $this->io->text("adding environment $newEnvName to project $project");
-        $this->executeCommand(new AddEnvironment($this->projectId, $newEnvName, $this->getEnvironmentFromInput($input)));
+        $this->executeCommand(
+            "adding environment $newEnvName to project " . $input->getArgument('project'),
+            new AddEnvironment($this->projectId, $newEnvName, $this->getEnvironmentFromInput($input))
+        );
 
         return self::SUCCESS;
     }

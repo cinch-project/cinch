@@ -3,6 +3,7 @@
 namespace Cinch\Command\Project;
 
 use Cinch\Command\CommandHandler;
+use Cinch\Command\Task;
 use Cinch\Database\SessionFactory;
 use Cinch\History\HistoryFactory;
 use Cinch\MigrationStore\MigrationStoreFactory;
@@ -24,32 +25,12 @@ class CreateProjectHandler extends CommandHandler
      */
     public function handle(CreateProject $c): void
     {
-        $rollback = [];
-        $environment = $c->project->getEnvironmentMap()->get($c->envName);
+        $env = $c->project->getEnvironmentMap()->get($c->envName);
 
-        $this->sessionFactory->create($environment->targetDsn)->close(); // test connection
-        // TargetConnected
-
-        try {
-            // ProjectAdded
-            $this->projectRepository->add($c->project);
-            $rollback['project directory'] = fn() => $this->projectRepository->remove($c->project->getId());
-
-            // MigrationStoreCreated
-            $migrationStore = $this->migrationStoreFactory->create($c->project->getMigrationStoreDsn());
-            $migrationStore->createConfig();
-            $rollback['migration store'] = $migrationStore->deleteConfig(...);
-
-            // HistoryCreated
-            $this->historyFactory->create($environment)->create();
-        }
-        catch (Exception $e) {
-            foreach ($rollback as $name => $action) {
-                echo "rollback: $name\n";
-                ignoreException($action);
-            }
-
-            throw $e;
-        }
+        $this->addTask(new Task\TestTarget($env->targetDsn, $this->sessionFactory))
+            ->addTask(new Task\CreateProject($c->project, $this->projectRepository))
+            ->addTask(new Task\CreateMigrationStore($c->project->getMigrationStoreDsn(), $this->migrationStoreFactory))
+            ->addTask(new Task\CreateHistory($env, $this->historyFactory))
+            ->runTasks();
     }
 }

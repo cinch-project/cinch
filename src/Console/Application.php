@@ -22,18 +22,54 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
 class Application extends BaseApplication
 {
-    public function __construct(string $name, private readonly Io $io)
+    public function __construct(string $name, private readonly ConsoleIo $io)
     {
         parent::__construct($name);
+
+        $this->setAutoExit(false);
+        $this->configureIO($this->io->getInput(), $this->io->getOutput());
+        $this->io->getInput()->setInteractive(false);
+
+        /* this dispatcher is only used for console events */
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(ConsoleEvents::COMMAND, $this->onConsoleCommand(...));
         $this->setDispatcher($dispatcher);
+    }
+
+    /** $input and $output are ignored. This will always use the Io instance passed to constructor.
+     * @throws Exception
+     */
+    public function run(InputInterface $input = null, OutputInterface $output = null): int
+    {
+        return parent::run($this->io->getInput(), $this->io->getOutput());
+    }
+
+    /** Loads environment variables from .env.local if it exists, otherwise .env.prod.
+     * @return string the loaded environment: either local or prod
+     */
+    public function loadEnv(string $envDir): string
+    {
+        $dotEnv = (new Dotenv())->usePutenv();
+
+        if (($env = getenv('CINCH_ENV')) !== false && $env != 'local' && $env != 'prod')
+            $env = false;
+
+        if (!$env) {
+            /* prod builds do not include .env.local. So if local exists, use it. */
+            $env = file_exists("$envDir/.env.local") ? 'local' : 'prod';
+            $dotEnv->populate(['CINCH_ENV' => $env], overrideExistingVars: true);
+        }
+
+        $dotEnv->load("$envDir/.env.$env");
+
+        return $env;
     }
 
     protected function doRenderThrowable(Throwable $e, OutputInterface $output): void
@@ -42,16 +78,10 @@ class Application extends BaseApplication
         parent::doRenderThrowable($e, new RenderThrowableOutput($output));
     }
 
-    public function configureIO(InputInterface $input, OutputInterface $output): void
-    {
-        parent::configureIO($input, $output);
-        $input->setInteractive(false);
-    }
-
     protected function getDefaultInputDefinition(): InputDefinition
     {
-        $default = parent::getDefaultInputDefinition();
         $definition = new InputDefinition();
+        $default = parent::getDefaultInputDefinition();
 
         $definition->setArguments($default->getArguments());
         $definition->setOptions([
@@ -96,7 +126,7 @@ class Application extends BaseApplication
         $container->setParameter('schema.description', getenv('CINCH_SCHEMA_DESCRIPTION'));
         $container->setParameter('schema.release_date', getenv('CINCH_SCHEMA_RELEASE_DATE'));
         $container->setParameter('twig.auto_reload', getenv('CINCH_ENV') !== 'prod');
-        $container->setParameter('twig.debug', getenv('CINCH_DEBUG') === '1');
+        $container->setParameter('twig.debug', $this->io->getOutput()->isDebug());
         $container->setParameter('twig.template_dir', $resourceDir);
         $container->setParameter('project.dir', $projectDir);
         $container->set(Io::class, $this->io);
@@ -124,7 +154,7 @@ class Application extends BaseApplication
         $projectDir = Path::join($workingDir, new ProjectName($input->getArgument('project')));
         $container = $this->compileContainer($projectDir);
 
-        $command->setIo($this->io);
+        $command->setConsoleIo($this->io);
         $command->setProjectDir($projectDir);
         $command->setCommandBus($container->get(CommandBus::class));
         $container->get(EventDispatcherInterface::class)->addSubscriber($command);

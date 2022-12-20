@@ -53,7 +53,7 @@ class Local extends Adapter
 
         $files = [];
 
-        /** on first iteration, finder throws DirectoryNotFoundException if $dir does not exist.
+        /**
          * @var SplFileInfo $file
          */
         foreach ($finder as $file) {
