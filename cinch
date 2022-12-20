@@ -5,44 +5,32 @@ use Cinch\Console\Application;
 use Cinch\Console\ConsoleIo;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Dotenv\Dotenv;
+use Symfony\Component\Console\Output\OutputInterface;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
 if (PHP_SAPI !== 'cli')
     throw new RuntimeException("cinch CLI only supports 'cli' SAPI");
 
-$io = new ConsoleIo($output = new ConsoleOutput());
-$application = new Application('cinch', $io);
-$application->configureIO($input = new ArgvInput(), $output);
+$io = new ConsoleIo(new ArgvInput(), new ConsoleOutput());
+$app = new Application('cinch', $io);
 
 try {
-    $appRoot = __DIR__;
-    $dotEnv = (new Dotenv())->usePutenv();
+    $env = $app->loadEnv(__DIR__);
 
-    if (($env = getenv('CINCH_ENV')) !== false && $env != 'local' && $env != 'prod')
-        $env = false;
+    if (!($version = getenv('CINCH_VERSION')))
+        throw new RuntimeException('Missing CINCH_VERSION environment variable');
 
-    if (!$env) {
-        /* prod builds do not include .env.local. So if local exists, use it. */
-        $env = file_exists("$appRoot/.env.local") ? 'local' : 'prod';
-        $dotEnv->populate(['CINCH_ENV' => $env], overrideExistingVars: true);
-    }
-
-    $dotEnv->load("$appRoot/.env.$env");
-    $version = getenv('CINCH_VERSION');
-    $io->debug("cinch $version using $env environment");
-
-    $application->setAutoExit(false);
-    $application->setVersion($version);
-    $exitCode = $application->run($input, $output);
+    $app->setVersion($version);
+    $io->debug("cinch {$version} using $env environment");
+    $exitCode = $app->run();
 }
 catch (Exception $e) {
     $exitCode = 255;
-    $application->renderThrowable($e, $output->getErrorOutput());
+    $app->renderThrowable($e, $io->getOutput()->getErrorOutput());
 }
 
 if ($exitCode = min(255, $exitCode))
-    $io->debug("application exit code $exitCode");
+    $io->setIndent()->debug("application exit code $exitCode"); // clear indent just in case
 
 exit($exitCode);
