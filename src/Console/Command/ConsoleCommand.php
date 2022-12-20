@@ -92,12 +92,31 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
 
     public function onTaskEnded(TaskEnded $event): void
     {
+        /* keep display 2 digits for seconds, minutes and hours. no support for days. */
+        $time = $event->elapsedSeconds;
+
+        // >5940 seconds (99 minutes): display format 12h47m
+        if ($time > 5940) {
+            $min = (int) $time / 60;
+            $hour = $min / 60;
+            $min = (int) $min % 60;
+            $time = sprintf('%dh%02dm', $hour, $min);
+        }
+        // >99 seconds: display format 12m47s
+        else if ($time > 99) {
+            $sec = (int) $time;
+            $min = $sec / 60;
+            $sec = $sec % 60;
+            $time = sprintf('%dm%02ds', $min, $sec);
+        }
+        // <=99 seconds: display format 12.472s
+        else {
+            $time = sprintf('%.3fs', $time);
+        }
+
+        $status = $event->success ? 'PASS' : 'FAIL';
         $statusColor = $event->success ? 'green' : 'red';
-        $this->io->text(sprintf(' <fg=%s>%s</> <fg=gray>%.3fs</>',
-            $statusColor,
-            $event->success ? 'PASS' : 'FAIL',
-            $event->elapsedSeconds
-        ));
+        $this->io->text(sprintf(' <fg=%s>%s</> <fg=gray>%s</>', $statusColor, $status, $time));
     }
 
     protected static function strtrunc(string $s, int $maxLength): string
