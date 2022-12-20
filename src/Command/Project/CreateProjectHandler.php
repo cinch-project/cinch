@@ -28,7 +28,7 @@ class CreateProjectHandler extends CommandHandler
         $env = $c->project->getEnvironmentMap()->get($c->envName);
 
         $this->addTask(new Task\TestTarget($env->targetDsn, $this->sessionFactory))
-            ->addTask(new Task\CreateProject($c->project, $this->projectRepository))
+            ->addTask(new Task\AddProject($c->project, $this->projectRepository))
             ->addTask(new Task\CreateMigrationStore($c->project->getMigrationStoreDsn(), $this->migrationStoreFactory))
             ->addTask(new Task\CreateHistory($env, $this->historyFactory))
             ->runTasks();

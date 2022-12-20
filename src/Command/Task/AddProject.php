@@ -6,7 +6,7 @@ use Cinch\Command\Task;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 
-class CreateProject extends Task
+class AddProject extends Task
 {
     public function __construct(private readonly Project $project, private readonly ProjectRepository $projectRepository)
     {
