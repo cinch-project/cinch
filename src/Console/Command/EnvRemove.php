@@ -3,6 +3,7 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Command\RemoveEnvironment;
+use Cinch\Console\Command;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('env:remove', 'Remove an environment')]
-class EnvRemove extends ConsoleCommand
+class EnvRemove extends Command
 {
     /**
      * @throws Exception

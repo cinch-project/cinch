@@ -5,6 +5,7 @@ namespace Cinch\Console\Command;
 use Cinch\Command\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\Common\StorePath;
+use Cinch\Console\Command;
 use Cinch\History\DeploymentTag;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -13,7 +14,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate:paths', 'Migrate one or more migration store paths')]
-class MigratePaths extends ConsoleCommand
+class MigratePaths extends Command
 {
     /**
      * @throws Exception

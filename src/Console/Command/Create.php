@@ -4,6 +4,7 @@ namespace Cinch\Console\Command;
 
 use Cinch\Command\CreateProject;
 use Cinch\Common\Dsn;
+use Cinch\Console\Command;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectName;
@@ -13,7 +14,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('create', 'Create a project')]
-class Create extends ConsoleCommand
+class Create extends Command
 {
     use AddsEnvironment;
 

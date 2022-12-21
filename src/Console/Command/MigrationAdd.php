@@ -8,6 +8,7 @@ use Cinch\Common\Description;
 use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\StorePath;
+use Cinch\Console\Command;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migration:add', 'Add a migration')]
-class MigrationAdd extends ConsoleCommand
+class MigrationAdd extends Command
 {
     /**
      * @throws Exception

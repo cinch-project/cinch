@@ -3,6 +3,7 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Command\AddEnvironment;
+use Cinch\Console\Command;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -10,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('env:add', 'Add an environment')]
-class EnvAdd extends ConsoleCommand
+class EnvAdd extends Command
 {
     use AddsEnvironment;
 

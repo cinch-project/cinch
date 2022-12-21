@@ -4,6 +4,7 @@ namespace Cinch\Console\Command;
 
 use Cinch\Command\MigrateOptions;
 use Cinch\Common\Author;
+use Cinch\Console\Command;
 use Cinch\History\DeploymentTag;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -11,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migrate', 'Migrate all eligible migrations')]
-class Migrate extends ConsoleCommand
+class Migrate extends Command
 {
     /**
      * @throws Exception

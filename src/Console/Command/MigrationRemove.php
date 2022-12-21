@@ -4,6 +4,7 @@ namespace Cinch\Console\Command;
 
 use Cinch\Command\RemoveMigration;
 use Cinch\Common\StorePath;
+use Cinch\Console\Command;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -11,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('migration:remove', 'Removes a migration')]
-class MigrationRemove extends ConsoleCommand
+class MigrationRemove extends Command
 {
     /**
      * @throws Exception

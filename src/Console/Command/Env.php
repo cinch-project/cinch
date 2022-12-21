@@ -2,6 +2,7 @@
 
 namespace Cinch\Console\Command;
 
+use Cinch\Console\Command;
 use Cinch\Console\Query\GetProject;
 use Cinch\Project\Project;
 use Exception;
@@ -10,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('env', 'List all environments')]
-class Env extends ConsoleCommand
+class Env extends Command
 {
     /**
      * @throws Exception

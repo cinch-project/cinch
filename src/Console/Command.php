@@ -1,10 +1,9 @@
 <?php
 
-namespace Cinch\Console\Command;
+namespace Cinch\Console;
 
 use Cinch\Command\Task;
 use Cinch\Component\Assert\Assert;
-use Cinch\Console\ConsoleIo;
 use Cinch\Project\ProjectId;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -12,7 +11,7 @@ use DateTimeZone;
 use Exception;
 use League\Tactician\CommandBus;
 use RuntimeException;
-use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\Command as BaseCommand;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Terminal;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-abstract class ConsoleCommand extends Command implements SignalableCommandInterface, EventSubscriberInterface
+abstract class Command extends BaseCommand implements SignalableCommandInterface, EventSubscriberInterface
 {
     /* lookup table for commonly used options: see getOptionByName() */
     private const OPTIONS = [
@@ -73,14 +72,16 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
     {
         static $counter = 0;
 
-        if ($event->isRollback)
-            $number = '<error>[00]</>';
+        if ($event->isUndo)
+            $number = '<fg=red>UNDO</>';
         else
-            $number = sprintf('[%2d]', ++$counter);
+            $number = sprintf('<fg=green>[%2d]</>', ++$counter);
 
         $msgWidth = $this->terminal->getWidth() - $this->io->getIndent() - 60;
-        $message = sprintf("%s %-28s <fg=blue>%-{$msgWidth}s</>",
+
+        $message = sprintf("%s <fg=%s>%-28s</> %-{$msgWidth}s",
             $number,
+            $event->isUndo ? 'gray' : 'white',
             self::strtrunc($event->name, 28),
             self::strtrunc($event->message, $msgWidth)
         );

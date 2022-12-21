@@ -3,7 +3,6 @@
 namespace Cinch\Console;
 
 use Cinch\Component\Assert\Assert;
-use Cinch\Console\Command\ConsoleCommand;
 use Cinch\Io;
 use Cinch\Project\ProjectName;
 use Exception;
@@ -145,7 +144,7 @@ class Application extends BaseApplication
     {
         $command = $event->getCommand();
 
-        if (!($command instanceof ConsoleCommand))
+        if (!($command instanceof Command))
             return;
 
         $input = $event->getInput();
