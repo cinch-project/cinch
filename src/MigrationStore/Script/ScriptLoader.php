@@ -48,7 +48,7 @@ class ScriptLoader
             return $this->sqlScriptParser->parse($sql);
         }
         catch (AssertException $e) {
-            throw new AssertException("{$file->getContents()}: {$e->getMessage()}", $e->getErrors());
+            throw new AssertException("{$file->getPath()}: {$e->getMessage()}", $e->getErrors());
         }
     }
 
