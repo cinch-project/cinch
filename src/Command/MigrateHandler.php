@@ -1,8 +1,7 @@
 <?php
 
-namespace Cinch\Command\Migrate;
+namespace Cinch\Command;
 
-use Cinch\Command\DeploymentHandler;
 use Cinch\Common\MigratePolicy;
 use Cinch\History\ChangeStatus;
 use Cinch\MigrationStore\Migration;

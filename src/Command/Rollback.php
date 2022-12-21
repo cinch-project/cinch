@@ -1,25 +1,25 @@
 <?php
 
-namespace Cinch\Command\Migrate;
+namespace Cinch\Command;
 
 use Cinch\Common\Author;
 use Cinch\History\DeploymentTag;
 use Cinch\Project\ProjectId;
 
-class Migrate
+class Rollback
 {
     /**
      * @param ProjectId $projectId
-     * @param DeploymentTag $tag
      * @param Author $deployer
-     * @param MigrateOptions $options
+     * @param DeploymentTag $tag
+     * @param RollbackBy $rollbackBy
      * @param string $envName
      */
     public function __construct(
         public readonly ProjectId $projectId,
-        public readonly DeploymentTag $tag,
         public readonly Author $deployer,
-        public readonly MigrateOptions $options,
+        public readonly DeploymentTag $tag,
+        public readonly RollbackBy $rollbackBy,
         public readonly string $envName = '')
     {
     }

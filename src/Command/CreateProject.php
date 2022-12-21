@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Command\Project;
+namespace Cinch\Command;
 
 use Cinch\Project\Project;
 

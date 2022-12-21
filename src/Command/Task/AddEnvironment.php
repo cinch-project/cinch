@@ -13,9 +13,13 @@ class AddEnvironment extends Task
         private readonly string $envName,
         private readonly Environment $env)
     {
-        $target = $env->targetDsn->getScheme();
-        $history = $env->historyDsn->getScheme();
-        parent::__construct('add environment', "$envName: target=$target, history=$history");
+        parent::__construct('add environment', sprintf('%s: target=%s history=%s schema=%s table_prefix=%s',
+            $this->envName,
+            $this->env->targetDsn->getScheme(),
+            $this->env->historyDsn->getScheme(),
+            $this->env->schema ?: "''",
+            $this->env->tablePrefix ?: "''"
+        ));
     }
 
     /**

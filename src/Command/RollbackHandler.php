@@ -1,8 +1,7 @@
 <?php
 
-namespace Cinch\Command\Rollback;
+namespace Cinch\Command;
 
-use Cinch\Command\DeploymentHandler;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
 use Exception;

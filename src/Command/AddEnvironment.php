@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Command\Environment;
+namespace Cinch\Command;
 
 use Cinch\Common\Environment;
 use Cinch\Project\ProjectId;

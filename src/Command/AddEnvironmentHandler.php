@@ -1,15 +1,13 @@
 <?php
 
-namespace Cinch\Command\Environment;
+namespace Cinch\Command;
 
-use Cinch\Command\CommandHandler;
-use Cinch\Command\Task;
 use Cinch\Database\SessionFactory;
 use Cinch\History\HistoryFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class AddEnvironmentHandler extends CommandHandler
+class AddEnvironmentHandler extends Handler
 {
     public function __construct(
         private readonly SessionFactory $sessionFactory,

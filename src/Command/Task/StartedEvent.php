@@ -2,12 +2,14 @@
 
 namespace Cinch\Command\Task;
 
-class TaskStarted
+use Symfony\Contracts\EventDispatcher\Event;
+
+class StartedEvent extends Event
 {
     public function __construct(
         public readonly string $name,
         public readonly string $message = '',
-        public readonly bool $rollback = false)
+        public readonly bool $isRollback = false)
     {
     }
 }

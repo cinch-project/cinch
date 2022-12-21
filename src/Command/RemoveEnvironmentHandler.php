@@ -1,13 +1,12 @@
 <?php
 
-namespace Cinch\Command\Environment;
+namespace Cinch\Command;
 
-use Cinch\Command\CommandHandler;
 use Cinch\History\HistoryFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class RemoveEnvironmentHandler extends CommandHandler
+class RemoveEnvironmentHandler extends Handler
 {
     public function __construct(
         private readonly HistoryFactory $historyFactory,

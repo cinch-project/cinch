@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Command\Migration;
+namespace Cinch\Command;
 
 use Cinch\Common\Author;
 use Cinch\Common\Description;

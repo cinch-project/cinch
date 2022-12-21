@@ -22,7 +22,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 
-abstract class DeploymentHandler extends CommandHandler
+abstract class DeploymentHandler extends Handler
 {
     protected MigrationStore $migrationStore;
     protected History $history;
@@ -87,7 +87,8 @@ abstract class DeploymentHandler extends CommandHandler
         $this->target->beginTransaction();
 
         try {
-            $migration->script->{$this->command->value}($this->target);
+            $command = $this->command->value; // 'migrate' or 'rollback'
+            $migration->script->$command($this->target);
             $this->addChange($status, $migration);
             $this->target->commit();
         }

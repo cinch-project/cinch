@@ -1,14 +1,13 @@
 <?php
 
-namespace Cinch\Command\Migration;
+namespace Cinch\Command;
 
-use Cinch\Command\CommandHandler;
 use Cinch\History\HistoryFactory;
 use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class RemoveMigrationHandler extends CommandHandler
+class RemoveMigrationHandler extends Handler
 {
     public function __construct(
         private readonly MigrationStoreFactory $migrationStoreFactory,

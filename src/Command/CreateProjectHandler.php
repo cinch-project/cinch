@@ -1,16 +1,14 @@
 <?php
 
-namespace Cinch\Command\Project;
+namespace Cinch\Command;
 
-use Cinch\Command\CommandHandler;
-use Cinch\Command\Task;
 use Cinch\Database\SessionFactory;
 use Cinch\History\HistoryFactory;
 use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class CreateProjectHandler extends CommandHandler
+class CreateProjectHandler extends Handler
 {
     public function __construct(
         private readonly MigrationStoreFactory $migrationStoreFactory,

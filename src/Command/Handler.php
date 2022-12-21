@@ -6,12 +6,12 @@ use Cinch\Io;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
-abstract class CommandHandler
+abstract class Handler
 {
     /** @var Task[] */
     private array $tasks = [];
     protected readonly Io $io;
-    protected readonly EventDispatcherInterface $dispatcher;
+    private readonly EventDispatcherInterface $dispatcher;
 
     public function setIo(Io $io): void
     {
@@ -21,11 +21,12 @@ abstract class CommandHandler
     public function setEventDispatcher(EventDispatcherInterface $dispatcher): void
     {
         $this->dispatcher = $dispatcher;
-        Task::setEventDispatcher($dispatcher);
     }
 
     protected function addTask(Task $task): static
     {
+        $task->setIo($this->io);
+        $task->setEventDispatcher($this->dispatcher);
         $this->tasks[] = $task;
         return $this;
     }

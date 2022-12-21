@@ -4,6 +4,7 @@ namespace Cinch\MigrationStore;
 
 use Cinch\Common\Author;
 use Cinch\Common\Description;
+use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
@@ -80,13 +81,14 @@ class MigrationStore
      * @throws Exception
      */
     public function add(StorePath $path, MigratePolicy $migratePolicy, Author $author,
-        DateTimeInterface $authoredAt, Description $description): void
+        DateTimeInterface $authoredAt, Description $description, Labels $labels): void
     {
         $content = $this->twig->render($path->isSql() ? 'sql.twig' : 'php.twig', [
             'migrate_policy' => $migratePolicy->value,
             'author' => $author->value,
             'authored_at' => $authoredAt->format('Y-m-d H:i:sP'),
             'description' => $description->value,
+            'labels' => $labels->all()
         ]);
 
         $this->adapter->addFile($path->value, $content, 'add migration request');

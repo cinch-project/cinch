@@ -2,40 +2,46 @@
 
 namespace Cinch\Command;
 
-use Cinch\Command\Task\TaskEnded;
-use Cinch\Command\Task\TaskStarted;
+use Cinch\Command\Task\EndedEvent;
+use Cinch\Command\Task\StartedEvent;
+use Cinch\Io;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 abstract class Task
 {
-    private static EventDispatcherInterface $dispatcher;
-    private int $startTime = 0;
+    protected readonly Io $io;
+    private readonly EventDispatcherInterface $dispatcher;
     private bool $requiresRollback = false;
 
     /**
      * @param string $name task name
-     * @param string $message a message describing the task
-     * @param string|null $rollbackName name used when rolling back task, set to null if task has no rollback
+     * @param string $description brief description of the task
+     * @param string $rollbackName name used when rolling back task. note: empty string disables rollback
      */
     public function __construct(
         private readonly string $name,
-        private readonly string $message,
-        private readonly string|null $rollbackName = null)
+        private readonly string $description,
+        private readonly string $rollbackName = '')
     {
     }
 
-    public static function setEventDispatcher(EventDispatcherInterface $dispatcher): void
+    public function setIo(Io $io): void
     {
-        self::$dispatcher = $dispatcher;
+        $this->io = $io;
     }
 
-    /**
+    public function setEventDispatcher(EventDispatcherInterface $dispatcher): void
+    {
+        $this->dispatcher = $dispatcher;
+    }
+
+    /** Runs the task.
      * @throws Exception
      */
     protected abstract function doRun(): void;
 
-    /**
+    /** Rolls back the task.
      * @throws Exception
      */
     protected abstract function doRollback(): void;
@@ -45,38 +51,41 @@ abstract class Task
      */
     public function run(): void
     {
-        $this->execute(false);
-        $this->requiresRollback = true;
+        $this->execute(isRollback: false);
+        $this->requiresRollback = !!$this->rollbackName;
     }
 
     public function rollback(): void
     {
-        if ($this->requiresRollback && $this->rollbackName !== null)
-            $this->execute(true);
+        if ($this->requiresRollback)
+            /** @noinspection PhpUnhandledExceptionInspection */
+            $this->execute(isRollback: true);
     }
 
     /**
      * @throws Exception
      */
-    private function execute(bool $rollback): void
+    private function execute(bool $isRollback): void
     {
-        $success = false;
-        $name = $rollback ? $this->rollbackName : $this->name;
-        self::$dispatcher->dispatch(new TaskStarted($name, $this->message, rollback: $rollback));
+        $name = $isRollback ? $this->rollbackName : $this->name;
+        $this->dispatcher->dispatch(new StartedEvent($name, $this->description, $isRollback));
 
         try {
-            $this->startTime = hrtime(true);
-            $rollback ? $this->doRollback() : $this->doRun();
+            $success = false;
+            $startTime = hrtime(true);
+            $isRollback ? $this->doRollback() : $this->doRun();
             $success = true;
         }
         catch (Exception $e) {
-            if (!$rollback)
+            if (!$isRollback)
                 throw $e;
+
+            $this->io->debug(sprintf('%s::rollback: %s - %s',
+                static::class, get_class($e), $e->getMessage()));
         }
         finally {
-            $elapsed = (hrtime(true) - $this->startTime) / 1e9;
-            $this->startTime = 0;
-            self::$dispatcher->dispatch(new TaskEnded($success, $elapsed));
+            $elapsed = (hrtime(true) - $startTime) / 1e9;
+            $this->dispatcher->dispatch(new EndedEvent($success, $elapsed));
         }
     }
 }

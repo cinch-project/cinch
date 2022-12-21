@@ -4,7 +4,7 @@ services:
         public: false
 
     _instanceof:
-        Cinch\Command\CommandHandler:
+        Cinch\Command\Handler:
             public: true
             calls:
                 -   setIo: [ '@Cinch\Io' ]
