@@ -68,54 +68,55 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         ];
     }
 
-    public function onTaskStarted(Task\StartedEvent $event): void
+    public function onTaskStarted(Task\StartedEvent $task): void
     {
-        static $counter = 0;
+        static $nameLength = 32;
 
-        if ($event->isUndo)
-            $number = '<fg=red>UNDO</>';
+        $descWidth = $this->terminal->getWidth() - $this->io->getIndent() - 60;
+
+        if ($task->isUndo)
+            $message = sprintf("<fg=red>UNDO</> <fg=gray>%-{$nameLength}s</> <fg=gray>%-{$descWidth}s</>",
+                "#$task->id $task->name",
+                'undoing previous action...'
+            );
         else
-            $number = sprintf('<fg=green>[%2d]</>', ++$counter);
-
-        $msgWidth = $this->terminal->getWidth() - $this->io->getIndent() - 60;
-
-        $message = sprintf("%s <fg=%s>%-28s</> %-{$msgWidth}s",
-            $number,
-            $event->isUndo ? 'gray' : 'white',
-            self::strtrunc($event->name, 28),
-            self::strtrunc($event->message, $msgWidth)
-        );
+            $message = sprintf("<fg=yellow>(%2d)</> %-{$nameLength}s %-{$descWidth}s",
+                $task->id,
+                self::strtrunc($task->name, $nameLength),
+                $task->description
+            );
 
         $this->io->raw($message, newLine: false);
     }
 
-    public function onTaskEnded(Task\EndedEvent $event): void
+    public function onTaskEnded(Task\EndedEvent $task): void
     {
-        /* keep display 2 digits for seconds, minutes and hours. no support for days. */
-        $time = $event->elapsedSeconds;
+        $elapsed = $task->elapsedSeconds;
+
+        /* never display more than 2 digits for seconds, minutes and hours. no support for days. */
 
         // >5940 seconds (99 minutes): display format 12h47m
-        if ($time > 5940) {
-            $min = (int) $time / 60;
+        if ($elapsed > 5940) {
+            $min = (int) $elapsed / 60;
             $hour = $min / 60;
             $min = (int) $min % 60;
-            $time = sprintf('%dh%02dm', $hour, $min);
+            $elapsed = sprintf('%dh%02dm', $hour, $min);
         }
         // >99 seconds: display format 12m47s
-        else if ($time > 99) {
-            $sec = (int) $time;
+        else if ($elapsed > 99) {
+            $sec = (int) $elapsed;
             $min = $sec / 60;
             $sec = $sec % 60;
-            $time = sprintf('%dm%02ds', $min, $sec);
+            $elapsed = sprintf('%dm%02ds', $min, $sec);
         }
         // <=99 seconds: display format 12.472s
         else {
-            $time = sprintf('%.3fs', $time);
+            $elapsed = sprintf('%.3fs', $elapsed);
         }
 
-        $status = $event->success ? 'PASS' : 'FAIL';
-        $statusColor = $event->success ? 'green' : 'red';
-        $this->io->text(sprintf(' <fg=%s>%s</> <fg=gray>%s</>', $statusColor, $status, $time));
+        $status = $task->success ? 'PASS' : 'FAIL';
+        $statusColor = $task->success ? 'green' : 'red';
+        $this->io->raw(sprintf(' <fg=%s>%s</> <fg=gray>%s</>', $statusColor, $status, $elapsed));
     }
 
     protected static function strtrunc(string $s, int $maxLength): string
