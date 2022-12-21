@@ -2,7 +2,7 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Migrate\MigrateOptions;
+use Cinch\Command\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\Common\StorePath;
 use Cinch\History\DeploymentTag;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate:paths', 'Migrates one or more migration store paths')]
+#[AsCommand('migrate:paths', 'Migrate one or more migration store paths')]
 class MigratePaths extends ConsoleCommand
 {
     /**
@@ -20,15 +20,21 @@ class MigratePaths extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $paths = array_map(fn(string $p) => new StorePath($p), $input->getArgument('paths'));
+        $paths = [];
+        $rawPaths = [];
 
-        $this->executeCommand(new \Cinch\Command\Migrate\Migrate(
+        foreach ($input->getArgument('paths') as $p) {
+            $paths[] = new StorePath($p);
+            $rawPaths[] = $p;
+        }
+
+        $this->executeCommand(new \Cinch\Command\Migrate(
             $this->projectId,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),
             new MigrateOptions($paths),
             $this->envName
-        ));
+        ), "Migrating migration store paths: " . implode(', ', $rawPaths));
 
         return self::SUCCESS;
     }

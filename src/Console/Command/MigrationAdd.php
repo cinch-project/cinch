@@ -2,7 +2,7 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Migration\AddMigration;
+use Cinch\Command\AddMigration;
 use Cinch\Common\Author;
 use Cinch\Common\Description;
 use Cinch\Common\Labels;
@@ -17,7 +17,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migration:add', 'Adds a migration')]
+#[AsCommand('migration:add', 'Add a migration')]
 class MigrationAdd extends ConsoleCommand
 {
     /**
@@ -25,15 +25,16 @@ class MigrationAdd extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $path = new StorePath($input->getArgument('path'));
         $this->executeCommand(new AddMigration(
             $this->projectId,
-            new StorePath($input->getArgument('path')),
+            $path,
             MigratePolicy::from($input->getOption('migrate-policy')),
             new Author($input->getOption('author') ?: get_system_user()),
             new DateTimeImmutable(timezone: new DateTimeZone('UTC')),
             new Description($input->getArgument('description')),
             new Labels($input->getOption('label'))
-        ));
+        ), "Adding migration script '$path'");
 
         return self::SUCCESS;
     }

@@ -2,11 +2,9 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Task\TaskEnded;
-use Cinch\Command\Task\TaskStarted;
+use Cinch\Command\Task;
 use Cinch\Component\Assert\Assert;
 use Cinch\Console\ConsoleIo;
-use Cinch\Event\ProgressEvent;
 use Cinch\Project\ProjectId;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -66,16 +64,16 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
     public static function getSubscribedEvents(): array
     {
         return [
-            TaskStarted::class => 'onTaskStarted',
-            TaskEnded::class => 'onTaskEnded',
+            Task\StartedEvent::class => 'onTaskStarted',
+            Task\EndedEvent::class => 'onTaskEnded',
         ];
     }
 
-    public function onTaskStarted(TaskStarted $event): void
+    public function onTaskStarted(Task\StartedEvent $event): void
     {
         static $counter = 0;
 
-        if ($event->rollback)
+        if ($event->isRollback)
             $number = '<error>[00]</>';
         else
             $number = sprintf('[%2d]', ++$counter);
@@ -90,7 +88,7 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
         $this->io->raw($message, newLine: false);
     }
 
-    public function onTaskEnded(TaskEnded $event): void
+    public function onTaskEnded(Task\EndedEvent $event): void
     {
         /* keep display 2 digits for seconds, minutes and hours. no support for days. */
         $time = $event->elapsedSeconds;
@@ -129,9 +127,12 @@ abstract class ConsoleCommand extends Command implements SignalableCommandInterf
     /**
      * @throws Exception
      */
-    protected function executeCommand(string $title, object $command): void
+    protected function executeCommand(object $command, string $title = ''): void
     {
         $success = false;
+
+        if (!$title)
+            $title = $this->getDescription();
 
         try {
             $this->io->text("$title\n")->setIndent(2);

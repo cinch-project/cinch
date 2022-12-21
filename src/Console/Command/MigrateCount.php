@@ -2,7 +2,7 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Migrate\MigrateOptions;
+use Cinch\Command\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\Component\Assert\Assert;
 use Cinch\History\DeploymentTag;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate:count', 'Migrates the next count migrations')]
+#[AsCommand('migrate:count', 'Migrate the next count migrations')]
 class MigrateCount extends ConsoleCommand
 {
     /**
@@ -22,13 +22,13 @@ class MigrateCount extends ConsoleCommand
     {
         $count = (int) Assert::digit($input->getArgument('count'), 'count argument');
 
-        $this->executeCommand(new \Cinch\Command\Migrate\Migrate(
+        $this->executeCommand(new \Cinch\Command\Migrate(
             $this->projectId,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),
             new MigrateOptions($count),
             $this->envName
-        ));
+        ), 'Migrating the next $count migration(s)');
 
         return self::SUCCESS;
     }

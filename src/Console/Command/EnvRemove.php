@@ -2,7 +2,7 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Environment\RemoveEnvironment;
+use Cinch\Command\RemoveEnvironment;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('env:remove', 'Removes an environment')]
+#[AsCommand('env:remove', 'Remove an environment')]
 class EnvRemove extends ConsoleCommand
 {
     /**
@@ -24,7 +24,10 @@ class EnvRemove extends ConsoleCommand
         $dropMsg = $drop ? 'and dropping history schema' : '';
         $this->io->text("deleting environment $name $dropMsg");
 
-        $this->executeCommand(new RemoveEnvironment($this->projectId, $name, $drop));
+        $this->executeCommand(
+            new RemoveEnvironment($this->projectId, $name, $drop),
+            "Removing environment '$name' from project '" . $input->getArgument('project') . "'"
+        );
 
         return self::SUCCESS;
     }

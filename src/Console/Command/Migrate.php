@@ -2,7 +2,7 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Migrate\MigrateOptions;
+use Cinch\Command\MigrateOptions;
 use Cinch\Common\Author;
 use Cinch\History\DeploymentTag;
 use Exception;
@@ -10,7 +10,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate', 'Migrates all eligible migrations')]
+#[AsCommand('migrate', 'Migrate all eligible migrations')]
 class Migrate extends ConsoleCommand
 {
     /**
@@ -18,13 +18,13 @@ class Migrate extends ConsoleCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->executeCommand(new \Cinch\Command\Migrate\Migrate(
+        $this->executeCommand(new \Cinch\Command\Migrate(
             $this->projectId,
             new DeploymentTag($input->getArgument('tag')),
             new Author($input->getOption('deployer') ?: get_system_user()),
             new MigrateOptions(),
             $this->envName
-        ));
+        ), 'Migrating all eligible migrations');
 
         // cinch create <project> <target>
 

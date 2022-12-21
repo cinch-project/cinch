@@ -56,8 +56,7 @@ class ConsoleProjectRepository implements ProjectRepository
             throw new Exception("project '{$project->getId()}' already exists");
 
         /* create project directory */
-        $fs = new Filesystem();
-        $fs->mkdir(Path::join($projectDir, 'log')); // creates all parents
+        (new Filesystem())->mkdir($projectDir);
 
         try {
             $this->update($project);

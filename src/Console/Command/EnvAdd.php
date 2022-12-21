@@ -2,14 +2,14 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Environment\AddEnvironment;
+use Cinch\Command\AddEnvironment;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('env:add', 'Adds an environment')]
+#[AsCommand('env:add', 'Add an environment')]
 class EnvAdd extends ConsoleCommand
 {
     use AddsEnvironment;
@@ -22,8 +22,8 @@ class EnvAdd extends ConsoleCommand
         $newEnvName = $input->getArgument('name');
 
         $this->executeCommand(
-            "adding environment $newEnvName to project " . $input->getArgument('project'),
-            new AddEnvironment($this->projectId, $newEnvName, $this->getEnvironmentFromInput($input))
+            new AddEnvironment($this->projectId, $newEnvName, $this->getEnvironmentFromInput($input)),
+            "Adding environment '$newEnvName' to project '" . $input->getArgument('project') . "'"
         );
 
         return self::SUCCESS;

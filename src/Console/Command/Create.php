@@ -2,7 +2,7 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Project\CreateProject;
+use Cinch\Command\CreateProject;
 use Cinch\Common\Dsn;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('create', 'Creates a project')]
+#[AsCommand('create', 'Create a project')]
 class Create extends ConsoleCommand
 {
     use AddsEnvironment;
@@ -33,7 +33,7 @@ class Create extends ConsoleCommand
             new EnvironmentMap($envName, [$envName => $environment])
         );
 
-        $this->executeCommand("Creating project $projectName", new CreateProject($project, $envName));
+        $this->executeCommand(new CreateProject($project, $envName), "Creating project '$projectName'");
 
         return self::SUCCESS;
     }

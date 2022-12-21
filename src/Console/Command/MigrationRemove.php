@@ -2,7 +2,7 @@
 
 namespace Cinch\Console\Command;
 
-use Cinch\Command\Migration\RemoveMigration;
+use Cinch\Command\RemoveMigration;
 use Cinch\Common\StorePath;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -19,7 +19,12 @@ class MigrationRemove extends ConsoleCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $path = new StorePath($input->getArgument('path'));
-        $this->executeCommand(new RemoveMigration($this->projectId, $this->envName, $path));
+
+        $this->executeCommand(
+            new RemoveMigration($this->projectId, $this->envName, $path),
+            "Removing migration script '$path'"
+        );
+
         return self::SUCCESS;
     }
 
