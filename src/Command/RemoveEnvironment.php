@@ -9,7 +9,7 @@ class RemoveEnvironment
     public function __construct(
         public readonly ProjectId $projectId,
         public readonly string $name,
-        public readonly bool $dropHistory)
+        public readonly bool $deleteHistory)
     {
     }
 }

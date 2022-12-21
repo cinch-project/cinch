@@ -19,14 +19,11 @@ class EnvRemove extends ConsoleCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $name = $input->getArgument('name');
-        $drop = $input->getOption('drop-history');
-
-        $dropMsg = $drop ? 'and dropping history schema' : '';
-        $this->io->text("deleting environment $name $dropMsg");
+        $deleteHistory = $input->getOption('delete-history');
 
         $this->executeCommand(
-            new RemoveEnvironment($this->projectId, $name, $drop),
-            "Removing environment '$name' from project '" . $input->getArgument('project') . "'"
+            new RemoveEnvironment($this->projectId, $name, $deleteHistory),
+            "Removing environment $name " . ($deleteHistory ? 'and deleting history' : '')
         );
 
         return self::SUCCESS;
@@ -43,6 +40,6 @@ class EnvRemove extends ConsoleCommand
         $this
             ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
-            ->addOption('drop-history', 'D', InputOption::VALUE_NONE, 'Drop history schema');
+            ->addOption('delete-history', 'D', InputOption::VALUE_NONE, 'Delete history');
     }
 }
