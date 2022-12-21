@@ -32,7 +32,7 @@ class MySql extends Platform
     {
         if (!$dt)
             $dt = new DateTime(timezone: new DateTimeZone('UTC'));
-        return $dt->format($this->dateTimeFormat); // mysql 5.7 excludes time zone offset
+        return $dt->format($this->dateTimeFormat);
     }
 
     public function assertIdentifier(string $value): string

@@ -12,10 +12,6 @@ use PDO;
 
 class SessionFactory
 {
-    public function __construct(Io $io)
-    {
-    }
-
     /**
      * @throws Exception
      */
