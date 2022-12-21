@@ -18,7 +18,7 @@ class AddMigration extends Task
         private readonly AddMigrationCommand $command,
         private readonly MigrationStoreFactory $migrationStoreFactory)
     {
-        parent::__construct('add migration script', sprintf('%s:%s - %s',
+        parent::__construct('add migration script', sprintf('%s by %s - %s',
             $this->command->path,
             $this->command->author,
             $this->command->description

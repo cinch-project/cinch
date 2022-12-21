@@ -74,6 +74,7 @@ class Local extends Adapter
         if (file_exists($path))
             throw new Exception("$path already exists: message=$message");
 
+        (new Filesystem())->mkdir(dirname($path));
         if (@file_put_contents($path, $content) === false)
             throw new LastErrorException();
     }
