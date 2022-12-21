@@ -2,10 +2,12 @@
 
 namespace Cinch\Command\Task;
 
+use Cinch\Command\TaskAttribute;
 use Cinch\Command\Task;
 use Cinch\Common\Environment;
 use Cinch\Project\Project;
 
+#[TaskAttribute('add environment', 'adds an environment to the project configuration', canUndo: true)]
 class AddEnvironment extends Task
 {
     public function __construct(
@@ -13,13 +15,7 @@ class AddEnvironment extends Task
         private readonly string $envName,
         private readonly Environment $env)
     {
-        parent::__construct('add environment', sprintf('%s: target=%s history=%s schema=%s table_prefix=%s',
-            $this->envName,
-            $this->env->targetDsn->getScheme(),
-            $this->env->historyDsn->getScheme(),
-            $this->env->schema ?: "''",
-            $this->env->tablePrefix ?: "''"
-        ));
+        parent::__construct();
     }
 
     /**
@@ -32,5 +28,6 @@ class AddEnvironment extends Task
 
     protected function doUndo(): void
     {
+        $this->project->removeEnvironment($this->envName);
     }
 }

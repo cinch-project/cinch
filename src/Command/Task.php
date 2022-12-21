@@ -13,17 +13,26 @@ abstract class Task
     protected readonly Io $io;
     private readonly EventDispatcherInterface $dispatcher;
     private bool $success = false;
+    private int $id = 0;
+    private readonly string $name;
+    private readonly string $description;
+    private readonly bool $canUndo;
 
-    /**
-     * @param string $name task name
-     * @param string $description brief description of the task
-     * @param bool $canUndo true if task can perform an undo, false otherwise
-     */
-    public function __construct(
-        private readonly string $name,
-        private readonly string $description,
-        private readonly bool $canUndo = false)
+    public function __construct()
     {
+        $attrs = (new \ReflectionObject($this))->getAttributes(TaskAttribute::class);
+        if (!$attrs)
+            throw new \RuntimeException("task must define an " . TaskAttribute::class . " attribute");
+
+        $asTask = $attrs[0]->newInstance();
+        $this->name = $asTask->name;
+        $this->description = $asTask->description;
+        $this->canUndo = $asTask->canUndo;
+    }
+
+    public function setId(int $id): void
+    {
+        $this->id = max(0, $id);
     }
 
     public function setIo(Io $io): void
@@ -51,14 +60,14 @@ abstract class Task
      */
     public function run(): void
     {
-        $this->execute(isUndo: false);
+        $this->execute(false);
     }
 
     public function undo(): void
     {
         if ($this->success && $this->canUndo)
             /** @noinspection PhpUnhandledExceptionInspection */
-            $this->execute(isUndo: true);
+            $this->execute(true);
     }
 
     /**
@@ -66,7 +75,7 @@ abstract class Task
      */
     private function execute(bool $isUndo): void
     {
-        $this->dispatcher->dispatch(new StartedEvent($this->name, $this->description, $isUndo));
+        $this->dispatcher->dispatch(new StartedEvent($this->id, $this->name, $this->description, $isUndo));
 
         try {
             $startTime = hrtime(true);

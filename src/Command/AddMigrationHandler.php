@@ -19,10 +19,7 @@ class AddMigrationHandler extends Handler
      */
     public function handle(AddMigration $c): void
     {
-        $this->addTask(new Task\AddMigration(
-            $this->projectRepository->get($c->projectId)->getMigrationStoreDsn(),
-            $c,
-            $this->migrationStoreFactory
-        ))->runTasks();
+        $dsn = $this->projectRepository->get($c->projectId)->getMigrationStoreDsn();
+        $this->addTask(new Task\AddMigration($dsn, $c, $this->migrationStoreFactory))->runTasks();
     }
 }

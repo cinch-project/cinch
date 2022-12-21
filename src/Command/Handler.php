@@ -25,9 +25,12 @@ abstract class Handler
 
     protected function addTask(Task $task): static
     {
+        $this->tasks[] = $task;
+
         $task->setIo($this->io);
         $task->setEventDispatcher($this->dispatcher);
-        $this->tasks[] = $task;
+        $task->setId(count($this->tasks));
+
         return $this;
     }
 

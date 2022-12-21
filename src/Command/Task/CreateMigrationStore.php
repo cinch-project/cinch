@@ -2,11 +2,14 @@
 
 namespace Cinch\Command\Task;
 
+use Cinch\Command\TaskAttribute;
 use Cinch\Command\Task;
 use Cinch\Common\Dsn;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 
+#[TaskAttribute('create migration store',
+    "open store and create the default '" . MigrationStore::FILENAME . "' file", canUndo: true)]
 class CreateMigrationStore extends Task
 {
     private MigrationStore $store;
@@ -15,7 +18,7 @@ class CreateMigrationStore extends Task
         private readonly Dsn $dsn,
         private readonly MigrationStoreFactory $migrationStoreFactory)
     {
-        parent::__construct('create migration store', $this->dsn, canUndo: true);
+        parent::__construct();
     }
 
     /**
