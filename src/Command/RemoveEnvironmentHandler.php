@@ -21,14 +21,14 @@ class RemoveEnvironmentHandler extends Handler
     {
         $project = $this->projectRepository->get($c->projectId);
 
-        if ($c->deleteHistory)
-            $this->addTask(new Task\DeleteHistory(
-                $project->getEnvironmentMap()->get($c->name),
-                $this->historyFactory
-            ));
-
         $this->addTask(new Task\RemoveEnvironment($project, $c->name))
-            ->addTask(new Task\UpdateProject($project, $this->projectRepository))
-            ->runTasks();
+            ->addTask(new Task\UpdateProject($project, $this->projectRepository));
+
+        if ($c->deleteHistory) {
+            $env = $project->getEnvironmentMap()->get($c->name);
+            $this->addTask(new Task\DeleteHistory($env, $this->historyFactory));
+        }
+
+        $this->runTasks();
     }
 }
