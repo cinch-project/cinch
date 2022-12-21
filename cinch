@@ -5,7 +5,6 @@ use Cinch\Console\Application;
 use Cinch\Console\ConsoleIo;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -22,15 +21,16 @@ try {
         throw new RuntimeException('Missing CINCH_VERSION environment variable');
 
     $app->setVersion($version);
-    $io->debug("cinch {$version} using $env environment");
+    $io->debug("cinch $version using $env environment");
     $exitCode = $app->run();
 }
 catch (Exception $e) {
     $exitCode = 255;
     $app->renderThrowable($e, $io->getOutput()->getErrorOutput());
 }
+finally {
+    if ($exitCode = min(255, $exitCode))
+        $io->setIndent()->debug("application exit code $exitCode");
 
-if ($exitCode = min(255, $exitCode))
-    $io->setIndent()->debug("application exit code $exitCode"); // clear indent just in case
-
-exit($exitCode);
+    exit($exitCode);
+}
