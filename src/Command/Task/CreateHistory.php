@@ -13,7 +13,7 @@ class CreateHistory extends Task
 
     public function __construct(private readonly Environment $env, private readonly HistoryFactory $historyFactory)
     {
-        parent::__construct('create history', "($env->schema) $env->historyDsn", 'rollback history');
+        parent::__construct('create history', "($env->schema) $env->historyDsn", canUndo: true);
     }
 
     /**
@@ -25,7 +25,7 @@ class CreateHistory extends Task
         $this->history->create();
     }
 
-    protected function doRollback(): void
+    protected function doUndo(): void
     {
         $this->history->delete();
     }

@@ -22,7 +22,7 @@ class AddMigration extends Task
             $this->command->path,
             $this->command->author,
             $this->command->description
-        ), 'rollback migration script');
+        ), canUndo: true);
     }
 
     /**
@@ -44,7 +44,7 @@ class AddMigration extends Task
     /**
      * @inheritDoc
      */
-    protected function doRollback(): void
+    protected function doUndo(): void
     {
         $this->store->remove($this->path);
     }

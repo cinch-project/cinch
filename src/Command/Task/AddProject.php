@@ -10,7 +10,7 @@ class AddProject extends Task
 {
     public function __construct(private readonly Project $project, private readonly ProjectRepository $projectRepository)
     {
-        parent::__construct('create project', $this->project->getId(), 'rollback project');
+        parent::__construct('create project', $this->project->getId(), canUndo: true);
     }
 
     protected function doRun(): void
@@ -18,7 +18,7 @@ class AddProject extends Task
         $this->projectRepository->add($this->project);
     }
 
-    protected function doRollback(): void
+    protected function doUndo(): void
     {
         $this->projectRepository->remove($this->project->getId());
     }

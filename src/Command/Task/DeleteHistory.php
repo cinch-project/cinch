@@ -21,7 +21,7 @@ class DeleteHistory extends Task
         $this->historyFactory->create($this->env)->delete();
     }
 
-    protected function doRollback(): void
+    protected function doUndo(): void
     {
     }
 }

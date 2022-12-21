@@ -30,7 +30,7 @@ class AddEnvironment extends Task
         $this->project->addEnvironment($this->envName, $this->env);
     }
 
-    protected function doRollback(): void
+    protected function doUndo(): void
     {
     }
 }

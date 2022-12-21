@@ -15,7 +15,7 @@ class CreateMigrationStore extends Task
         private readonly Dsn $dsn,
         private readonly MigrationStoreFactory $migrationStoreFactory)
     {
-        parent::__construct('create migration store', $this->dsn, 'rollback migration store');
+        parent::__construct('create migration store', $this->dsn, canUndo: true);
     }
 
     /**
@@ -27,7 +27,7 @@ class CreateMigrationStore extends Task
         $this->store->createConfig();
     }
 
-    protected function doRollback(): void
+    protected function doUndo(): void
     {
         $this->store->deleteConfig();
     }

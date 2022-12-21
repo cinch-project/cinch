@@ -9,7 +9,7 @@ class StartedEvent extends Event
     public function __construct(
         public readonly string $name,
         public readonly string $message = '',
-        public readonly bool $isRollback = false)
+        public readonly bool $isUndo = false)
     {
     }
 }

@@ -12,7 +12,7 @@ class UpdateProject extends Task
         private readonly Project $project,
         private readonly ProjectRepository $projectRepository)
     {
-        parent::__construct('update project', $this->project->getId());
+        parent::__construct('update project', $this->project->getId(), canUndo: true);
     }
 
     protected function doRun(): void
@@ -20,7 +20,8 @@ class UpdateProject extends Task
         $this->projectRepository->update($this->project);
     }
 
-    protected function doRollback(): void
+    protected function doUndo(): void
     {
+        $this->projectRepository->update($this->project);
     }
 }

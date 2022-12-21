@@ -18,7 +18,7 @@ class TestTarget extends Task
         $this->sessionFactory->create($this->dsn)->close();
     }
 
-    protected function doRollback(): void
+    protected function doUndo(): void
     {
     }
 }

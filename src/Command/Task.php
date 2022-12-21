@@ -12,17 +12,17 @@ abstract class Task
 {
     protected readonly Io $io;
     private readonly EventDispatcherInterface $dispatcher;
-    private bool $requiresRollback = false;
+    private bool $success = false;
 
     /**
      * @param string $name task name
      * @param string $description brief description of the task
-     * @param string $rollbackName name used when rolling back task. note: empty string disables rollback
+     * @param bool $canUndo true if task can perform an undo, false otherwise
      */
     public function __construct(
         private readonly string $name,
         private readonly string $description,
-        private readonly string $rollbackName = '')
+        private readonly bool $canUndo = false)
     {
     }
 
@@ -44,48 +44,45 @@ abstract class Task
     /** Rolls back the task.
      * @throws Exception
      */
-    protected abstract function doRollback(): void;
+    protected abstract function doUndo(): void;
 
     /**
      * @throws Exception
      */
     public function run(): void
     {
-        $this->execute(isRollback: false);
-        $this->requiresRollback = !!$this->rollbackName;
+        $this->execute(isUndo: false);
     }
 
-    public function rollback(): void
+    public function undo(): void
     {
-        if ($this->requiresRollback)
+        if ($this->success && $this->canUndo)
             /** @noinspection PhpUnhandledExceptionInspection */
-            $this->execute(isRollback: true);
+            $this->execute(isUndo: true);
     }
 
     /**
      * @throws Exception
      */
-    private function execute(bool $isRollback): void
+    private function execute(bool $isUndo): void
     {
-        $name = $isRollback ? $this->rollbackName : $this->name;
-        $this->dispatcher->dispatch(new StartedEvent($name, $this->description, $isRollback));
+        $this->dispatcher->dispatch(new StartedEvent($this->name, $this->description, $isUndo));
 
         try {
-            $success = false;
             $startTime = hrtime(true);
-            $isRollback ? $this->doRollback() : $this->doRun();
-            $success = true;
+            $isUndo ? $this->doUndo() : $this->doRun();
+            $this->success = true;
         }
         catch (Exception $e) {
-            if (!$isRollback)
+            if (!$isUndo)
                 throw $e;
 
-            $this->io->debug(sprintf('%s::rollback: %s - %s',
+            $this->io->debug(sprintf('%s::undo: %s - %s',
                 static::class, get_class($e), $e->getMessage()));
         }
         finally {
             $elapsed = (hrtime(true) - $startTime) / 1e9;
-            $this->dispatcher->dispatch(new EndedEvent($success, $elapsed));
+            $this->dispatcher->dispatch(new EndedEvent($this->success, $elapsed));
         }
     }
 }

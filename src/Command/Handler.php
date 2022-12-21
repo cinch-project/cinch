@@ -41,8 +41,8 @@ abstract class Handler
                 $task->run();
         }
         catch (Exception $e) {
-            while ($task = array_pop($this->tasks))
-                $task->rollback();
+            foreach ($this->tasks as $task)
+                $task->undo();
             throw $e;
         }
     }
