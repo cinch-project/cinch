@@ -37,7 +37,7 @@ class RemoveMigrationHandler extends Handler
                 $change->tag->value,
             ));
 
-        $dsn = $this->projectRepository->get($c->projectId)->getMigrationStoreDsn();
-        $this->migrationStoreFactory->create($dsn)->remove($c->path);
+        $dsn = $project->getMigrationStoreDsn();
+        $this->addTask(new Task\RemoveMigration($dsn, $c->path, $this->migrationStoreFactory))->runTasks();
     }
 }
