@@ -60,6 +60,7 @@ class MsSql extends Platform
             throw new UnsupportedVersionException($edition, $this->version, 12.0,
                 "compatibility_level $compatLevel < 110");
 
+        $session->executeStatement('set implicit_transactions = OFF');
         return $session;
     }
 

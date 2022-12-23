@@ -80,6 +80,7 @@ class MySql extends Platform
 
         $charset = $session->quoteString($dsn->getOption('charset', 'utf8mb4'));
         $session->executeStatement("
+            set autocommit = 1;
             set character set $charset;
             set session max_execution_time={$dsn->getTimeout()}; 
             set session time_zone = '+00:00';");
