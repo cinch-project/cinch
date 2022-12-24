@@ -7,7 +7,7 @@ use Cinch\Command\Task;
 use Cinch\Common\Environment;
 use Cinch\Project\Project;
 
-#[TaskAttribute('add environment', 'adds an environment to the project configuration', canUndo: true)]
+#[TaskAttribute('add environment', 'adding an environment to the project configuration', canUndo: true)]
 class AddEnvironment extends Task
 {
     public function __construct(

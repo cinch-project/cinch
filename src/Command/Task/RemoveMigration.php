@@ -10,7 +10,7 @@ use Cinch\Common\StorePath;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 
-#[TaskAttribute('remove migration script', 'removes a migration script')]
+#[TaskAttribute('remove migration script', 'removing migration script')]
 class RemoveMigration extends Task
 {
     private readonly MigrationStore $store;

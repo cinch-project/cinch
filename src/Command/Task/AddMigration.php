@@ -10,7 +10,7 @@ use Cinch\Common\StorePath;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 
-#[TaskAttribute('add migration script', 'adds a migration script using a template', canUndo: true)]
+#[TaskAttribute('add migration script', 'adding a migration script using a template', canUndo: true)]
 class AddMigration extends Task
 {
     private readonly StorePath $path;

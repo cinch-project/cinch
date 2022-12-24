@@ -7,7 +7,7 @@ use Cinch\Command\Task;
 use Cinch\Common\Dsn;
 use Cinch\Database\SessionFactory;
 
-#[TaskAttribute('test target', "connect to target, initialize session, disconnect")]
+#[TaskAttribute('test target', "connecting to target and initializing session")]
 class TestTarget extends Task
 {
     public function __construct(private readonly Dsn $dsn, private readonly SessionFactory $sessionFactory)

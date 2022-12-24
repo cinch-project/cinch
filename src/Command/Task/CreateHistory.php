@@ -8,7 +8,7 @@ use Cinch\Common\Environment;
 use Cinch\History\History;
 use Cinch\History\HistoryFactory;
 
-#[TaskAttribute('create history', 'connect to history and create cinch schema', canUndo: true)]
+#[TaskAttribute('create history', 'connecting to history and creating cinch schema', canUndo: true)]
 class CreateHistory extends Task
 {
     private History $history;

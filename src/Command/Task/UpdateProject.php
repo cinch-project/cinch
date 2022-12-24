@@ -7,7 +7,7 @@ use Cinch\Command\Task;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 
-#[TaskAttribute('update project', 'saves any changes made to the project configuration', canUndo: true)]
+#[TaskAttribute('update project', 'saving updates to the project configuration', canUndo: true)]
 class UpdateProject extends Task
 {
     public function __construct(

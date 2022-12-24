@@ -8,7 +8,7 @@ use Cinch\Common\Environment;
 use Cinch\Project\Project;
 use Exception;
 
-#[TaskAttribute('remove environment', 'removes an environment from the project configuration', canUndo: true)]
+#[TaskAttribute('remove environment', 'removing environment from the project configuration', canUndo: true)]
 class RemoveEnvironment extends Task
 {
     private readonly Environment $env;

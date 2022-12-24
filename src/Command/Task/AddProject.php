@@ -7,7 +7,7 @@ use Cinch\Command\Task;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 
-#[TaskAttribute('create project', 'create project directory and save configuration', canUndo: true)]
+#[TaskAttribute('create project', 'creating project directory and saving configuration', canUndo: true)]
 class AddProject extends Task
 {
     public function __construct(

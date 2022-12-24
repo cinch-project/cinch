@@ -9,7 +9,7 @@ use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 
 #[TaskAttribute('create migration store',
-    "open store and create the default '" . MigrationStore::FILENAME . "' file", canUndo: true)]
+    "opening store and creating the default '" . MigrationStore::FILENAME . "' file", canUndo: true)]
 class CreateMigrationStore extends Task
 {
     private MigrationStore $store;
