@@ -35,7 +35,7 @@ class RollbackHandler extends DeploymentHandler
     /**
      * @throws Exception
      */
-    protected function run(): void
+    protected function runMigrations(): void
     {
         foreach ($this->changes as $change) {
             $migration = $this->migrationStore->get($change->path);
@@ -43,7 +43,7 @@ class RollbackHandler extends DeploymentHandler
             if (!$change->checksum->equals($migration->checksum))
                 throw new Exception("rollback '$change->path' failed: script changed since last migrated");
 
-            $this->execute($migration, ChangeStatus::ROLLBACKED);
+            $this->runDeployTask($migration, ChangeStatus::ROLLBACKED);
         }
     }
 }

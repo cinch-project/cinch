@@ -4,9 +4,11 @@ namespace Cinch\Command;
 
 use Cinch\Command\Task\EndedEvent;
 use Cinch\Command\Task\StartedEvent;
+use Cinch\Component\Assert\Assert;
 use Cinch\Io;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use RuntimeException;
 
 abstract class Task
 {
@@ -14,20 +16,34 @@ abstract class Task
     private readonly EventDispatcherInterface $dispatcher;
     private bool $success = false;
     private int $id = 0;
-    private readonly string $name;
-    private readonly string $description;
+    private string $name;
+    private string $description;
     private readonly bool $canUndo;
 
     public function __construct()
     {
         $attrs = (new \ReflectionObject($this))->getAttributes(TaskAttribute::class);
         if (!$attrs)
-            throw new \RuntimeException("task must define an " . TaskAttribute::class . " attribute");
+            throw new RuntimeException(sprintf('%s must define %s',
+                static::class, TaskAttribute::class));
 
         $asTask = $attrs[0]->newInstance();
-        $this->name = $asTask->name;
-        $this->description = $asTask->description;
+        $this->name = Assert::notEmpty($asTask->name);
+        $this->setDescription($asTask->description);
         $this->canUndo = $asTask->canUndo;
+    }
+
+    /**
+     * @param string $name
+     */
+    protected function setName(string $name): void
+    {
+        $this->name = Assert::notEmpty($name, 'task name');
+    }
+
+    protected function setDescription(string $description): void
+    {
+        $this->description = Assert::notEmpty($description, 'task description');
     }
 
     public function setId(int $id): void

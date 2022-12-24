@@ -41,9 +41,10 @@ class History
     /**
      * @throws Exception
      */
-    public function openDeployment(DeploymentCommand $command, DeploymentTag $tag, Author $deployer): Deployment
+    public function openDeployment(DeploymentCommand $command, DeploymentTag $tag,
+        Author $deployer, bool $isSingleTransactionMode): Deployment
     {
-        return new Deployment($this->schema, $command, $tag, $deployer, $this->application);
+        return new Deployment($this->schema, $command, $tag, $deployer, $this->application, $isSingleTransactionMode);
     }
 
     /**

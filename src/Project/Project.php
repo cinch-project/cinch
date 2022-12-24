@@ -14,10 +14,22 @@ class Project
     public function __construct(
         private readonly ProjectId $id,
         private readonly ProjectName $name,
-        protected Dsn $migrationStoreDsn,
-        protected EnvironmentMap $envMap,
-        protected array $hooks = [])
+        private Dsn $migrationStoreDsn,
+        private EnvironmentMap $envMap,
+        private array $hooks = [],
+        private readonly bool $isSingleTransactionMode = true)
     {
+    }
+
+    /** Indicates if all migrations within a deployment, should be wrapped within a single transaction. When this
+     * is false, each migration uses a separate transaction, meaning if a migration script fails, any previously
+     * committed changes remain. The default is true. When using a database without transactional DDL support,
+     * like mysql/mariadb and oracle, it is recommended to set this to false when any migration contains DDL.
+     * @return bool
+     */
+    public function isSingleTransactionMode(): bool
+    {
+        return $this->isSingleTransactionMode;
     }
 
     /**
@@ -76,6 +88,7 @@ class Project
 
         return [
             'migration_store' => (string) $this->migrationStoreDsn,
+            'single_transaction' => $this->isSingleTransactionMode,
             'environments' => $this->envMap->snapshot(),
             'hooks' => (object) $hooks
         ];

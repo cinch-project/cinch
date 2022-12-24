@@ -42,7 +42,8 @@ class ConsoleProjectRepository implements ProjectRepository
             $name,
             new Dsn(Assert::stringProp($state, 'migration_store', "migration_store")),
             $this->createEnvironmentMap($state, $name),
-            $this->createHooks($state)
+            $this->createHooks($state),
+            Assert::ifPropSet($state, 'single_transaction', true, 'single_transaction')->bool()->value()
         );
     }
 

@@ -3,6 +3,7 @@
 namespace Cinch\History;
 
 use Cinch\Common\Author;
+use Cinch\Common\StorePath;
 use Cinch\Database\Session;
 use Exception;
 use RuntimeException;
@@ -21,7 +22,8 @@ class Deployment
         DeploymentCommand $command,
         DeploymentTag $tag,
         Author $deployer,
-        string $application)
+        string $application,
+        private readonly bool $isSingleTransactionMode)
     {
         if (!($schema->state() & Schema::OBJECTS))
             throw new RuntimeException("cinch history '{$schema->name()}' contains no objects");
@@ -58,9 +60,18 @@ class Deployment
             ]);
         }
         catch (Exception $e) {
-            ignoreException($this->schema->unlock(...));
             $this->clear();
             throw $e;
+        }
+
+        if ($this->isSingleTransactionMode) {
+            try {
+                $this->session->beginTransaction();
+            }
+            catch (Exception $e) {
+                $this->clear();
+                throw $e;
+            }
         }
     }
 
@@ -69,8 +80,21 @@ class Deployment
      */
     public function addChange(Change $change): void
     {
+        /* if NOT isSingleTransactionMode, a single insert handled by autocommit */
         $formatDateTime = $this->session->getPlatform()->formatDateTime(...);
         $this->session->insert($this->schema->table('change'), $change->snapshot($formatDateTime));
+    }
+
+    /**
+     * @throws Exception
+     * @internal
+     */
+    public function removeChange(StorePath $path): void
+    {
+        $this->session->delete($this->schema->table('change'), [
+            'path' => $path->value,
+            'tag' => $this->tag->value
+        ]);
     }
 
     /**
@@ -78,6 +102,30 @@ class Deployment
      */
     public function close(DeploymentError|null $error = null): void
     {
+        if ($this->isSingleTransactionMode) {
+            try {
+                if ($error)
+                    $this->session->rollBack();
+                else
+                    $this->session->commit();
+            }
+            catch (Exception $e) {
+                if ($error) {
+                    $extraMessage = get_class($e) . ' - ' . $e->getMessage();
+                    $error = new DeploymentError(
+                        "$error->message - rollback failed with $extraMessage",
+                        $error->exception,
+                        $error->file,
+                        $error->line,
+                        $error->trace
+                    );
+                }
+                else {
+                    $error = DeploymentError::fromException($e);
+                }
+            }
+        }
+
         try {
             $this->session->update($this->schema->table('deployment'), [
                 'error' => $error?->message,
@@ -86,14 +134,13 @@ class Deployment
             ], ['tag' => $this->tag->value]);
         }
         finally {
-            ignoreException($this->schema->unlock(...));
             $this->clear();
         }
     }
 
-    /** Once a deployment object is closed, it cannot be reused. */
     private function clear(): void
     {
+        ignoreException($this->schema->unlock(...));
         $this->schema = $this->session = $this->tag = null;
     }
 }

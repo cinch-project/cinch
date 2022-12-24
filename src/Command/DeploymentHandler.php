@@ -2,10 +2,10 @@
 
 namespace Cinch\Command;
 
+use Cinch\Command\Task\DeployTask;
 use Cinch\Common\Author;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
-use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
 use Cinch\History\Deployment;
 use Cinch\History\DeploymentCommand;
@@ -18,8 +18,6 @@ use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectId;
 use Cinch\Project\ProjectRepository;
-use DateTimeImmutable;
-use DateTimeZone;
 use Exception;
 
 abstract class DeploymentHandler extends Handler
@@ -29,6 +27,7 @@ abstract class DeploymentHandler extends Handler
     private Session $target;
     private Deployment $deployment;
     private DeploymentCommand $command;
+    private readonly bool $isSingleTransactionMode;
 
     public function __construct(
         private readonly SessionFactory $sessionFactory,
@@ -41,7 +40,7 @@ abstract class DeploymentHandler extends Handler
     }
 
     /** Called by deploy() after opening a deployment. */
-    protected abstract function run(): void;
+    protected abstract function runMigrations(): void;
 
     /**
      * @throws Exception
@@ -53,6 +52,7 @@ abstract class DeploymentHandler extends Handler
         $this->target = $this->sessionFactory->create($environment->targetDsn);
         $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
         $this->history = $this->historyFactory->create($environment);
+        $this->isSingleTransactionMode = $project->isSingleTransactionMode();
     }
 
     /**
@@ -61,12 +61,20 @@ abstract class DeploymentHandler extends Handler
     protected function deploy(DeploymentTag $tag, Author $deployer): void
     {
         $error = null;
-        $this->deployment = $this->history->openDeployment($this->command, $tag, $deployer);
+        $this->deployment = $this->history->openDeployment($this->command, $tag, $deployer, $this->isSingleTransactionMode);
+
+        if ($this->isSingleTransactionMode)
+            $this->target->beginTransaction();
 
         try {
-            $this->run();
+            $this->runMigrations();
+            if ($this->isSingleTransactionMode)
+                $this->target->commit();
         }
         catch (Exception $e) {
+            if ($this->isSingleTransactionMode)
+                ignoreException($this->target->rollBack(...));
+
             $error = DeploymentError::fromException($e);
             throw $e;
         }
@@ -82,38 +90,9 @@ abstract class DeploymentHandler extends Handler
     /** Executes a migration (rollback or migrate) within a transaction.
      * @throws Exception
      */
-    protected function execute(Migration $migration, ChangeStatus $status): void
+    protected function runDeployTask(Migration $migration, ChangeStatus $status): void
     {
-        $this->target->beginTransaction();
-
-        try {
-            $command = $this->command->value; // 'migrate' or 'rollback'
-            $migration->script->$command($this->target);
-            $this->addChange($status, $migration);
-            $this->target->commit();
-        }
-        catch (Exception $e) {
-            ignoreException($this->target->rollBack(...));
-            throw $e;
-        }
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function addChange(ChangeStatus $status, Migration $migration): void
-    {
-        $this->deployment->addChange(new Change(
-            $migration->path,
-            $this->deployment->getTag(),
-            $migration->script->getMigratePolicy(),
-            $status,
-            $migration->script->getAuthor(),
-            $migration->checksum,
-            $migration->script->getDescription(),
-            $migration->script->getLabels(),
-            $migration->script->getAuthoredAt(),
-            new DateTimeImmutable(timezone: new DateTimeZone('UTC'))
-        ));
+        $task = new DeployTask($migration, $status, $this->target, $this->deployment, $this->isSingleTransactionMode);
+        $task->run();
     }
 }

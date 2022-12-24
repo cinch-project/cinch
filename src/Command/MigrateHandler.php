@@ -26,7 +26,7 @@ class MigrateHandler extends DeploymentHandler
     /**
      * @throws Exception
      */
-    protected function run(): void
+    protected function runMigrations(): void
     {
         $count = $this->options->getCount();
 
@@ -36,7 +36,7 @@ class MigrateHandler extends DeploymentHandler
                 continue;
             }
 
-            $this->execute($migration, $status);
+            $this->runDeployTask($migration, $status);
 
             if ($count !== null && --$count == 0)
                 break;

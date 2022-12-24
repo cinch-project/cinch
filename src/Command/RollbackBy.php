@@ -14,9 +14,9 @@ class RollbackBy
     const COUNT = 'count';
     const PATHS = 'paths';
 
-    public static function tag(string $tag): self
+    public static function tag(DeploymentTag $tag): self
     {
-        return new self(self::TAG, new DeploymentTag($tag));
+        return new self(self::TAG, $tag);
     }
 
     public static function date(DateTimeInterface $date): self
@@ -26,7 +26,7 @@ class RollbackBy
 
     public static function count(int $count): self
     {
-        return new self(self::COUNT, Assert::between($count, 1, 100, 'rollback-by-count'));
+        return new self(self::COUNT, Assert::greaterThan($count, 0, 'rollback-by-count'));
     }
 
     public static function paths(array $paths): self
