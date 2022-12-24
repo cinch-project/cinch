@@ -40,6 +40,7 @@ class Application extends BaseApplication
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(ConsoleEvents::COMMAND, $this->onConsoleCommand(...));
         $this->setDispatcher($dispatcher);
+        $this->configureMemoryLimit();
     }
 
     /** $input and $output are ignored. This will always use the Io instance passed to constructor.
@@ -157,5 +158,26 @@ class Application extends BaseApplication
         $command->setProjectDir($projectDir);
         $command->setCommandBus($container->get(CommandBus::class));
         $container->get(EventDispatcherInterface::class)->addSubscriber($command);
+    }
+
+    private function configureMemoryLimit(): void
+    {
+        if ($mem = getenv('CINCH_MEMORY_LIMIT')) {
+            $mem = Assert::regex(trim($mem), '~^\d+[kmgKMG]?$~', 'CINCH_MEMORY_LIMIT');
+            @ini_set('memory_limit', $mem);
+        }
+        else {
+            $mem = trim(ini_get('memory_limit'));
+            $value = (int) $mem;
+            $value *= match (substr($mem, -1)) {
+                'g', 'G' => 1024 ** 3,
+                'm', 'M' => 1024 * 1024,
+                'k', 'K' => 1024,
+                default => 1
+            };
+
+            if ($value < 256 * 1024 * 1024)
+                @ini_set('memory_limit', '256M');
+        }
     }
 }
