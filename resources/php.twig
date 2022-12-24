@@ -17,7 +17,7 @@ return new class extends Script {
             new Description('{{ description }}'),
             new Labels({{ labels|json_encode(constant('JSON_UNESCAPED_SLASHES')) }})
         );
-    }}
+    }
 
     public function migrate(Session $session): void
     {
