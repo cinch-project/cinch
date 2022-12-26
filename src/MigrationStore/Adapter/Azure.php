@@ -8,7 +8,6 @@ use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
-use Cinch\MigrationStore\GitFile;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
@@ -34,17 +33,17 @@ class Azure extends Git
     /**
      * @throws GuzzleException
      */
-    public function search(Directory $dir): array
+    public function getFiles(): array
     {
         $query = http_build_query([
             'api-version' => self::API_VERSION,
-            'scopePath' => $this->resolvePath($dir->path),
-            'recursionLevel' => ($dir->flags & Directory::RECURSIVE) ? 'full' : 'oneLevel',
+            'scopePath' => $this->storeDir,
+            'recursionLevel' => 'full',
             ...$this->branchInfo
         ]);
 
         $tree = $this->getTree("$this->baseUri/items?$query");
-        return $this->toFiles($tree['values'], $dir->exclude, 'path', 'gitObjectType', 'objectId');
+        return $this->getFilesFromTree($tree['values'], 'path', 'gitObjectType', 'objectId');
     }
 
     /**
@@ -117,12 +116,7 @@ class Azure extends Git
             'headers' => ['Accept' => 'application/json'] // metadata and content
         ]);
 
-        return new GitFile(
-            $this,
-            new StorePath($path),
-            new Checksum($data['objectId']),
-            $data['content']
-        );
+        return new File(new StorePath($path), new Checksum($data['objectId']), $data['content']);
     }
 
     /**
@@ -168,7 +162,7 @@ class Azure extends Git
      */
     public static function fromDsn(Dsn $dsn, string $userAgent): static
     {
-        // azure:organization/<project>/<repo>/storeDir?branch=branch
+        // azure:organization/<project>/<repo>/rootDir?branch=branch
 
         Assert::equals($dsn->getScheme(), 'azure', "expected azure dsn");
         Assert::empty($dsn->getHost(), 'gitlab host not supported');

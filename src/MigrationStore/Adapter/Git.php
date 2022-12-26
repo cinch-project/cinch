@@ -9,7 +9,6 @@ use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Cinch\MigrationStore\Adapter;
 use Cinch\MigrationStore\File;
-use Cinch\MigrationStore\GitFile;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
@@ -17,7 +16,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 
 abstract class Git extends Adapter
@@ -25,7 +23,6 @@ abstract class Git extends Adapter
     const TOKEN_ENV_NAME = '';
 
     protected readonly Client $client;
-    private readonly int $storeDirLen;
     private readonly string $messagePrefix;
 
     /**
@@ -47,14 +44,6 @@ abstract class Git extends Adapter
 
         $this->client = new Client($config);
         parent::__construct(trim($storeDir, '/'));
-
-        /* when listing trees, blob paths come back as storeDir/dir/blob.php. cinch Locations are
-         * relative to the migration store dir. Thus, we chop off storeDirLen chars from blob path.
-         */
-        if (($len = strlen($this->storeDir)))
-            $len++; // +1 for '/' after storeDir
-
-        $this->storeDirLen = $len;
     }
 
     /**
@@ -121,49 +110,37 @@ abstract class Git extends Adapter
         return "$this->messagePrefix: " . Assert::notEmpty($message, 'commit message');
     }
 
-    /** Converts tree entry objects to File objects. The "*Key" parameters exist since each Git provider
+    /** Converts a tree into file objects. The "*Key" parameters exist since each Git provider
      * uses different names, although the values are the same.
      * @param array $tree array of tree entry objects
-     * @param array $exclude paths to exclude using regex patterns
      * @param string $pathKey key to get the entry path
      * @param string $typeKey key to get the entry type
      * @param string $shaKey key to get the entry sha-1
+     * @param bool $relativeToRoot does provider returns paths relative to repo root
      * @return File[]
      */
-    protected function toFiles(array $tree, array $exclude, string $pathKey, string $typeKey, string $shaKey): array
+    protected function getFilesFromTree(array $tree, string $pathKey, string $typeKey,
+        string $shaKey, bool $relativeToRoot = true): array
     {
+        /* most providers return paths relative to repo root: $storeDir/dir/blob.php. */
+        if ($storeDirLength = strlen($this->storeDir))
+            $storeDirLength++; // +1 for '/' after storeDir
+
         $files = [];
 
-        foreach ($tree as $entry) {
-            /* make relative to storeDir */
-            $path = substr(ltrim(Path::normalize($entry[$pathKey]), '/'), $this->storeDirLen);
+        foreach ($tree as $e) {
+            $name = basename($path = trim($e[$pathKey], '/'));
 
-            if ($this->accept($path, $entry[$typeKey], $exclude))
-                $files[] = new GitFile($this, new StorePath($path), new Checksum($entry[$shaKey]));
+            if ($e[$typeKey] != 'blob' || !preg_match(self::FILE_PATTERN, $name))
+                continue;
+
+            if ($relativeToRoot)
+                $path = substr($path, $storeDirLength);
+
+            $files[] = new File(new StorePath($path), new Checksum($e[$shaKey]));
         }
 
         return $files;
-    }
-
-    /** Accepts or rejects a migration script.
-     * @param string $path
-     * @param string $type
-     * @param array $exclude
-     * @return bool
-     */
-    protected function accept(string $path, string $type, array $exclude): bool
-    {
-        $name = basename($path);
-
-        if ($type != 'blob' || $name[0] == '.' || !preg_match(self::FILENAME_PATTERN, $name))
-            return false;
-
-        /* store.yml 'exclude: [pattern, ...]' */
-        foreach ($exclude as $pattern)
-            if (preg_match($pattern, $path) === 1)
-                return false;
-
-        return true;
     }
 
     /** Gets the guzzle/http SSL config options.

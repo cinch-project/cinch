@@ -11,16 +11,14 @@ use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use DateTimeInterface;
 use Exception;
-use Generator;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Path;
-use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 use Symfony\Component\Yaml\Yaml;
 use Twig\Environment as Twig;
 
 class MigrationStore
 {
-    const FILENAME = 'store.yml';
+    const CONFIG_FILE = 'store.yml';
     private const PARSE_FLAGS = Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE | Yaml::PARSE_OBJECT_FOR_MAP;
 
     /** @var Directory[] */
@@ -29,7 +27,9 @@ class MigrationStore
     /* only used to know if we created store.yml as part of create-project or add-env. If something fails
      * during those commands, we need to delete the store.yml just created.
      */
-    private bool|null $createdStoreConfig = null;
+    private bool $createdStoreConfig = false;
+
+    private bool $populatedDirectories = false;
 
     public function __construct(
         private readonly Adapter $adapter,
@@ -46,15 +46,12 @@ class MigrationStore
     {
         if (!$this->exists()) {
             $this->adapter->addFile(
-                self::FILENAME,
-                slurp(Path::join($this->resourceDir, self::FILENAME)),
-                'created ' . self::FILENAME
+                self::CONFIG_FILE,
+                slurp(Path::join($this->resourceDir, self::CONFIG_FILE)),
+                'created ' . self::CONFIG_FILE
             );
 
             $this->createdStoreConfig = true;
-        }
-        else {
-            $this->createdStoreConfig = false;
         }
     }
 
@@ -63,8 +60,8 @@ class MigrationStore
      */
     public function deleteConfig(): void
     {
-        if ($this->createdStoreConfig === null || $this->createdStoreConfig)
-            $this->adapter->deleteFile(self::FILENAME, 'deleted ' . self::FILENAME);
+        if ($this->createdStoreConfig)
+            $this->adapter->deleteFile(self::CONFIG_FILE, 'deleted ' . self::CONFIG_FILE);
     }
 
     /**
@@ -100,39 +97,68 @@ class MigrationStore
     }
 
     /** Iterates through all migrations in directory migrate order.
-     * @return Generator<Migration>
+     * @return Migration[]
      * @throws Exception
      */
-    public function iterate(): Generator
+    public function all(): array
     {
-        if (!$this->exists())
-            throw new Exception(self::FILENAME . ' does not exist');
+        $migrations = [];
+        $this->populateDirectories();
 
-        foreach ($this->directories as $dir)
-            foreach ($dir->search() as $migration)
-                yield $migration;
+        foreach ($this->getDirectories() as $dir)
+            array_push($migrations, ...$dir->all());
+
+        return $migrations;
     }
 
     /**
      * @throws Exception
      */
-    private function getDirectoryFor(StorePath $storePath): Directory
+    private function populateDirectories(): void
     {
-        $dir = null;
+        if ($this->populatedDirectories)
+            return;
+
+        $this->populatedDirectories = true;
+
+        /* to support remote git providers, all migrations for a store are recursively fetched: git tree.
+         * This is a performance win (due to API overhead) and avoids requests per minute/hour rate limits.
+         * Although Local adapter doesn't require this, it behaves identically to keep things generic.
+         */
+        if (!$this->getDirectories() || !($files = $this->adapter->getFiles()))
+            return;
+
+        /* Since we have an unsorted list of all files, we need to match them to a directory. some may not be
+         * ready to deploy, meaning their parent dirs are not listed within the store's config file. Some may
+         * be 1+ levels deep, while the directory is marked non-recursive. These are simply ignored. This finds the
+         * deepest matching base-dir: /a/b/c.php should be added to /a/b rather than /a (see getDirectoryFor).
+         */
+        while ($file = array_shift($files))
+            if ($dir = $this->getDirectoryFor($file->getPath()))
+                $dir->add($file);
+
+        /* migrate sort order: based on config options */
+        foreach ($this->getDirectories() as $dir)
+            $dir->sort();
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function getDirectoryFor(StorePath $storePath): Directory|null
+    {
+        $candidate = null;
         $path = dirname($storePath->value) . '/'; // remove filename, append '/' to avoid false positives: /a, /ab
 
         /* find the deepest directory that is a base-path of store-path */
-        foreach ($this->getDirectories() as $d) {
-            if (mb_strpos($path, rtrim($d->path, '/') . '/', encoding: 'UTF-8') === 0) {
-                if (!$dir || strlen($d->path) > strlen($dir->path))
-                    $dir = $d;
+        foreach ($this->getDirectories() as $dir) {
+            if (mb_stripos($path, rtrim($dir->getPath(), '/') . '/', encoding: 'UTF-8') === 0) {
+                if (!$candidate || $dir->getDepth() > $candidate->getDepth())
+                    $candidate = $dir;
             }
         }
 
-        if ($dir)
-            return $dir;
-
-        throw new DirectoryNotFoundException("Cannot find directory for \"$storePath\"");
+        return $candidate;
     }
 
     /**
@@ -158,7 +184,7 @@ class MigrationStore
         if ($this->directories !== null)
             return $this->directories;
 
-        $contents = $this->adapter->getContents(self::FILENAME);
+        $contents = $this->adapter->getContents(self::CONFIG_FILE);
         $store = Yaml::parse($contents, self::PARSE_FLAGS);
         $variables = $this->parseVariables($store, 'store.variables'); // top-level (global) variables
 

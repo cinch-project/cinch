@@ -18,6 +18,9 @@ class DeployTask extends Task
 {
     private string $command;
 
+    /**
+     * @throws Exception
+     */
     public function __construct(
         private readonly Migration $migration,
         private readonly ChangeStatus $status,
@@ -28,11 +31,11 @@ class DeployTask extends Task
         parent::__construct();
 
         $this->command = $this->status != ChangeStatus::ROLLBACKED ? 'migrate' : 'rollback';
-        $policy = $this->command == 'migrate' ? $this->migration->script->getMigratePolicy()->value : '';
+        $policy = $this->command == 'migrate' ? $this->migration->getScript()->getMigratePolicy()->value : '';
 
         /* special case: override TaskAttribute settings */
         $this->setName("$this->command $policy"); // ex: 'migrate once, 'migrate always', 'rollback', etc.
-        $this->setDescription($this->migration->path);
+        $this->setDescription($this->migration->getPath());
     }
 
     protected function doRun(): void
@@ -43,7 +46,7 @@ class DeployTask extends Task
             if (!$this->isSingleTransactionMode)
                 $this->target->beginTransaction();
 
-            $this->migration->script->{$this->command}($this->target);
+            $this->migration->getScript()->{$this->command}($this->target);
             $addedChange = $this->addChange($this->status, $this->migration);
 
             if (!$this->isSingleTransactionMode)
@@ -53,7 +56,7 @@ class DeployTask extends Task
             if (!$this->isSingleTransactionMode) {
                 ignoreException($this->target->rollBack(...));
                 if ($addedChange)
-                    ignoreException($this->deployment->removeChange(...), $this->migration->path);
+                    ignoreException($this->deployment->removeChange(...), $this->migration->getPath());
             }
 
             throw $e;
@@ -69,16 +72,18 @@ class DeployTask extends Task
      */
     private function addChange(ChangeStatus $status, Migration $migration): bool
     {
+        $script = $migration->getScript();
+
         $this->deployment->addChange(new Change(
-            $migration->path,
+            $migration->getPath(),
             $this->deployment->getTag(),
-            $migration->script->getMigratePolicy(),
+            $script->getMigratePolicy(),
             $status,
-            $migration->script->getAuthor(),
-            $migration->checksum,
-            $migration->script->getDescription(),
-            $migration->script->getLabels(),
-            $migration->script->getAuthoredAt(),
+            $script->getAuthor(),
+            $migration->getChecksum(),
+            $script->getDescription(),
+            $script->getLabels(),
+            $script->getAuthoredAt(),
             new DateTimeImmutable(timezone: new DateTimeZone('UTC'))
         ));
 

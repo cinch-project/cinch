@@ -228,7 +228,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
             default => 'UNKNOWN' // never happen
         };
 
-        echo "'{$this->getName()}' command interrupted by {$name}[$signal]\n";
+        $this->io->debug("'{$this->getName()}' command interrupted by {$name}[$signal]");
         exit(0);
     }
 }

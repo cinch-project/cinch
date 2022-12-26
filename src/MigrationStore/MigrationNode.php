@@ -5,17 +5,11 @@ namespace Cinch\MigrationStore;
 use RuntimeException;
 
 /** Used to build a tree of migration store directory files for the purpose of sorting.
- *
- * Due to remote data stores like github, azure, etc., listing one directory at a time is not practical:
- * API calls are typically between ~200ms and 500ms. Thus when recursive, MigrationStore searching
- * can return a list that is unordered, multi-depth, and across many directories. This class builds a
- * tree, allowing us to walk it and sort one depth at a time.
- *
  * @internal
  */
-class FileNode
+class MigrationNode
 {
-    /** @var FileNode[] */
+    /** @var MigrationNode[] */
     private array $children = [];
 
     public static function root(): self
@@ -23,36 +17,36 @@ class FileNode
         return new self('', null);
     }
 
-    private function __construct(private readonly string $name, private readonly File|null $file)
+    private function __construct(private readonly string $name, private readonly Migration|null $migration)
     {
     }
 
     /** Adds a child to this node.
      * @param string $name
-     * @param File|null $file
-     * @return FileNode either a new or existing child node
+     * @param Migration|null $migration
+     * @return MigrationNode either a new or existing child node
      */
-    public function addChild(string $name, File|null $file = null): FileNode
+    public function addChild(string $name, Migration|null $migration = null): MigrationNode
     {
         if ($this->isLeaf())
             throw new RuntimeException("cannot add child '$name' to a leaf node");
 
         if (!($child = $this->children[$name] ?? false))
-            $child = $this->children[$name] = new self($name, $file);
+            $child = $this->children[$name] = new self($name, $migration);
 
         return $child;
     }
 
     public function isLeaf(): bool
     {
-        return $this->file !== null;
+        return $this->migration !== null;
     }
 
     public function sort(SortPolicy $sortPolicy): self
     {
         $strcmp = $sortPolicy->isNatural() ? strnatcmp(...) : strcmp(...);
 
-        uasort($this->children, static function (self $a, self $b) use ($sortPolicy, $strcmp) {
+        uasort($this->children, function (self $a, self $b) use ($sortPolicy, $strcmp) {
             /* directories first */
             if ($n = ($a->isLeaf() - $b->isLeaf()))
                 return $n;
@@ -73,19 +67,19 @@ class FileNode
     }
 
     /** Converts tree to a depth first array of Files (flatten).
-     * @return File[]
+     * @return Migration[]
      */
-    public function toFiles(): array
+    public function toMigrations(): array
     {
-        $files = [];
+        $migrations = [];
 
         foreach ($this->children as $child) {
             if ($child->isLeaf())
-                $files[] = $child->file;
+                $migrations[] = $child->migration;
             else
-                array_push($files, ...$child->toFiles());
+                array_push($migrations, ...$child->toMigrations());
         }
 
-        return $files;
+        return $migrations;
     }
 }

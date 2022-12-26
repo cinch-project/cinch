@@ -7,18 +7,17 @@ use Symfony\Component\Filesystem\Path;
 
 abstract class Adapter
 {
-    const FILENAME_PATTERN = '~\.(?:sql|php)$~i';
+    const FILE_PATTERN = '~^[^.].*\.(?:sql|php)$~i';
 
     public function __construct(protected readonly string $storeDir)
     {
     }
 
-    /** Searches a directory for files: recursively or not.
-     * @param Directory $dir
+    /** Recursively gets all files from the store.
      * @return File[]
      * @throws Exception
      */
-    public abstract function search(Directory $dir): array;
+    public abstract function getFiles(): array;
 
     /** Adds a file. This is an optional feature. For remote migration stores, cinch will require write access.
      * This is only used to create a default store.yml during create project or generate a template

@@ -5,9 +5,12 @@ namespace Cinch\MigrationStore;
 use Cinch\Common\Checksum;
 use Cinch\Common\StorePath;
 
-abstract class File
+class File
 {
-    public function __construct(protected readonly StorePath $path)
+    public function __construct(
+        private readonly StorePath $path,
+        private readonly Checksum $checksum,
+        private readonly string|null $contents = null)
     {
     }
 
@@ -16,7 +19,13 @@ abstract class File
         return $this->path;
     }
 
-    public abstract function getChecksum(): Checksum;
+    public function getChecksum(): Checksum
+    {
+        return $this->checksum;
+    }
 
-    public abstract function getContents(): string;
+    public function getContents(): string|null
+    {
+        return $this->contents;
+    }
 }

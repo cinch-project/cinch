@@ -6,9 +6,7 @@ use Cinch\Common\Checksum;
 use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
-use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
-use Cinch\MigrationStore\GitFile;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
@@ -19,25 +17,16 @@ class GitLab extends Git
     const TOKEN_ENV_NAME = 'CINCH_GITLAB_TOKEN';
 
     /**
-     * @param Directory $dir
-     * @return array
      * @throws GuzzleException|Exception
      */
-    public function search(Directory $dir): array
+    public function getFiles(): array
     {
-        $path = $this->resolvePath($dir->path);
-
         $query = [
-            'path' => $path,
+            'path' => $this->storeDir,
             'per_page' => 100,
-            'pagination' => 'keyset',
-            'order_by' => 'id',
-            'sort' => 'asc',
-            'ref' => $this->branch
+            'ref' => $this->branch,
+            'recursive' => true
         ];
-
-        if ($dir->flags & Directory::RECURSIVE)
-            $query['recursive'] = true;
 
         $tree = [];
         $uri = "$this->baseUri/tree?" . http_build_query($query);
@@ -57,13 +46,11 @@ class GitLab extends Git
             $uri = $next[1];
         }
 
-        /* empty dirs are not allowed in git. if you request a tree from a non-existent dir, gitlab returns
-         * an empty array rather than a 404. This is workable, but a 404 would be better.
-         */
+        /* gitlab returns an empty tree vs 404, as annoying as forcing pagination with tree api. */
         if (!$tree)
-            throw new DirectoryNotFoundException("The \"$path\" directory does not exist");
+            throw new DirectoryNotFoundException("The \"$this->storeDir\" directory does not exist");
 
-        return $this->toFiles($tree, $dir->exclude, 'path', 'type', 'id');
+        return $this->getFilesFromTree($tree, 'path', 'type', 'id');
     }
 
     /**
@@ -109,13 +96,7 @@ class GitLab extends Git
             throw new RuntimeException("cannot get file without a path");
 
         $data = $this->getFileByUri("$this->baseUri/files/$path?ref=$this->branch");
-
-        return new GitFile(
-            $this,
-            new StorePath($path),
-            new Checksum($data['blob_id']),
-            base64_decode($data['content'])
-        );
+        return new File(new StorePath($path), new Checksum($data['blob_id']), base64_decode($data['content']));
     }
 
     /**

@@ -40,7 +40,7 @@ class RollbackHandler extends DeploymentHandler
         foreach ($this->changes as $change) {
             $migration = $this->migrationStore->get($change->path);
 
-            if (!$change->checksum->equals($migration->checksum))
+            if (!$change->checksum->equals($migration->getChecksum()))
                 throw new Exception("rollback '$change->path' failed: script changed since last migrated");
 
             $this->runDeployTask($migration, ChangeStatus::ROLLBACKED);

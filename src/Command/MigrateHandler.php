@@ -7,7 +7,6 @@ use Cinch\History\ChangeStatus;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationOutOfSyncException;
 use Exception;
-use Generator;
 
 class MigrateHandler extends DeploymentHandler
 {
@@ -30,8 +29,8 @@ class MigrateHandler extends DeploymentHandler
     {
         $count = $this->options->getCount();
 
-        foreach ($this->iterate() as $migration) {
-            if ($migration->script->getMigratePolicy() == MigratePolicy::NEVER ||
+        foreach ($this->getMigrations() as $migration) {
+            if ($migration->getScript()->getMigratePolicy() == MigratePolicy::NEVER ||
                 !($status = $this->getStatus($migration))) {
                 continue;
             }
@@ -44,19 +43,15 @@ class MigrateHandler extends DeploymentHandler
     }
 
     /**
-     * @return Generator
+     * @return Migration[]
      * @throws Exception
      */
-    private function iterate(): Generator
+    private function getMigrations(): array
     {
         /* migrate specific scripts */
-        if ($paths = $this->options->getPaths()) {
-            foreach ($paths as $path)
-                yield $this->migrationStore->get($path);
-        }
-        else {
-            return $this->migrationStore->iterate();
-        }
+        if ($paths = $this->options->getPaths())
+            return array_map(fn($p) => $this->migrationStore->get($p), $paths);
+        return $this->migrationStore->all();
     }
 
     /**
@@ -66,20 +61,20 @@ class MigrateHandler extends DeploymentHandler
      */
     private function getStatus(Migration $migration): ChangeStatus|null
     {
-        $changes = $this->history->getChangeView()->getMostRecentChanges([$migration->path]);
+        $changes = $this->history->getChangeView()->getMostRecentChanges([$migration->getPath()]);
 
         /* doesn't exist yet, migrate it */
         if (!$changes)
             return ChangeStatus::MIGRATED;
 
         $change = $changes[0];
-        $scriptChanged = !$change->checksum->equals($migration->checksum);
+        $scriptChanged = !$change->checksum->equals($migration->getChecksum());
 
         if ($change->migratePolicy == MigratePolicy::ONCE) {
             /* error: migrate once policy cannot change */
             if ($scriptChanged)
                 throw new MigrationOutOfSyncException(
-                    "once migration '$migration->path' no longer matches history");
+                    "once migration '$migration' no longer matches history");
 
             return null;
         }
@@ -88,7 +83,7 @@ class MigrateHandler extends DeploymentHandler
             /* error: rollbacked script cannot change */
             if ($scriptChanged)
                 throw new MigrationOutOfSyncException(
-                    "rollbacked migration '$migration->path' no longer matches history");
+                    "rollbacked migration '$migration' no longer matches history");
 
             return null;
         }

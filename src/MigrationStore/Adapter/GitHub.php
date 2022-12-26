@@ -8,7 +8,8 @@ use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
-use Cinch\MigrationStore\GitFile;
+use Cinch\MigrationStore\Migration;
+use Cinch\MigrationStore\GitMigration;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
@@ -22,28 +23,23 @@ class GitHub extends Git
     /**
      * @throws GuzzleException
      */
-    public function search(Directory $dir): array
+    public function getFiles(): array
     {
-        $dirPath = $this->resolvePath($dir->path);
-        $encodedPath = rawurlencode($dirPath);
+        $encodedPath = rawurlencode($this->storeDir);
         $ref = $encodedPath ? "$this->branch:$encodedPath" : $this->branch; // extended SHA-1 syntax ... <ref>:<path>
-
-        $recursive = $dir->flags & Directory::RECURSIVE;
-        $uri = "$this->baseUri/git/trees/$ref" . ($recursive ? '?recursive=1' : '');
-
-        $tree = $this->getTree($uri);
+        $tree = $this->getTree("$this->baseUri/git/trees/$ref?recursive=1");
 
         /* GitHub sets this to 7MB or 100,000 entries. However: after calculating the approx (small) size of an
          * entry (200 bytes), only ~36,000 entries can fit within 7MB? Should be plenty for cinch though.
          */
         if (($tree['truncated'] ?? false) === true)
-            throw new RuntimeException(sprintf('searching %s exceeded GitHub limits (%d entries retrieved %s)',
-                $dirPath,
+            throw new RuntimeException(sprintf('searching %s exceeded GitHub limits (%d entries)',
+                $this->storeDir,
                 count($tree['tree']),
-                $recursive ? 'recursively' : 'non-recursively'
             ));
 
-        return $this->toFiles($tree['tree'], $dir->exclude, 'path', 'type', 'sha');
+        /* note: GitHub returns relative to storeDir (search path), not repo root */
+        return $this->getFilesFromTree($tree['tree'], pathKey: 'path', typeKey: 'type', shaKey: 'sha', relativeToRoot: false);
     }
 
     /**
@@ -92,7 +88,7 @@ class GitHub extends Git
         else
             $content = base64_decode($data['content']); // use it if returned
 
-        return new GitFile($this, new StorePath($path), new Checksum($data['sha']), $content);
+        return new File(new StorePath($path), new Checksum($data['sha']), $content);
     }
 
     /**

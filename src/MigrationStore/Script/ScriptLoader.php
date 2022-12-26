@@ -21,14 +21,16 @@ class ScriptLoader
     /**
      * @throws Exception
      */
-    public function load(File $file, array $variables, bool $environment): Script
+    public function load(File $file, string $contents, array $variables, bool $environment): Script
     {
-        if ($file->getPath()->isSql())
-            $script = $this->parseSql($file, $variables, $environment);
+        $path = $file->getPath();
+
+        if ($path->isSql())
+            $script = $this->parseSql($path, $contents, $variables, $environment);
         else if ($file instanceof LocalFile)
             $script = $this->requireFile($file);
         else
-            $script = $this->evalFile($file);
+            $script = $this->evalFile($path, $contents);
 
         (new ReflectionMethod($script, 'setVariables'))->invoke($script, $variables);
         return $script;
@@ -37,18 +39,18 @@ class ScriptLoader
     /**
      * @throws Exception
      */
-    private function parseSql(File $file, array $variables, bool $environment): Script
+    private function parseSql(StorePath $path, string $contents, array $variables, bool $environment): Script
     {
         if ($environment)
             $variables = [...$variables, ...getenv()];
 
-        $sql = $this->twig->createTemplate($file->getContents())->render($variables);
+        $sql = $this->twig->createTemplate($contents)->render($variables);
 
         try {
             return $this->sqlScriptParser->parse($sql);
         }
         catch (AssertException $e) {
-            throw new AssertException("{$file->getPath()}: {$e->getMessage()}", $e->getErrors());
+            throw new AssertException("$path: {$e->getMessage()}", $e->getErrors());
         }
     }
 
@@ -57,9 +59,9 @@ class ScriptLoader
         return $this->assertScript(require $file->getAbsolutePath(), $file->getPath());
     }
 
-    private function evalFile(File $file): Script
+    private function evalFile(StorePath $path, string $contents): Script
     {
-        return $this->assertScript(eval('?>' . $file->getContents()), $file->getPath());
+        return $this->assertScript(eval('?>' . $contents), $path);
     }
 
     private function assertScript(mixed $script, StorePath $path): Script
@@ -67,6 +69,6 @@ class ScriptLoader
         if ($script instanceof Script)
             return $script;
 
-        throw new AssertException("$path must be a " . Script::class);
+        throw new AssertException("$path must be a type of " . Script::class);
     }
 }

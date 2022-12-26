@@ -4,12 +4,13 @@ namespace Cinch\MigrationStore;
 
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\AssertException;
+use Cinch\MigrationStore\Script\Script;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
-use Generator;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 
-/** migration store directory object */
+/** migration store directory object
+ */
 class Directory
 {
     /** recursively search directory - yaml 'recursive: true' */
@@ -21,6 +22,11 @@ class Directory
     /** replace environment variables when processing SQL scripts - yaml 'environment: true' */
     const ENVIRONMENT = 0x08;
 
+    /** @var Migration[] */
+    private array $migrations = [];
+
+    private readonly int $depth;
+
     /**
      * @param string $path directory path "relative" to store directory
      * @throws Exception
@@ -28,55 +34,45 @@ class Directory
     public function __construct(
         private readonly Adapter $adapter,
         private readonly ScriptLoader $scriptLoader,
-        public readonly string $path,
-        public readonly array $variables,
-        public readonly array $exclude,
-        public readonly SortPolicy $sortPolicy,
-        public readonly int $flags)
+        private readonly string $path,
+        private readonly array $variables,
+        private readonly array $exclude,
+        private readonly SortPolicy $sortPolicy,
+        private readonly int $flags)
     {
         $this->assertExclude();
+        $this->depth = substr_count($this->path, '/');
     }
 
-    /**
-     * @return Migration|null null is returned if the path is not found
-     * @throws Exception
-     */
-    public function getMigration(StorePath $path): Migration|null
+    public function getPath(): string
     {
-        try {
-            return $this->createMigration($this->adapter->getFile($path->value));
-        }
-        catch (FileNotFoundException) {
-            return null;
-        }
+        return $this->path;
     }
 
-    /**
-     * @return Generator
-     * @throws Exception
-     */
-    public function search(): Generator
+    public function getDepth(): int
     {
-        $files = $this->adapter->search($this);
-
-        if (($this->flags & self::ERROR_IF_EMPTY) && !$files)
-            throw new Exception("migration store directory '$this->path' is empty");
-
-        $files = $this->sort($files);
-
-        while ($file = array_shift($files))
-            yield $this->createMigration($file);
-
-        unset($files);
+        return $this->depth;
     }
 
-    /**
-     * @throws Exception
-     */
-    private function createMigration(File $file): Migration
+    public function add(File $file): void
     {
-        $script = $this->scriptLoader->load($file, $this->variables, $this->flags & self::ENVIRONMENT);
-        return new Migration($file->getPath(), $file->getChecksum(), $script);
+        $path = $file->getPath()->value;
+
+        /* exclude this file? */
+        foreach ($this->exclude as $pattern)
+            if (preg_match($pattern, $path))
+                return;
+
+        /* ignore files with depths > dir when not recursive */
+        if (!($this->flags & self::RECURSIVE) && substr_count($path, '/') > $this->depth)
+            return;
+
+        $this->migrations[] = new Migration($this, $file);
+    }
+
+    public function all(): array
+    {
+        return $this->migrations;
     }
 
     /**
@@ -88,26 +84,56 @@ class Directory
      *     a/b.sql   <- files sorted separately
      *     a.sql
      *
-     * @param File[] $files
-     * @return File[]
+     * @return self
+     * @throws Exception
      */
-    private function sort(array $files): array
+    public function sort(): self
     {
-        $root = FileNode::root();
+        if (($this->flags & self::ERROR_IF_EMPTY) && !$this->migrations)
+            throw new Exception("$this->path is empty");
+
+        $root = MigrationNode::root();
 
         /* build tree using path components as nodes */
-        foreach ($files as $file) {
-            $components = explode('/', $file->getPath()->value);
+        foreach ($this->migrations as $migration) {
+            $components = explode('/', $migration->getPath()->value);
             $filename = array_pop($components);
 
             for ($node = $root; $name = array_shift($components);)
                 $node = $node->addChild($name);
 
-            $node->addChild($filename, $file); // last component -- leaf node
+            $node->addChild($filename, $migration); // last component -- leaf node
         }
 
-        /* sort tree recursively. toFiles returns all leaf nodes in depth-first order. */
-        return $root->sort($this->sortPolicy)->toFiles();
+        /* sort tree recursively. toMigrations returns all leaf nodes in depth-first order. */
+        $this->migrations = $root->sort($this->sortPolicy)->toMigrations();
+
+        return $this;
+    }
+
+    /**
+     * @throws Exception
+     * @internal
+     */
+    public function loadScript(File $file): Script
+    {
+        if (($contents = $file->getContents()) === null)
+            $contents = $this->adapter->getContents($file->getPath()->value);
+        return $this->scriptLoader->load($file, $contents, $this->variables, $this->flags & self::ENVIRONMENT);
+    }
+
+    /**
+     * @return Migration|null null is returned if the path is not found
+     * @throws Exception
+     */
+    public function getMigration(StorePath $path): Migration|null
+    {
+        try {
+            return new Migration($this, $this->adapter->getFile($path->value));
+        }
+        catch (FileNotFoundException) {
+            return null;
+        }
     }
 
     /**
