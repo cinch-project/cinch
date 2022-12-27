@@ -59,15 +59,16 @@ This command adds skeleton migration to the migration store. You cannot add a pr
 using this command. The <info><path></> must be relative and end with a .sql or .php extension. Directories 
 will automatically be created. 
 
-<code-comment># adds an 'onchange' migration</>
-<code>cinch add project-name alter-user-table.sql "add phone column" --migrate-policy=onchange</>
+<code-comment># adds an 'onchange-after' migration</>
+<code>cinch add project-name alter-user-table.sql "add phone column" --migrate-policy=onchange-after</>
 
 <code-comment># adds a migration with two labels (migrate-policy set to default 'once')</>
 <code>cinch add project-name 2022/05/alter-user-table.php "add phone column" -l label0 -l label1</>
 
-After creation, the migration can be edited or removed. Once migrated, only 'onchange' and 'always'
-migrations can be edited and no migration can be removed. 'always' and 'onchange' migrations can 
-change their policies to 'never', which means they will never run again.
+After creation, the migration can be edited or removed. Once migrated, only 'onchange-*' and 'always-*'
+migrations can be edited and no migration can ever be removed. To stop an 'always-*' migration from 
+running, add it to it's directory <info>exclude</> list within the migration store config file. For 
+'onchange-*', add it to the exclude list, like 'always=*' migrations, or simply stop changing the script.
 HELP);
     }
 }
