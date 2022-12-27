@@ -3,17 +3,18 @@
 namespace Cinch\Console;
 
 use Cinch\Component\Assert\Assert;
-use Cinch\Io;
 use Cinch\Project\ProjectName;
 use Exception;
 use League\Tactician\CommandBus;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Command\HelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -28,13 +29,17 @@ use Throwable;
 
 class Application extends BaseApplication
 {
-    public function __construct(string $name, private readonly ConsoleIo $io)
+    private readonly InputInterface $input;
+
+    public function __construct(string $name, private readonly ConsoleLogger $logger)
     {
         parent::__construct($name);
 
         $this->setAutoExit(false);
-        $this->configureIO($this->io->getInput(), $this->io->getOutput());
-        $this->io->getInput()->setInteractive(false);
+
+        $this->input = new ArgvInput();
+        $this->configureIO($this->input, $this->logger->getOutput());
+        $this->input->setInteractive(false);
 
         /* this dispatcher is only used for console events */
         $dispatcher = new EventDispatcher();
@@ -43,12 +48,12 @@ class Application extends BaseApplication
         $this->configureMemoryLimit();
     }
 
-    /** $input and $output are ignored. This will always use the Io instance passed to constructor.
+    /** $input and $output are ignored.
      * @throws Exception
      */
     public function run(InputInterface $input = null, OutputInterface $output = null): int
     {
-        return parent::run($this->io->getInput(), $this->io->getOutput());
+        return parent::run($this->input, $this->logger->getOutput());
     }
 
     /** Loads environment variables from .env.local if it exists, otherwise .env.prod.
@@ -126,10 +131,10 @@ class Application extends BaseApplication
         $container->setParameter('schema.description', getenv('CINCH_SCHEMA_DESCRIPTION'));
         $container->setParameter('schema.release_date', getenv('CINCH_SCHEMA_RELEASE_DATE'));
         $container->setParameter('twig.auto_reload', getenv('CINCH_ENV') !== 'prod');
-        $container->setParameter('twig.debug', $this->io->getOutput()->isDebug());
+        $container->setParameter('twig.debug', $this->logger->getOutput()->isDebug());
         $container->setParameter('twig.template_dir', $resourceDir);
         $container->setParameter('project.dir', $projectDir);
-        $container->set(Io::class, $this->io);
+        $container->set(LoggerInterface::class, $this->logger);
 
         $loader = new YamlFileLoader($container, new FileLocator("$rootDir/config"));
         $loader->load('services.yml');
@@ -154,7 +159,7 @@ class Application extends BaseApplication
         $projectDir = Path::join($workingDir, new ProjectName($input->getArgument('project')));
         $container = $this->compileContainer($projectDir);
 
-        $command->setConsoleIo($this->io);
+        $command->setLogger($this->logger);
         $command->setProjectDir($projectDir);
         $command->setCommandBus($container->get(CommandBus::class));
         $container->get(EventDispatcherInterface::class)->addSubscriber($command);

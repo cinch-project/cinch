@@ -67,7 +67,7 @@ class MigrateHandler extends DeploymentHandler
             }
         }
 
-        $this->io->notice(sprintf("found %d before, %d new, %d after eligible migrations out of %d",
+        $this->logger->notice(sprintf("found %d before, %d new, %d after eligible migrations out of %d",
             count($beforeTasks), count($onceTasks), count($afterTasks), count($migrations)));
 
         foreach ($beforeTasks as $task)
@@ -98,19 +98,19 @@ class MigrateHandler extends DeploymentHandler
 
         if ($change->migratePolicy == MigratePolicy::ONCE) {
             if ($scriptChanged)
-                $this->io->error("once migration '$migration' no longer matches history");
+                $this->logger->error("once migration '$migration' no longer matches history");
             return null;
         }
 
         if ($change->status == ChangeStatus::ROLLBACKED) {
             if ($scriptChanged)
-                $this->io->error("rollbacked migration '$migration' no longer matches history");
+                $this->logger->error("rollbacked migration '$migration' no longer matches history");
             return null;
         }
 
         /* only migrate when script changes */
         if (!$scriptChanged && $change->migratePolicy->isOnChange()) {
-            $this->io->notice(sprintf("skipping unchanged migration '%s': migrate_policy '%s'",
+            $this->logger->notice(sprintf("skipping unchanged migration '%s': migrate_policy '%s'",
                 $migration, $change->migratePolicy->value));
             return null;
         }

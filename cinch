@@ -2,8 +2,7 @@
 <?php
 
 use Cinch\Console\Application;
-use Cinch\Console\ConsoleIo;
-use Symfony\Component\Console\Input\ArgvInput;
+use Cinch\Console\ConsoleLogger;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -11,8 +10,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 if (PHP_SAPI !== 'cli')
     throw new RuntimeException("cinch CLI only supports 'cli' SAPI");
 
-$io = new ConsoleIo(new ArgvInput(), new ConsoleOutput());
-$app = new Application('cinch', $io);
+$logger = new ConsoleLogger(new ConsoleOutput());
+$app = new Application('cinch', $logger);
 
 try {
     $env = $app->loadEnv(__DIR__);
@@ -21,16 +20,16 @@ try {
         throw new RuntimeException('Missing CINCH_VERSION environment variable');
 
     $app->setVersion($version);
-    $io->debug("cinch $version using $env environment");
+    $logger->debug("cinch $version using $env environment");
     $exitCode = $app->run();
 }
 catch (Exception $e) {
     $exitCode = 255;
-    $app->renderThrowable($e, $io->getOutput()->getErrorOutput());
+    $app->renderThrowable($e, $logger->getOutput()->getErrorOutput());
 }
 finally {
     if ($exitCode = min(255, $exitCode))
-        $io->setIndent()->debug("application exit code $exitCode");
+        $logger->setIndent()->debug("application exit code $exitCode");
 
     exit($exitCode);
 }

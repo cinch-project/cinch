@@ -8,10 +8,10 @@ use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
-use Cinch\Io;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use DateTimeInterface;
 use Exception;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Yaml\Yaml;
@@ -40,7 +40,7 @@ class MigrationStore
         private readonly Adapter $adapter,
         private readonly ScriptLoader $scriptLoader,
         private readonly Twig $twig,
-        private readonly Io $io,
+        private readonly LoggerInterface $logger,
         private readonly string $resourceDir)
     {
     }
@@ -67,7 +67,7 @@ class MigrationStore
         foreach ($this->getDirectories() as $dir)
             array_push($migrations, ...$dir->all());
 
-        $this->io->debug('found ' . count($migrations) . ' migration scripts');
+        $this->logger->debug('found ' . count($migrations) . ' migration scripts');
         return $migrations;
     }
 
@@ -137,7 +137,7 @@ class MigrationStore
 
         $flags = $this->followLinks ? self::FOLLOW_LINKS : 0;
         if (!($files = $this->adapter->getFiles($flags))) {
-            $this->io->warning("migration store does not contain any migration scripts");
+            $this->logger->warning("migration store does not contain any migration scripts");
             return;
         }
 
@@ -195,7 +195,7 @@ class MigrationStore
         foreach (Assert::arrayProp($store, 'directories', $docPath) as $i => $dir) {
             $subPath = "{$docPath}[$i]";
             $dirPath = Assert::thatProp($dir, 'path', "$subPath.path")->string()->notEmpty()->value();
-            $directories[$dirPath] = new Directory(
+            $directories[] = new Directory(
                 $this->adapter,
                 $this->scriptLoader,
                 $dirPath,
@@ -207,9 +207,9 @@ class MigrationStore
         }
 
         if (!$directories)
-            $this->io->warning(self::CONFIG_FILE . " has no directories configured");
+            $this->logger->warning(self::CONFIG_FILE . " has no directories configured");
         else
-            $this->io->debug(self::CONFIG_FILE . ': found ' . count($directories) . ' directories');
+            $this->logger->debug(self::CONFIG_FILE . ': found ' . count($directories) . ' directories');
 
         return $this->directories = $directories;
     }

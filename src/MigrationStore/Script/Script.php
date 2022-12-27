@@ -66,7 +66,12 @@ abstract class Script
         return $this->labels;
     }
 
-    protected function setVariables(array $variables): void
+    /**
+     * @param array $variables
+     * @return void
+     * @internal
+     */
+    public function setVariables(array $variables): void
     {
         $this->variables = $variables;
     }

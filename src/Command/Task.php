@@ -5,14 +5,14 @@ namespace Cinch\Command;
 use Cinch\Command\Task\EndedEvent;
 use Cinch\Command\Task\StartedEvent;
 use Cinch\Component\Assert\Assert;
-use Cinch\Io;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 abstract class Task
 {
-    protected readonly Io $io;
+    protected readonly LoggerInterface $logger;
     private readonly EventDispatcherInterface $dispatcher;
     private bool $success = false;
     private int $id = 0;
@@ -51,9 +51,9 @@ abstract class Task
         $this->id = max(0, $id);
     }
 
-    public function setIo(Io $io): void
+    public function setLogger(LoggerInterface $logger): void
     {
-        $this->io = $io;
+        $this->logger = $logger;
     }
 
     public function setEventDispatcher(EventDispatcherInterface $dispatcher): void
@@ -102,7 +102,7 @@ abstract class Task
             if (!$isUndo)
                 throw $e;
 
-            $this->io->debug(sprintf('%s::undo: %s - %s',
+            $this->logger->debug(sprintf('%s::undo: %s - %s',
                 static::class, get_class($e), $e->getMessage()));
         }
         finally {

@@ -32,7 +32,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
 
     protected readonly ProjectId $projectId;
     protected readonly string $envName;
-    protected readonly ConsoleIo $io;
+    protected readonly ConsoleLogger $logger;
     private readonly CommandBus $commandBus;
     private readonly Terminal $terminal;
 
@@ -55,9 +55,9 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         $this->commandBus = $commandBus;
     }
 
-    public function setConsoleIo(ConsoleIo $io): void
+    public function setLogger(ConsoleLogger $logger): void
     {
-        $this->io = $io;
+        $this->logger = $logger;
     }
 
     public static function getSubscribedEvents(): array
@@ -72,7 +72,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     {
         static $nameLength = 32;
 
-        $descWidth = $this->terminal->getWidth() - $this->io->getIndent() - 60;
+        $descWidth = $this->terminal->getWidth() - $this->logger->getIndent() - 60;
 
         if ($task->isUndo)
             $message = sprintf("<fg=red>UNDO</> <fg=gray>%-{$nameLength}s</> <fg=gray>%-{$descWidth}s</> ",
@@ -86,7 +86,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
                 self::strtrunc($task->description, $descWidth)
             );
 
-        $this->io->raw($message, newLine: false);
+        $this->logger->info($message, options: ConsoleLogger::RAW);
     }
 
     public function onTaskEnded(Task\EndedEvent $task): void
@@ -116,7 +116,10 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
 
         $status = $task->success ? 'PASS' : 'FAIL';
         $statusColor = $task->success ? 'green' : 'red';
-        $this->io->raw(sprintf('<fg=%s>%s</> <fg=gray>%s</>', $statusColor, $status, $elapsed));
+        $this->logger->info(
+            sprintf('<fg=%s>%s</> <fg=gray>%s</>', $statusColor, $status, $elapsed),
+            options: ConsoleLogger::RAW | ConsoleLogger::NEWLINE
+        );
     }
 
     protected static function strtrunc(string $s, int $maxLength): string
@@ -137,14 +140,15 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
             $title = $this->getDescription();
 
         try {
-            $this->io->text("$title\n")->setIndent(2);
+            $this->logger->info("$title\n");
+            $this->logger->setIndent(2);
             $this->commandBus->handle($command);
             $success = true;
         }
         finally {
-            $this->io->setIndent();
+            $this->logger->setIndent();
             if ($success)
-                $this->io->text("\ncompleted successfully");
+                $this->logger->info("\ncompleted successfully");
         }
     }
 
@@ -228,7 +232,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
             default => 'UNKNOWN' // never happen
         };
 
-        $this->io->debug("'{$this->getName()}' command interrupted by {$name}[$signal]");
+        $this->logger->debug("'{$this->getName()}' command interrupted by {$name}[$signal]");
         exit(0);
     }
 }

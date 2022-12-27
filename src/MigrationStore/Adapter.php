@@ -20,9 +20,7 @@ abstract class Adapter
      */
     public abstract function getFiles(int $flags = 0): array;
 
-    /** Adds a file. This is an optional feature. For remote migration stores, cinch will require write access.
-     * This is only used to create a default store.yml during create project or generate a template
-     * migration script for add-script. Both can be done manually.
+    /** Adds (commits) a file.
      * @param string $path
      * @param string $content
      * @param string $message

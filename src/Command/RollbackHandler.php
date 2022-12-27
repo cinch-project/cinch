@@ -32,7 +32,7 @@ class RollbackHandler extends DeploymentHandler
         };
 
         if (count($this->changes) == 0) {
-            $this->io->debug("rollback-by-{$c->rollbackBy->type}: no changes to rollback");
+            $this->logger->debug("rollback-by-{$c->rollbackBy->type}: no changes to rollback");
             return;
         }
 
@@ -48,12 +48,12 @@ class RollbackHandler extends DeploymentHandler
             $migration = $this->migrationStore->get($change->path);
 
             if (!$change->checksum->equals($migration->getChecksum()))
-                $this->io->error("'$migration' cannot be rollbacked, it has changed since the last migrate");
+                $this->logger->error("'$migration' cannot be rollbacked, it has changed since the last migrate");
             else
                 $this->addTask($this->createDeployTask($migration, ChangeStatus::ROLLBACKED));
         }
 
-        $this->io->notice(sprintf('found %d eligible migrations for rollback out of %d',
+        $this->logger->notice(sprintf('found %d eligible migrations for rollback out of %d',
             $this->getTaskCount(), count($this->changes)));
 
         $this->changes = [];

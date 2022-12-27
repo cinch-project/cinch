@@ -46,7 +46,7 @@ class MigrationNode
     {
         $strcmp = $sortPolicy->isNatural() ? strnatcmp(...) : strcmp(...);
 
-        uasort($this->children, function (self $a, self $b) use ($sortPolicy, $strcmp) {
+        uasort($this->children, static function (self $a, self $b) use ($sortPolicy, $strcmp) {
             /* directories first */
             if ($n = ($a->isLeaf() - $b->isLeaf()))
                 return $n;

@@ -7,7 +7,6 @@ use Cinch\Component\Assert\AssertException;
 use Cinch\MigrationStore\File;
 use Cinch\MigrationStore\LocalFile;
 use Exception;
-use ReflectionMethod;
 use Twig\Environment as Twig;
 
 class ScriptLoader
@@ -32,7 +31,7 @@ class ScriptLoader
         else
             $script = $this->evalFile($path, $contents);
 
-        (new ReflectionMethod($script, 'setVariables'))->invoke($script, $variables);
+        $script->setVariables($variables);
         return $script;
     }
 

@@ -2,20 +2,20 @@
 
 namespace Cinch\Command;
 
-use Cinch\Io;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Log\LoggerInterface;
 
 abstract class Handler
 {
     /** @var Task[] */
     private array $tasks = [];
-    protected readonly Io $io;
+    protected readonly LoggerInterface $logger;
     private readonly EventDispatcherInterface $dispatcher;
 
-    public function setIo(Io $io): void
+    public function setLogger(LoggerInterface $logger): void
     {
-        $this->io = $io;
+        $this->logger = $logger;
     }
 
     public function setEventDispatcher(EventDispatcherInterface $dispatcher): void
@@ -27,7 +27,7 @@ abstract class Handler
     {
         $this->tasks[] = $task;
 
-        $task->setIo($this->io);
+        $task->setLogger($this->logger);
         $task->setEventDispatcher($this->dispatcher);
         $task->setId(count($this->tasks));
 

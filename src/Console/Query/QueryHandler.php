@@ -2,14 +2,14 @@
 
 namespace Cinch\Console\Query;
 
-use Cinch\Io;
+use Psr\Log\LoggerInterface;
 
 abstract class QueryHandler
 {
-    protected readonly Io $io;
+    protected readonly LoggerInterface $logger;
 
-    public function setIo(Io $io): void
+    public function setLogger(LoggerInterface $logger): void
     {
-        $this->io = $io;
+        $this->logger = $logger;
     }
 }

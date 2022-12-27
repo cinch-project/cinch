@@ -15,8 +15,6 @@ use RuntimeException;
 class Azure extends Git
 {
     const TOKEN_ENV_NAME = 'CINCH_AZURE_TOKEN';
-
-    /* docs say set to 6.0 but response headers return 7.0 -- Nov 9, 2022 */
     private const API_VERSION = '7.0';
     private readonly array $branchInfo;
 
@@ -31,6 +29,7 @@ class Azure extends Git
 
     /**
      * @param int $flags
+     * @return File[]
      * @throws GuzzleException
      */
     public function getFiles(int $flags = 0): array
