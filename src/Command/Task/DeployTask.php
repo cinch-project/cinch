@@ -34,7 +34,7 @@ class DeployTask extends Task
         $policy = $this->command == 'migrate' ? $this->migration->getScript()->getMigratePolicy()->value : '';
 
         /* special case: override TaskAttribute settings */
-        $this->setName("$this->command $policy"); // ex: 'migrate once, 'migrate always', 'rollback', etc.
+        $this->setName("$this->command $policy"); // ex: 'migrate once, 'migrate always-before', 'rollback', etc.
         $this->setDescription($this->migration->getPath());
     }
 

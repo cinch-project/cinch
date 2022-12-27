@@ -87,12 +87,11 @@ abstract class DeploymentHandler extends Handler
         }
     }
 
-    /** Executes a migration (rollback or migrate) within a transaction.
+    /**
      * @throws Exception
      */
-    protected function runDeployTask(Migration $migration, ChangeStatus $status): void
+    protected function createDeployTask(Migration $migration, ChangeStatus $status): DeployTask
     {
-        $task = new DeployTask($migration, $status, $this->target, $this->deployment, $this->isSingleTransactionMode);
-        $task->run();
+        return new DeployTask($migration, $status, $this->target, $this->deployment, $this->isSingleTransactionMode);
     }
 }

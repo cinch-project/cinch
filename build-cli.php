@@ -1,12 +1,12 @@
 <?php
 
-require_once(__DIR__ . '/vendor/autoload.php');
+require_once 'vendor/autoload.php';
 
 use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 
-const INCLUDE_DIRS = ['bootstrap', 'resources', 'src', 'vendor'];
+const INCLUDE_DIRS = ['config', 'resources', 'src', 'vendor'];
 const INCLUDE_FILES = ['.env.prod', 'cinch', 'LICENSE'];
 const BUILD_DIR = 'build';
 

@@ -2,6 +2,7 @@
 
 namespace Cinch\Command;
 
+use Cinch\History\Change;
 use Cinch\History\HistoryFactory;
 use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
@@ -28,12 +29,14 @@ class RemoveMigrationHandler extends Handler
             ->getChangeView()
             ->getMostRecentChanges([$c->path]);
 
+        /** @var Change $change */
         if ($change = array_shift($changes))
             throw new \RuntimeException(sprintf(
-                "cannot remove migration '%s': last deployed '%s', status '%s', tag '%s'",
+                "cannot remove migration '%s': last deployed '%s', status '%s', policy '%s', tag '%s'",
                 $c->path,
                 $change->deployedAt->format('Y-m-d H:i:s.uP'),
                 $change->status->value,
+                $change->migratePolicy->value,
                 $change->tag->value,
             ));
 

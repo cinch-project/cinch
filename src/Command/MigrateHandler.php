@@ -3,21 +3,21 @@
 namespace Cinch\Command;
 
 use Cinch\Common\MigratePolicy;
+use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
 use Cinch\MigrationStore\Migration;
-use Cinch\MigrationStore\MigrationOutOfSyncException;
 use Exception;
 
 class MigrateHandler extends DeploymentHandler
 {
-    private MigrateOptions $options;
+    private MigrateOptions $migrateOptions;
 
     /**
      * @throws Exception
      */
     public function handle(Migrate $c): void
     {
-        $this->options = $c->options;
+        $this->migrateOptions = $c->options;
         $this->prepare($c->projectId, $c->envName);
         $this->deploy($c->tag, $c->deployer);
     }
@@ -27,72 +27,95 @@ class MigrateHandler extends DeploymentHandler
      */
     protected function runMigrations(): void
     {
-        $count = $this->options->getCount();
+        $changes = [];
+        $paths = $this->migrateOptions->getPaths() ?? [];
 
-        foreach ($this->getMigrations() as $migration) {
-            if ($migration->getScript()->getMigratePolicy() == MigratePolicy::NEVER ||
-                !($status = $this->getStatus($migration))) {
+        /* convert indexed array to assoc. with path keys */
+        foreach ($this->history->getChangeView()->getMostRecentChanges($paths) as $c)
+            $changes[mb_strtolower($c->path, 'UTF-8')] = $c;
+
+        $beforeTasks = [];
+        $onceTasks = [];
+        $afterTasks = [];
+        $count = $this->migrateOptions->getCount();
+
+        if ($paths)
+            $migrations = array_map(fn($p) => $this->migrationStore->get($p), $paths);
+        else
+            $migrations = $this->migrationStore->all();
+
+        /* find eligible migrations (still filtering). also put them in the before/after order */
+        foreach ($migrations as $migration) {
+            $change = $changes[mb_strtolower($migration->getPath(), 'UTF-8')] ?? null;
+
+            if (!($status = $this->getStatus($migration, $change)))
                 continue;
+
+            $task = $this->createDeployTask($migration, $status);
+            $migratePolicy = $migration->getScript()->getMigratePolicy();
+
+            if ($migratePolicy->isBefore()) {
+                $beforeTasks[] = $task;
             }
-
-            $this->runDeployTask($migration, $status);
-
-            if ($count !== null && --$count == 0)
-                break;
+            else if ($migratePolicy->isAfter()) {
+                $afterTasks[] = $task;
+            }
+            else {
+                $onceTasks[] = $task;
+                if ($count !== null && --$count == 0) // limit to count, doesn't apply to before|after
+                    break;
+            }
         }
-    }
 
-    /**
-     * @return Migration[]
-     * @throws Exception
-     */
-    private function getMigrations(): array
-    {
-        /* migrate specific scripts */
-        if ($paths = $this->options->getPaths())
-            return array_map(fn($p) => $this->migrationStore->get($p), $paths);
-        return $this->migrationStore->all();
+        $this->io->notice(sprintf("found %d before, %d new, %d after eligible migrations out of %d",
+            count($beforeTasks), count($onceTasks), count($afterTasks), count($migrations)));
+
+        foreach ($beforeTasks as $task)
+            $this->addTask($task);
+
+        foreach ($onceTasks as $task)
+            $this->addTask($task);
+
+        foreach ($afterTasks as $task)
+            $this->addTask($task);
+
+        unset($migrations, $beforeTasks, $onceTasks, $afterTasks, $changes);
+        $this->runTasks();
     }
 
     /**
      * @param Migration $migration
+     * @param Change|null $change
      * @return ChangeStatus|null change status or null if migration should be skipped
-     * @throws Exception
      */
-    private function getStatus(Migration $migration): ChangeStatus|null
+    private function getStatus(Migration $migration, Change|null $change): ChangeStatus|null
     {
-        $changes = $this->history->getChangeView()->getMostRecentChanges([$migration->getPath()]);
-
         /* doesn't exist yet, migrate it */
-        if (!$changes)
+        if (!$change)
             return ChangeStatus::MIGRATED;
 
-        $change = $changes[0];
         $scriptChanged = !$change->checksum->equals($migration->getChecksum());
 
         if ($change->migratePolicy == MigratePolicy::ONCE) {
-            /* error: migrate once policy cannot change */
             if ($scriptChanged)
-                throw new MigrationOutOfSyncException(
-                    "once migration '$migration' no longer matches history");
-
+                $this->io->error("once migration '$migration' no longer matches history");
             return null;
         }
 
         if ($change->status == ChangeStatus::ROLLBACKED) {
-            /* error: rollbacked script cannot change */
             if ($scriptChanged)
-                throw new MigrationOutOfSyncException(
-                    "rollbacked migration '$migration' no longer matches history");
-
+                $this->io->error("rollbacked migration '$migration' no longer matches history");
             return null;
         }
 
         /* only migrate when script changes */
-        if (!$scriptChanged && $change->migratePolicy == MigratePolicy::ONCHANGE)
+        if (!$scriptChanged && $change->migratePolicy->isOnChange()) {
+            $this->io->notice(sprintf("skipping unchanged migration '%s': migrate_policy '%s'",
+                $migration, $change->migratePolicy->value));
             return null;
+        }
 
-        /* migrate policy is ONCHANGE or ALWAYS */
+        /* migrate policy must be always-* or onchange-*, this is a remigrate */
         return ChangeStatus::REMIGRATED;
     }
 }

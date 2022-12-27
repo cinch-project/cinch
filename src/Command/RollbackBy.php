@@ -31,9 +31,9 @@ class RollbackBy
 
     public static function paths(array $paths): self
     {
-        Assert::notEmpty($paths, 'rollback-by-script paths');
+        Assert::notEmpty($paths, 'rollback-by-path');
         foreach ($paths as $i => $p)
-            Assert::class($p, StorePath::class, "rollback-by-script paths[$i]");
+            Assert::class($p, StorePath::class, "rollback-by-path[$i]");
         return new self(self::PATHS, $paths);
     }
 

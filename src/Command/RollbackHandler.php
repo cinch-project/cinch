@@ -2,6 +2,7 @@
 
 namespace Cinch\Command;
 
+use Cinch\Common\MigratePolicy;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
 use Exception;
@@ -19,15 +20,21 @@ class RollbackHandler extends DeploymentHandler
         $this->prepare($c->projectId, $c->envName);
         $view = $this->history->getChangeView();
 
+        $value = $c->rollbackBy->value;
+        $policies = [MigratePolicy::ONCE];    /* rollback only supports 'once' migrations */
+        $statuses = [ChangeStatus::MIGRATED]; /* all other statuses are not supported by rollback */
+
         $this->changes = match ($c->rollbackBy->type) {
-            RollbackBy::COUNT => $view->getMostRecentChangesByCount($c->rollbackBy->value),
-            RollbackBy::TAG => $view->getMostRecentChangesSinceTag($c->rollbackBy->value),
-            RollbackBy::DATE => $view->getMostRecentChangesSinceDate($c->rollbackBy->value),
-            RollbackBy::PATHS => $view->getMostRecentChanges($c->rollbackBy->value, excludeRollbacked: true)
+            RollbackBy::COUNT => $view->getMostRecentChangesByCount($value, $policies, $statuses),
+            RollbackBy::TAG => $view->getMostRecentChangesSinceTag($value, $policies, $statuses),
+            RollbackBy::DATE => $view->getMostRecentChangesSinceDate($value, $policies, $statuses),
+            RollbackBy::PATHS => $view->getMostRecentChanges($value, $policies, $statuses)
         };
 
-        if (count($this->changes) == 0)
+        if (count($this->changes) == 0) {
+            $this->io->debug("rollback-by-{$c->rollbackBy->type}: no changes to rollback");
             return;
+        }
 
         $this->deploy($c->tag, $c->deployer);
     }
@@ -41,9 +48,15 @@ class RollbackHandler extends DeploymentHandler
             $migration = $this->migrationStore->get($change->path);
 
             if (!$change->checksum->equals($migration->getChecksum()))
-                throw new Exception("rollback '$change->path' failed: script changed since last migrated");
-
-            $this->runDeployTask($migration, ChangeStatus::ROLLBACKED);
+                $this->io->error("'$migration' cannot be rollbacked, it has changed since the last migrate");
+            else
+                $this->addTask($this->createDeployTask($migration, ChangeStatus::ROLLBACKED));
         }
+
+        $this->io->notice(sprintf('found %d eligible migrations for rollback out of %d',
+            $this->getTaskCount(), count($this->changes)));
+
+        $this->changes = [];
+        $this->runTasks();
     }
 }
