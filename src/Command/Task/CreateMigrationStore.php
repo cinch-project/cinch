@@ -2,8 +2,8 @@
 
 namespace Cinch\Command\Task;
 
-use Cinch\Command\TaskAttribute;
 use Cinch\Command\Task;
+use Cinch\Command\TaskAttribute;
 use Cinch\Common\Dsn;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;

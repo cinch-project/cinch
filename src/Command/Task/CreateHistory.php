@@ -2,8 +2,8 @@
 
 namespace Cinch\Command\Task;
 
-use Cinch\Command\TaskAttribute;
 use Cinch\Command\Task;
+use Cinch\Command\TaskAttribute;
 use Cinch\Common\Environment;
 use Cinch\History\History;
 use Cinch\History\HistoryFactory;

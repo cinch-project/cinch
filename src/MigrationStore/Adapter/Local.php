@@ -8,7 +8,6 @@ use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Cinch\LastErrorException;
 use Cinch\MigrationStore\Adapter;
-use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
 use Cinch\MigrationStore\LocalFile;
 use Cinch\MigrationStore\MigrationStore;

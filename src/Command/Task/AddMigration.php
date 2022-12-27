@@ -3,8 +3,8 @@
 namespace Cinch\Command\Task;
 
 use Cinch\Command\AddMigration as AddMigrationCommand;
-use Cinch\Command\TaskAttribute;
 use Cinch\Command\Task;
+use Cinch\Command\TaskAttribute;
 use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\MigrationStore\MigrationStore;

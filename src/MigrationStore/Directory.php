@@ -7,7 +7,6 @@ use Cinch\Component\Assert\AssertException;
 use Cinch\MigrationStore\Script\Script;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
-use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 
 /** migration store directory object
  */

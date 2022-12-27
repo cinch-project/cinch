@@ -5,7 +5,6 @@ namespace Cinch\Database;
 use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
-use Cinch\Io;
 use Doctrine\DBAL\DriverManager;
 use Exception;
 use PDO;

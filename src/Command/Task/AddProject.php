@@ -2,8 +2,8 @@
 
 namespace Cinch\Command\Task;
 
-use Cinch\Command\TaskAttribute;
 use Cinch\Command\Task;
+use Cinch\Command\TaskAttribute;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 

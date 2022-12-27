@@ -6,7 +6,6 @@ use Cinch\Common\Checksum;
 use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
-use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
