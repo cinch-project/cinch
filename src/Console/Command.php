@@ -75,15 +75,15 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         $descWidth = $this->terminal->getWidth() - $this->io->getIndent() - 60;
 
         if ($task->isUndo)
-            $message = sprintf("<fg=red>UNDO</> <fg=gray>%-{$nameLength}s</> <fg=gray>%-{$descWidth}s</>",
+            $message = sprintf("<fg=red>UNDO</> <fg=gray>%-{$nameLength}s</> <fg=gray>%-{$descWidth}s</> ",
                 "#$task->id $task->name",
                 'undoing previous action...'
             );
         else
-            $message = sprintf("<fg=yellow>(%2d)</> %-{$nameLength}s %-{$descWidth}s",
+            $message = sprintf("<fg=yellow>(%2d)</> %-{$nameLength}s %-{$descWidth}s ",
                 $task->id,
                 self::strtrunc($task->name, $nameLength),
-                $task->description
+                self::strtrunc($task->description, $descWidth)
             );
 
         $this->io->raw($message, newLine: false);
@@ -116,7 +116,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
 
         $status = $task->success ? 'PASS' : 'FAIL';
         $statusColor = $task->success ? 'green' : 'red';
-        $this->io->raw(sprintf(' <fg=%s>%s</> <fg=gray>%s</>', $statusColor, $status, $elapsed));
+        $this->io->raw(sprintf('<fg=%s>%s</> <fg=gray>%s</>', $statusColor, $status, $elapsed));
     }
 
     protected static function strtrunc(string $s, int $maxLength): string
