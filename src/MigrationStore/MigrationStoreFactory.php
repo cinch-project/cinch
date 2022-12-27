@@ -3,6 +3,7 @@
 namespace Cinch\MigrationStore;
 
 use Cinch\Common\Dsn;
+use Cinch\Io;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
 use RuntimeException;
@@ -13,6 +14,7 @@ class MigrationStoreFactory
     public function __construct(
         private readonly ScriptLoader $scriptLoader,
         private readonly Twig $twig,
+        private readonly Io $io,
         private readonly string $projectDir,
         private readonly string $resourceDir,
         private readonly string $userAgent)
@@ -32,6 +34,6 @@ class MigrationStoreFactory
             default => throw new RuntimeException("unsupported migration store adapter '{$dsn->getScheme()}'")
         };
 
-        return new MigrationStore($adapter, $this->scriptLoader, $this->twig, $this->resourceDir);
+        return new MigrationStore($adapter, $this->scriptLoader, $this->twig, $this->io, $this->resourceDir);
     }
 }

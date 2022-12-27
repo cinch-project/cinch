@@ -17,9 +17,10 @@ class GitLab extends Git
     const TOKEN_ENV_NAME = 'CINCH_GITLAB_TOKEN';
 
     /**
+     * @param int $flags
      * @throws GuzzleException|Exception
      */
-    public function getFiles(): array
+    public function getFiles(int $flags = 0): array
     {
         $query = [
             'path' => $this->storeDir,

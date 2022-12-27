@@ -66,7 +66,7 @@ class MigrationNode
         return $this;
     }
 
-    /** Converts tree to a depth first array of Files (flatten).
+    /** Converts tree to a depth first array of migrations (flatten).
      * @return Migration[]
      */
     public function toMigrations(): array

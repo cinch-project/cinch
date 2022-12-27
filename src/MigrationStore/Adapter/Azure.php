@@ -31,9 +31,10 @@ class Azure extends Git
     }
 
     /**
+     * @param int $flags
      * @throws GuzzleException
      */
-    public function getFiles(): array
+    public function getFiles(int $flags = 0): array
     {
         $query = http_build_query([
             'api-version' => self::API_VERSION,

@@ -14,7 +14,7 @@ use Exception;
 
 class SqlScriptParser
 {
-    const TAGS = ['author', 'authored_at', 'description', 'migrate_policy'];
+    private const TAGS = ['author', 'authored_at', 'description', 'migrate_policy'];
 
     /**
      * @throws Exception
@@ -33,7 +33,7 @@ class SqlScriptParser
         // DocBlock
         // /**
         //  * @author ...
-        //  * @authoredAt ...
+        //  * @migrate_policy ...
         //  * etc.
         //  */
         if (preg_match('~/\*\*(.*)\*/~SsU', $data, $docBlock) !== 1)
@@ -50,7 +50,6 @@ class SqlScriptParser
             if ($line && $line[0] == '@' && ($line = substr($line, 1))) {
                 /* split on any number of spaces and/or tabs, limit split to two tokens: name and value */
                 $pair = preg_split('~[ \t]+~', $line, 2, PREG_SPLIT_NO_EMPTY);
-
                 $name = array_shift($pair);
                 $value = array_shift($pair);
 
@@ -61,10 +60,7 @@ class SqlScriptParser
             }
         }
 
-        Assert::keySet($tags, 'author', "@author");
         Assert::keySet($tags, 'authored_at', "@authored_at");
-        Assert::keySet($tags, 'description', "@description");
-        Assert::keySet($tags, 'migrate_policy', "@migrate_policy");
 
         try {
             $authoredAt = new DateTimeImmutable($tags['authored_at'], new DateTimeZone('UTC'));
@@ -73,11 +69,12 @@ class SqlScriptParser
             throw new AssertException("@authored_at invalid - {$e->getMessage()}");
         }
 
+        /* parameter order of SqlScript ctor */
         return [
-            MigratePolicy::from($tags['migrate_policy']),
-            new Author($tags['author']),
+            MigratePolicy::from(Assert::keySet($tags, 'migrate_policy', "@migrate_policy")),
+            new Author(Assert::keySet($tags, 'author', "@author")),
             $authoredAt,
-            new Description($tags['description']),
+            new Description(Assert::keySet($tags, 'description', "@description")),
             new Labels($labels)
         ];
     }
@@ -87,31 +84,29 @@ class SqlScriptParser
      */
     private static function parseSql(string $data): array
     {
-        $migrateSql = '';
-        $rollbackSql = '';
+        $migrate = null;
+        $rollback = null;
         $section = '';
 
         foreach (preg_split('~\R~', $data) as $line => $data) {
             if (preg_match('~^[ \t]*--[ \t]+@(migrate|rollback)\b~S', $data, $m)) {
                 $section = $m[1];
 
-                if ($section == 'migrate' && $migrateSql)
+                if ($section == 'migrate' && $migrate !== null)
                     throw new AssertException("second migrate section found at line $line");
-
-                if ($section == 'rollback' && $rollbackSql)
+                else if ($section == 'rollback' && $rollback !== null)
                     throw new AssertException("second rollback section found at line $line");
+
+                $$section = '';
             }
-            else if ($section == 'migrate') {
-                $migrateSql .= "$data\n";
-            }
-            else if ($section == 'rollback') {
-                $rollbackSql .= "$data\n";
+            else if ($data = trim($data)) { // avoid empty lines
+                $$section .= "$data\n";
             }
         }
 
-        if (!($migrateSql || $rollbackSql))
+        if ($migrate === null && $rollback === null)
             throw new AssertException("no migrate or rollback section found");
 
-        return [trim($migrateSql), trim($rollbackSql)];
+        return [trim($migrate ?? ''), trim($rollback ?? '')];
     }
 }

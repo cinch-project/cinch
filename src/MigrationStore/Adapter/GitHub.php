@@ -21,9 +21,10 @@ class GitHub extends Git
     const TOKEN_ENV_NAME = 'CINCH_GITHUB_TOKEN';
 
     /**
+     * @param int $flags
      * @throws GuzzleException
      */
-    public function getFiles(): array
+    public function getFiles(int $flags = 0): array
     {
         $encodedPath = rawurlencode($this->storeDir);
         $ref = $encodedPath ? "$this->branch:$encodedPath" : $this->branch; // extended SHA-1 syntax ... <ref>:<path>

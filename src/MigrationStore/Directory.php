@@ -15,12 +15,10 @@ class Directory
 {
     /** recursively search directory - yaml 'recursive: true' */
     const RECURSIVE = 0x01;
-    /** raise error if directory is empty after filtering - yaml 'errorIfEmpty: true' */
+    /** raise error if directory is empty after filtering - yaml 'error_if_empty: true' */
     const ERROR_IF_EMPTY = 0x02;
-    /** (local filesystem only) follow symbolic links - yaml 'followLinks: true' */
-    const FOLLOW_LINKS = 0x04;
     /** replace environment variables when processing SQL scripts - yaml 'environment: true' */
-    const ENVIRONMENT = 0x08;
+    const ENVIRONMENT = 0x04;
 
     /** @var Migration[] */
     private array $migrations = [];
@@ -123,17 +121,13 @@ class Directory
     }
 
     /**
-     * @return Migration|null null is returned if the path is not found
+     * @param StorePath $path
+     * @return Migration
      * @throws Exception
      */
-    public function getMigration(StorePath $path): Migration|null
+    public function get(StorePath $path): Migration
     {
-        try {
-            return new Migration($this, $this->adapter->getFile($path->value));
-        }
-        catch (FileNotFoundException) {
-            return null;
-        }
+        return new Migration($this, $this->adapter->getFile($path->value));
     }
 
     /**

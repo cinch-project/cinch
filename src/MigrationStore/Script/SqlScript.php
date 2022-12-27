@@ -13,8 +13,8 @@ use Exception;
 class SqlScript extends Script
 {
     /**
-     * @param string $migrateSql can be an empty string if there are no migrate commands
-     * @param string $rollbackSql can be an empty string if there are no rollback commands
+     * @param string $migrate migrate sql: can be an empty string, in which case nothing is sent to server
+     * @param string $rollback rollback sql: can be an empty string, in which case nothing is sent to server
      * @param MigratePolicy $migratePolicy
      * @param Author $author
      * @param DateTimeInterface $authoredAt
@@ -22,8 +22,8 @@ class SqlScript extends Script
      * @param Labels $labels
      */
     public function __construct(
-        private readonly string $migrateSql,
-        private readonly string $rollbackSql,
+        private readonly string $migrate,
+        private readonly string $rollback,
         MigratePolicy $migratePolicy,
         Author $author,
         DateTimeInterface $authoredAt,
@@ -38,8 +38,8 @@ class SqlScript extends Script
      */
     public function migrate(Session $session): void
     {
-        if ($this->migrateSql)
-            $session->executeStatement($this->migrateSql);
+        if ($this->migrate)
+            $session->executeStatement($this->migrate);
     }
 
     /**
@@ -47,7 +47,7 @@ class SqlScript extends Script
      */
     public function rollback(Session $session): void
     {
-        if ($this->rollbackSql)
-            $session->executeStatement($this->rollbackSql);
+        if ($this->rollback)
+            $session->executeStatement($this->rollback);
     }
 }

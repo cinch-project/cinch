@@ -8,6 +8,7 @@ use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
+use Cinch\Io;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use DateTimeInterface;
 use Exception;
@@ -19,6 +20,8 @@ use Twig\Environment as Twig;
 class MigrationStore
 {
     const CONFIG_FILE = 'store.yml';
+    /** (local filesystem only) follow symbolic links - yaml 'follow_links: true' */
+    const FOLLOW_LINKS = 0x1000;
     private const PARSE_FLAGS = Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE | Yaml::PARSE_OBJECT_FOR_MAP;
 
     /** @var Directory[] */
@@ -30,38 +33,16 @@ class MigrationStore
     private bool $createdStoreConfig = false;
 
     private bool $populatedDirectories = false;
+    private bool $followLinks = false;
+
 
     public function __construct(
         private readonly Adapter $adapter,
         private readonly ScriptLoader $scriptLoader,
         private readonly Twig $twig,
+        private readonly Io $io,
         private readonly string $resourceDir)
     {
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function createConfig(): void
-    {
-        if (!$this->exists()) {
-            $this->adapter->addFile(
-                self::CONFIG_FILE,
-                slurp(Path::join($this->resourceDir, self::CONFIG_FILE)),
-                'created ' . self::CONFIG_FILE
-            );
-
-            $this->createdStoreConfig = true;
-        }
-    }
-
-    /** Deletes the store file, not the directory.
-     * @return void
-     */
-    public function deleteConfig(): void
-    {
-        if ($this->createdStoreConfig)
-            $this->adapter->deleteFile(self::CONFIG_FILE, 'deleted ' . self::CONFIG_FILE);
     }
 
     /**
@@ -71,7 +52,23 @@ class MigrationStore
      */
     public function get(StorePath $path): Migration
     {
-        return $this->getDirectoryFor($path)->getMigration($path);
+        return $this->getDirectoryFor($path)->get($path);
+    }
+
+    /** Gets all migrations within store in directory migrate order.
+     * @return Migration[]
+     * @throws Exception
+     */
+    public function all(): array
+    {
+        $migrations = [];
+        $this->populateDirectories();
+
+        foreach ($this->getDirectories() as $dir)
+            array_push($migrations, ...$dir->all());
+
+        $this->io->debug('found ' . count($migrations) . ' migration scripts');
+        return $migrations;
     }
 
     /**
@@ -96,19 +93,32 @@ class MigrationStore
         $this->adapter->deleteFile($path->value, 'remove migration request');
     }
 
-    /** Iterates through all migrations in directory migrate order.
-     * @return Migration[]
+    /**
      * @throws Exception
      */
-    public function all(): array
+    public function createConfig(): void
     {
-        $migrations = [];
-        $this->populateDirectories();
+        try {
+            $this->getDirectories();
+        }
+        catch (FileNotFoundException) {
+            $this->adapter->addFile(
+                self::CONFIG_FILE,
+                slurp(Path::join($this->resourceDir, self::CONFIG_FILE)),
+                'created ' . self::CONFIG_FILE
+            );
 
-        foreach ($this->getDirectories() as $dir)
-            array_push($migrations, ...$dir->all());
+            $this->createdStoreConfig = true;
+        }
+    }
 
-        return $migrations;
+    /** Deletes the store file, not the directory.
+     * @return void
+     */
+    public function deleteConfig(): void
+    {
+        if ($this->createdStoreConfig)
+            $this->adapter->deleteFile(self::CONFIG_FILE, 'deleted ' . self::CONFIG_FILE);
     }
 
     /**
@@ -119,18 +129,21 @@ class MigrationStore
         if ($this->populatedDirectories)
             return;
 
-        $this->populatedDirectories = true;
-
         /* to support remote git providers, all migrations for a store are recursively fetched: git tree.
          * This is a performance win (due to API overhead) and avoids requests per minute/hour rate limits.
-         * Although Local adapter doesn't require this, it behaves identically to keep things generic.
          */
-        if (!$this->getDirectories() || !($files = $this->adapter->getFiles()))
+        if (!($directories = $this->getDirectories()))
             return;
 
-        /* Since we have an unsorted list of all files, we need to match them to a directory. some may not be
-         * ready to deploy, meaning their parent dirs are not listed within the store's config file. Some may
-         * be 1+ levels deep, while the directory is marked non-recursive. These are simply ignored. This finds the
+        $flags = $this->followLinks ? self::FOLLOW_LINKS : 0;
+        if (!($files = $this->adapter->getFiles($flags))) {
+            $this->io->warning("migration store does not contain any migration scripts");
+            return;
+        }
+
+        $this->populatedDirectories = true;
+
+        /* Since we have an unsorted list of all files, we need to match them to a directory. This finds the
          * deepest matching base-dir: /a/b/c.php should be added to /a/b rather than /a (see getDirectoryFor).
          */
         while ($file = array_shift($files))
@@ -138,7 +151,7 @@ class MigrationStore
                 $dir->add($file);
 
         /* migrate sort order: based on config options */
-        foreach ($this->getDirectories() as $dir)
+        foreach ($directories as $dir)
             $dir->sort();
     }
 
@@ -161,20 +174,6 @@ class MigrationStore
         return $candidate;
     }
 
-    /**
-     * @throws Exception
-     */
-    private function exists(): bool
-    {
-        try {
-            $this->getDirectories();
-            return true;
-        }
-        catch (FileNotFoundException) {
-            return false;
-        }
-    }
-
     /** Gets the directories from the migration store.
      * @return Directory[]
      * @throws Exception
@@ -187,6 +186,8 @@ class MigrationStore
         $contents = $this->adapter->getContents(self::CONFIG_FILE);
         $store = Yaml::parse($contents, self::PARSE_FLAGS);
         $variables = $this->parseVariables($store, 'store.variables'); // top-level (global) variables
+        $this->followLinks = Assert::ifPropSet($store, 'follow_links', false, "store.follow_links")
+            ->bool()->value();
 
         $directories = [];
         $docPath = 'store.directories';
@@ -205,7 +206,12 @@ class MigrationStore
             );
         }
 
-        return $directories;
+        if (!$directories)
+            $this->io->warning(self::CONFIG_FILE . " has no directories configured");
+        else
+            $this->io->debug(self::CONFIG_FILE . ': found ' . count($directories) . ' directories');
+
+        return $this->directories = $directories;
     }
 
     private function parseVariables(object $obj, string $docPath): array
@@ -228,11 +234,8 @@ class MigrationStore
         if (Assert::ifPropSet($dir, 'recursive', false, "$docPath.recursive")->bool()->value())
             $flags |= Directory::RECURSIVE;
 
-        if (Assert::ifPropSet($dir, 'errorIfEmpty', false, "$docPath.errorIfEmpty")->bool()->value())
+        if (Assert::ifPropSet($dir, 'error_if_empty', false, "$docPath.error_if_empty")->bool()->value())
             $flags |= Directory::ERROR_IF_EMPTY;
-
-        if (Assert::ifPropSet($dir, 'followLinks', false, "$docPath.followLinks")->bool()->value())
-            $flags |= Directory::FOLLOW_LINKS;
 
         if (Assert::ifPropSet($dir, 'environment', false, "$docPath.environment")->bool()->value())
             $flags |= Directory::ENVIRONMENT;

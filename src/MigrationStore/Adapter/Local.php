@@ -10,8 +10,8 @@ use Cinch\LastErrorException;
 use Cinch\MigrationStore\Adapter;
 use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
-use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\LocalFile;
+use Cinch\MigrationStore\MigrationStore;
 use Exception;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Filesystem;
@@ -37,15 +37,13 @@ class Local extends Adapter
         return new self(Assert::directory($dir, 'migration store directory'));
     }
 
-    public function getFiles(): array
+    public function getFiles(int $flags = 0): array
     {
-        $finder = (new Finder)
-            ->in($this->storeDir)
-            ->name(self::FILE_PATTERN)
-            ->ignoreDotFiles(true)
-            ->files();
-
         $files = [];
+        $finder = (new Finder)->in($this->storeDir)->name(self::FILE_PATTERN)->files();
+
+        if ($flags & MigrationStore::FOLLOW_LINKS)
+            $finder->followLinks();
 
         /**
          * @var SplFileInfo $file

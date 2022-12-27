@@ -14,10 +14,11 @@ abstract class Adapter
     }
 
     /** Recursively gets all files from the store.
+     * @param int $flags see adapter implementation for which flags are supported.
      * @return File[]
      * @throws Exception
      */
-    public abstract function getFiles(): array;
+    public abstract function getFiles(int $flags = 0): array;
 
     /** Adds a file. This is an optional feature. For remote migration stores, cinch will require write access.
      * This is only used to create a default store.yml during create project or generate a template
