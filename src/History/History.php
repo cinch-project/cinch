@@ -68,11 +68,6 @@ class History
         $Q = $this->session->quoteString(...);
         $version = $this->schema->version();
 
-        $migratePolicies = [];
-        foreach (MigratePolicy::cases() as $m)
-            if ($m != MigratePolicy::NEVER)
-                $migratePolicies[] = $m->value;
-
         $ddl = $this->twig->render('create-history.twig', [
             'db' => [
                 'name' => $this->session->getPlatform()->getName(),
@@ -88,7 +83,7 @@ class History
             ],
             'commands' => array_map(fn($e) => $e->value, DeploymentCommand::cases()),
             'statuses' => array_map(fn($e) => $e->value, ChangeStatus::cases()),
-            'migrate_policies' => $migratePolicies,
+            'migrate_policies' => array_map(fn($e) => $e->value, MigratePolicy::cases()),
             ...$this->schema->objects()
         ]);
 
