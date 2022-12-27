@@ -1,6 +1,6 @@
 #
-# This file is an object with two properties: variables and directories. Variables at the top-level scope
-# are available within any script: replacing {{ name }} within SQL scripts and available as an associative
+# This file is an object with several properties: variables, follow_links and directories. Variables at the top-level
+# scope are available within any script: replacing {{ name }} within SQL scripts and available as an associative
 # array to PHP scripts. The directories property is an array of directory objects. The array defines the
 # deployment order of directories. Within each directory, a 'sort' policy defines the order of migration scripts.
 #
@@ -14,18 +14,18 @@
 # An example store.yml with default values: excluding 'path' which is required.
 # -----------------------------------------------------------------------------------------------------------
 # variables: {}
-# directories:             # array of Directory objects
-#   - path: v1.2.4         # must be a relative directory path (relative to store directory)
-#     sort: natural        # sort policy: natural and alpha with -ci (case-insensitive) variants
-#     recursive: false     # search recursively within directory, applying rules declared here
-#     errorIfEmpty: false  # raise an error if directory is empty (after applying any filtering)
-#     followLinks: false   # follow symlinks (local filesystem only) -- warning: files outside store
-#                          # are harder to track
-#     environment: false   # enable ENV variables within SQL scripts: {{ MY_ENV_VAR }}. ENV variables
-#                          # take precedence over 'variables' when there is a conflict.
-#     exclude: []          # path patterns to exclude: PHP regular expressions - must use '/' delimiters
-#     variables: {}        # available to this directory only, merged into top-level variables
-#   - path: v1.3.0         # next directory of migration scripts...
+# follow_links: false         # follow symlinks (local filesystem only) -- warning: files outside store
+#                             # are harder to track
+# directories:                # array of Directory objects
+#   - path: v1.2.4            # must be a relative directory path (relative to store directory)
+#     sort: natural           # sort policy: natural and alpha with -ci (case-insensitive) variants
+#     recursive: false        # search recursively within directory, applying rules declared here
+#     error_if_empty: false   # raise an error if directory is empty (after applying any filtering)
+#     environment: false      # enable ENV variables within SQL scripts: {{ MY_ENV_VAR }}. ENV variables
+#                             # take precedence over 'variables' when there is a conflict.
+#     exclude: []             # path patterns to exclude: PHP regular expressions - must use '/' delimiters
+#     variables: {}           # available to this directory only, merged into top-level variables
+#   - path: v1.3.0/subdir     # next directory of migration scripts...
 #
 
 # This configures the current directory (store dir) non-recursively. It is a typical setup found in framework
