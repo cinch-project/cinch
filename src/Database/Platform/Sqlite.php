@@ -3,7 +3,6 @@
 namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
-use Cinch\Component\Assert\Assert;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -18,11 +17,6 @@ class Sqlite extends Platform
      */
     private $lockStream = null;
     private readonly string $lockPath; // sqlite db path from dsn
-
-    public function assertIdentifier(string $value): string
-    {
-        return Assert::regex($value, '~^[\x{0001}-\x{ffff}]+$~u', 'identifier');
-    }
 
     public function addParams(Dsn $dsn, array $params): array
     {

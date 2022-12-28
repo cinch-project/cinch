@@ -3,7 +3,6 @@
 namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
-use Cinch\Component\Assert\Assert;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -33,11 +32,6 @@ class MySql extends Platform
         if (!$dt)
             $dt = new DateTime(timezone: new DateTimeZone('UTC'));
         return $dt->format($this->dateTimeFormat);
-    }
-
-    public function assertIdentifier(string $value): string
-    {
-        return Assert::regex($value, '~^[\x{0001}-\x{ffff}]{1,64}(?<!\s)$~u', 'identifier');
     }
 
     public function addParams(Dsn $dsn, array $params): array

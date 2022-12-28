@@ -50,12 +50,6 @@ abstract class Platform
         return $this->version;
     }
 
-    /** Asserts a platform identifier: database, schema, table, column, etc.
-     * @param string $value
-     * @return string
-     */
-    public abstract function assertIdentifier(string $value): string;
-
     /** Adds platform-specific connection parameters.
      * @param Dsn $dsn
      * @param array $params current parameters

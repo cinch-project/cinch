@@ -3,7 +3,6 @@
 namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
-use Cinch\Component\Assert\Assert;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -13,11 +12,6 @@ use RuntimeException;
 
 class MsSql extends Platform
 {
-    public function assertIdentifier(string $value): string
-    {
-        return Assert::regex($value, '~^[\x{0001}-\x{ffff}]{1,128}$~u', 'identifier');
-    }
-
     public function addParams(Dsn $dsn, array $params): array
     {
         $params['user'] = $dsn->getUser(default: 'sa'); // standard administrator

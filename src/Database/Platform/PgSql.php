@@ -3,7 +3,6 @@
 namespace Cinch\Database\Platform;
 
 use Cinch\Common\Dsn;
-use Cinch\Component\Assert\Assert;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -12,14 +11,6 @@ use PDO;
 
 class PgSql extends Platform
 {
-    public function assertIdentifier(string $value): string
-    {
-        return Assert::that($value, 'identifier')
-            ->betweenLength(1, 63, 'ASCII') // max length in bytes, use ASCII
-            ->regex('~^[\x{0001}-\x{ffff}]+$~u')
-            ->value();
-    }
-
     public function addParams(Dsn $dsn, array $params): array
     {
         $params['user'] = $dsn->getUser(default: 'postgres');
