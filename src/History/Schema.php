@@ -17,8 +17,10 @@ class Schema
     /* 'utf8_ci_ai' is a postgresql-only collation */
     private const TABLES = ['cinch', 'deployment', 'change'];
     private const COLLATION = 'utf8_ci_ai';
-
+    /** Quoted and schema-qualified. "$schema"."$prefix$name" */
     private readonly array $objects;
+    /** Unquoted and not schema-qualified. $prefix$name */
+    private readonly array $rawObjects;
     private int $state = 0;
     private readonly string $name;
 
@@ -31,7 +33,7 @@ class Schema
         private readonly SchemaVersion $version)
     {
         $this->name = $this->session->getPlatform()->assertIdentifier($this->environment->schema);
-        $this->objects = $this->createObjects();
+        [$this->objects, $this->rawObjects] = $this->createObjects();
         $this->verify();
     }
 
@@ -69,6 +71,13 @@ class Schema
     {
         if (in_array($name, self::TABLES))
             return $this->objects[$name];
+        throw new RuntimeException("history: unknown table '$name'");
+    }
+
+    public function rawTable(string $name): string
+    {
+        if (in_array($name, self::TABLES))
+            return $this->rawObjects[$name];
         throw new RuntimeException("history: unknown table '$name'");
     }
 
@@ -123,13 +132,17 @@ class Schema
     private function createObjects(): array
     {
         $objects = [];
-        $prefix = "$this->name.{$this->environment->tablePrefix}";
+        $rawObjects = [];
+        $fullPrefix = "$this->name.{$this->environment->tablePrefix}";
 
-        foreach (self::TABLES as $name)
-            $objects[$name] = $this->session->quoteIdentifier($prefix . $name);
+        foreach (self::TABLES as $name) {
+            $rawObjects[$name] = $this->environment->tablePrefix . $name;
+            $objects[$name] = $this->session->quoteIdentifier($fullPrefix . $name);
+        }
 
-        $objects[self::COLLATION] = $this->session->quoteIdentifier($prefix . self::COLLATION);
-        return $objects;
+        $rawObjects[self::COLLATION] = $this->environment->tablePrefix . self::COLLATION;
+        $objects[self::COLLATION] = $this->session->quoteIdentifier($fullPrefix . self::COLLATION);
+        return [$objects, $rawObjects];
     }
 
     /**
@@ -157,33 +170,35 @@ class Schema
     private function objectsExist(): bool
     {
         $name = $this->session->getPlatform()->getName();
+        $tables = $this->rawObjects;
+        $collation = array_pop($tables);
 
         if ($name == 'sqlite')
             $result = $this->session->executeQuery("select tbl_name from sqlite_master 
-                where type = 'table' and tbl_name in (?, ?, ?)", self::TABLES);
+                where type = 'table' and tbl_name in (?, ?, ?)", $tables);
         else
             $result = $this->session->executeQuery("select lower(table_name) from information_schema.tables 
-                where table_schema = ? and table_name in (?, ?, ?)", [$this->name, ...self::TABLES]);
+                where table_schema = ? and table_name in (?, ?, ?)", [$this->name, ...$tables]);
 
         $found = [];
         while (($t = $result->fetchOne()) !== false)
             $found[] = $t;
 
         /* any cinch tables missing? */
-        if ($found && ($missing = array_diff(self::TABLES, $found))) {
+        if ($found && ($missing = array_diff($tables, $found))) {
             $missing = implode(', ', $missing);
             throw new CorruptSchemaException("'{$this->name}' missing cinch table(s) $missing");
         }
 
         /* postgresql also has a collation */
         if ($name == 'pgsql') {
-            $haveCollation = $this->collationExists();
+            $haveCollation = $this->collationExists($collation);
 
             if ($found && !$haveCollation)
-                throw new CorruptSchemaException("'{$this->name}' missing cinch collation " . self::COLLATION);
+                throw new CorruptSchemaException("'{$this->name}' missing cinch collation $collation");
 
             if (!$found && $haveCollation) {
-                $missing = implode(', ', self::TABLES);
+                $missing = implode(', ', $tables);
                 throw new CorruptSchemaException("'{$this->name}' missing cinch table(s) $missing");
             }
         }
@@ -197,9 +212,9 @@ class Schema
     }
 
     /** @throws Exception */
-    private function collationExists(): bool
+    private function collationExists(string $collation): bool
     {
         $query = "select 1 from information_schema.collations where collation_schema = ? and collation_name = ?";
-        return $this->session->executeQuery($query, [$this->name, self::COLLATION])->fetchOne() !== false;
+        return $this->session->executeQuery($query, [$this->name, $collation])->fetchOne() !== false;
     }
 }
