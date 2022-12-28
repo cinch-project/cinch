@@ -49,7 +49,7 @@ class Local extends Adapter
          */
         foreach ($finder as $file) {
             $path = new StorePath(Path::makeRelative($file->getRealPath(), $this->storeDir));
-            $files[] = new LocalFile($file->getRealPath(), $path);
+            $files[] = new LocalFile($this, $file->getRealPath(), $path);
         }
 
         return $files;
@@ -77,7 +77,7 @@ class Local extends Adapter
 
     public function getFile(string $path): File
     {
-        return new LocalFile($this->resolvePath($path), new StorePath($path));
+        return new LocalFile($this, $this->resolvePath($path), new StorePath($path));
     }
 
     public function getContents(string $path): string

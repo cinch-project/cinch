@@ -137,7 +137,7 @@ abstract class Git extends Adapter
             if ($relativeToRoot)
                 $path = substr($path, $storeDirLength);
 
-            $files[] = new File(new StorePath($path), new Checksum($e[$shaKey]));
+            $files[] = new File($this, new StorePath($path), new Checksum($e[$shaKey]));
         }
 
         return $files;
@@ -163,7 +163,6 @@ abstract class Git extends Adapter
     protected static function getToken(Dsn $dsn): string
     {
         $token = $dsn->getOption('token', getenv(static::TOKEN_ENV_NAME) ?: '');
-        $name = str_replace('Adapter', '', classname(static::class));
-        return Assert::that($token, "$name token")->string()->notEmpty()->value();
+        return Assert::that($token, static::TOKEN_ENV_NAME)->string()->notEmpty()->value();
     }
 }

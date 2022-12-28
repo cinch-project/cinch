@@ -28,7 +28,7 @@ abstract class Task
                 static::class, TaskAttribute::class));
 
         $asTask = $attrs[0]->newInstance();
-        $this->name = Assert::notEmpty($asTask->name);
+        $this->setName($asTask->name);
         $this->setDescription($asTask->description);
         $this->canUndo = $asTask->canUndo;
     }
@@ -79,10 +79,12 @@ abstract class Task
         $this->execute(false);
     }
 
+    /**
+     * @throws Exception
+     */
     public function undo(): void
     {
         if ($this->success && $this->canUndo)
-            /** @noinspection PhpUnhandledExceptionInspection */
             $this->execute(true);
     }
 

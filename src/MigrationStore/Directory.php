@@ -4,7 +4,6 @@ namespace Cinch\MigrationStore;
 
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\AssertException;
-use Cinch\MigrationStore\Script\Script;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
 
@@ -64,7 +63,7 @@ class Directory
         if (!($this->flags & self::RECURSIVE) && substr_count($path, '/') > $this->depth)
             return;
 
-        $this->migrations[] = new Migration($this, $file);
+        $this->migrations[] = new Migration($file, $this->scriptLoader, $this->variables, $this->flags);
     }
 
     public function all(): array
@@ -109,24 +108,14 @@ class Directory
     }
 
     /**
-     * @throws Exception
-     * @internal
-     */
-    public function loadScript(File $file): Script
-    {
-        if (($contents = $file->getContents()) === null)
-            $contents = $this->adapter->getContents($file->getPath()->value);
-        return $this->scriptLoader->load($file, $contents, $this->variables, $this->flags & self::ENVIRONMENT);
-    }
-
-    /**
      * @param StorePath $path
      * @return Migration
      * @throws Exception
      */
     public function get(StorePath $path): Migration
     {
-        return new Migration($this, $this->adapter->getFile($path->value));
+        $file = $this->adapter->getFile($path->value);
+        return new Migration($file, $this->scriptLoader, $this->variables, $this->flags);
     }
 
     /**

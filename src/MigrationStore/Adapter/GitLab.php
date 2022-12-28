@@ -97,7 +97,7 @@ class GitLab extends Git
             throw new RuntimeException("cannot get file without a path");
 
         $data = $this->getFileByUri("$this->baseUri/files/$path?ref=$this->branch");
-        return new File(new StorePath($path), new Checksum($data['blob_id']), base64_decode($data['content']));
+        return new File($this, new StorePath($path), new Checksum($data['blob_id']), base64_decode($data['content']));
     }
 
     /**

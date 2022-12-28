@@ -4,6 +4,7 @@ namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\AssertException;
+use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
 use Cinch\MigrationStore\LocalFile;
 use Exception;
@@ -20,16 +21,17 @@ class ScriptLoader
     /**
      * @throws Exception
      */
-    public function load(File $file, string $contents, array $variables, bool $environment): Script
+    public function load(File $file, array $variables, int $flags): Script
     {
         $path = $file->getPath();
+        $environment = (bool) ($flags & Directory::ENVIRONMENT);
 
         if ($path->isSql())
-            $script = $this->parseSql($path, $contents, $variables, $environment);
+            $script = $this->parseSql($path, $file->getContents(), $variables, $environment);
         else if ($file instanceof LocalFile)
-            $script = $this->requireFile($file);
+            $script = $this->requireFile($file); // does 'require', don't call getContents()
         else
-            $script = $this->evalFile($path, $contents);
+            $script = $this->evalFile($path, $file->getContents());
 
         $script->setVariables($variables);
         return $script;

@@ -115,7 +115,7 @@ class Azure extends Git
             'headers' => ['Accept' => 'application/json'] // metadata and content
         ]);
 
-        return new File(new StorePath($path), new Checksum($data['objectId']), $data['content']);
+        return new File($this, new StorePath($path), new Checksum($data['objectId']), $data['content']);
     }
 
     /**

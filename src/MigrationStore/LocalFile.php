@@ -7,10 +7,10 @@ use Cinch\Common\StorePath;
 
 class LocalFile extends File
 {
-    public function __construct(private readonly string $absolutePath, StorePath $path)
+    public function __construct(Adapter $adapter, private readonly string $absolutePath, StorePath $path)
     {
         $contents = slurp($this->absolutePath);
-        parent::__construct($path, Checksum::fromData($contents), $contents);
+        parent::__construct($adapter, $path, Checksum::fromData($contents), $contents);
     }
 
     public function getAbsolutePath(): string

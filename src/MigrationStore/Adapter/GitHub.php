@@ -87,7 +87,7 @@ class GitHub extends Git
         else
             $content = base64_decode($data['content']); // use it if returned
 
-        return new File(new StorePath($path), new Checksum($data['sha']), $content);
+        return new File($this, new StorePath($path), new Checksum($data['sha']), $content);
     }
 
     /**
@@ -98,7 +98,7 @@ class GitHub extends Git
         if (!($path = $this->resolvePath($path)))
             throw new RuntimeException("cannot get contents without a path");
 
-        /* github blocks files > 100M, plenty for cinch. Must use Git Large File Storage (Git LFS) */
+        /* note: github blocks files > 100M, plenty for cinch. */
         return $this->getContentsByUri("$this->baseUri/contents/$path", [
             'headers' => ['Accept' => self::RAW],
             'query' => ['ref' => $this->branch]

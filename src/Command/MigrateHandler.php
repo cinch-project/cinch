@@ -52,6 +52,11 @@ class MigrateHandler extends DeploymentHandler
                 continue;
 
             $task = $this->createDeployTask($migration, $status);
+
+            /* in most cases: getScript() must actually load the script, which could be a remote API call. However,
+             * at this point it is "known" that this script should be deployed. This avoids wasting API calls on
+             * scripts that will ultimately be skipped.
+             */
             $migratePolicy = $migration->getScript()->getMigratePolicy();
 
             if ($migratePolicy->isBefore()) {
@@ -115,7 +120,7 @@ class MigrateHandler extends DeploymentHandler
             return null;
         }
 
-        /* migrate policy must be always-* or onchange-*, this is a remigrate */
+        /* migrate policy must be always-* or onchange-*, this must be a remigrate */
         return ChangeStatus::REMIGRATED;
     }
 }

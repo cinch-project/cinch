@@ -5,13 +5,18 @@ namespace Cinch\MigrationStore;
 use Cinch\Common\Checksum;
 use Cinch\Common\StorePath;
 use Cinch\MigrationStore\Script\Script;
+use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
 
 class Migration
 {
     private Script|null $script = null;
 
-    public function __construct(private readonly Directory $directory, private readonly File $file)
+    public function __construct(
+        private readonly File $file,
+        private readonly ScriptLoader $scriptLoader,
+        private readonly array $variables,
+        private readonly int $flags)
     {
     }
 
@@ -31,7 +36,7 @@ class Migration
     public function getScript(): Script
     {
         if ($this->script === null)
-            $this->script = $this->directory->loadScript($this->file);
+            $this->script = $this->scriptLoader->load($this->file, $this->variables, $this->flags);
         return $this->script;
     }
 

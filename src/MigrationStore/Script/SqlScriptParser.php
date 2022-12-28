@@ -99,7 +99,7 @@ class SqlScriptParser
 
                 $$section = '';
             }
-            else if ($data = trim($data)) { // avoid empty lines
+            else if ($section && ($data = trim($data))) {
                 $$section .= "$data\n";
             }
         }

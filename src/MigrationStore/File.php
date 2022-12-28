@@ -4,13 +4,15 @@ namespace Cinch\MigrationStore;
 
 use Cinch\Common\Checksum;
 use Cinch\Common\StorePath;
+use Exception;
 
 class File
 {
     public function __construct(
+        private readonly Adapter $adapter,
         private readonly StorePath $path,
         private readonly Checksum $checksum,
-        private readonly string|null $contents = null)
+        private string|null $contents = null)
     {
     }
 
@@ -24,8 +26,13 @@ class File
         return $this->checksum;
     }
 
+    /**
+     * @throws Exception
+     */
     public function getContents(): string|null
     {
+        if ($this->contents === null)
+            $this->contents = $this->adapter->getContents($this->path->value);
         return $this->contents;
     }
 }
