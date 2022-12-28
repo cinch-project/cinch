@@ -34,7 +34,7 @@ services:
 
     Cinch\Database\SessionFactory: ~
     Cinch\Project\ProjectRepository:
-        class: Cinch\Console\ConsoleProjectRepository
+        class: Cinch\Project\YamlProjectRepository
 
     Cinch\History\HistoryFactory:
         arguments:

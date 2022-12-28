@@ -1,35 +1,31 @@
 <?php
 
-namespace Cinch\Console;
+namespace Cinch\Project;
 
 use Cinch\Common\Dsn;
 use Cinch\Common\Environment;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Cinch\LastErrorException;
-use Cinch\Project\EnvironmentMap;
-use Cinch\Project\Hook;
-use Cinch\Project\HookEvent;
-use Cinch\Project\HookScript;
-use Cinch\Project\Project;
-use Cinch\Project\ProjectId;
-use Cinch\Project\ProjectName;
-use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Yaml\Yaml;
 
-class ConsoleProjectRepository implements ProjectRepository
+class YamlProjectRepository implements ProjectRepository
 {
-    const PROJECT_FILE = 'project.yml';
+    const DEFAULT_CONFIG_FILE = 'project.yml';
+
+    public function __construct(private readonly string $configFile = self::DEFAULT_CONFIG_FILE)
+    {
+    }
 
     /**
      * @throws Exception
      */
     public function get(ProjectId $id): Project
     {
-        $file = Path::join($id, self::PROJECT_FILE);
+        $file = Path::join($id, $this->configFile);
 
         if (!file_exists($file))
             throw new Exception("project '$id' does not exist");
@@ -74,7 +70,7 @@ class ConsoleProjectRepository implements ProjectRepository
     public function update(Project $project): void
     {
         $state = Yaml::dump($project->snapshot(), 100, flags: Yaml::DUMP_OBJECT_AS_MAP);
-        $file = Path::join($project->getId(), self::PROJECT_FILE);
+        $file = Path::join($project->getId(), $this->configFile);
         if (@file_put_contents($file, $state) === false)
             throw new LastErrorException();
     }
