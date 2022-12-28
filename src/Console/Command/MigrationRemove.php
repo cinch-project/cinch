@@ -38,7 +38,7 @@ class MigrationRemove extends Command
             ->addOptionByName('env')
             ->setHelp(<<<HELP
 This command cannot remove migrations that have already been deployed. For migrations with an 'always' 
-or 'onchange' migrate policy, update their policy to 'never'. 
+or 'onchange' migrate policy, add them to the directory exclude list within the migration store config file. 
 HELP
             );
     }

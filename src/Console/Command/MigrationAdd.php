@@ -55,7 +55,7 @@ class MigrationAdd extends Command
             ->addOption('label', 'l', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'One or more labels')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
-This command adds skeleton migration to the migration store. You cannot add a pre-existing migration 
+This command adds a skeleton migration to the migration store. You cannot add a pre-existing migration 
 using this command. The <info><path></> must be relative and end with a .sql or .php extension. Directories 
 will automatically be created. 
 
