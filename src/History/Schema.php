@@ -14,14 +14,17 @@ class Schema
     const OBJECTS = 0x04; // cinch schema objects exist
     private const STATE_MASK = 7;
 
-    /* 'utf8_ci_ai' is a postgresql-only collation */
     private const TABLES = ['cinch', 'deployment', 'change'];
+    /** postgresql-only non-deterministic collation */
     private const COLLATION = 'utf8_ci_ai';
-    /** Quoted and schema-qualified. "$schema"."$prefix$name" */
+
+    /** Object names: quoted and schema-qualified. "$schema"."$prefix$name" */
     private readonly array $objects;
-    /** Unquoted and not schema-qualified. $prefix$name */
+    /** Raw object names: unquoted and not schema-qualified. $prefix$name */
     private readonly array $rawObjects;
+    /** state mask */
     private int $state = 0;
+    /** schema name */
     private readonly string $name;
 
     /**
@@ -32,7 +35,7 @@ class Schema
         private readonly Environment $environment,
         private readonly SchemaVersion $version)
     {
-        $this->name = $this->session->getPlatform()->assertIdentifier($this->environment->schema);
+        $this->name = $this->environment->schema;
         [$this->objects, $this->rawObjects] = $this->createObjects();
         $this->verify();
     }
@@ -67,6 +70,10 @@ class Schema
         return $this->version;
     }
 
+    /** Gets the quoted and schema-qualified table.
+     * @param string $name
+     * @return string
+     */
     public function table(string $name): string
     {
         if (in_array($name, self::TABLES))
@@ -74,6 +81,10 @@ class Schema
         throw new RuntimeException("history: unknown table '$name'");
     }
 
+    /** Gets the raw (unquoted and without schema) table.
+     * @param string $name
+     * @return string
+     */
     public function rawTable(string $name): string
     {
         if (in_array($name, self::TABLES))
@@ -169,41 +180,39 @@ class Schema
      */
     private function objectsExist(): bool
     {
-        $name = $this->session->getPlatform()->getName();
         $tables = $this->rawObjects;
         $collation = array_pop($tables);
+        $platformName = $this->session->getPlatform()->getName();
 
-        if ($name == 'sqlite')
+        if ($platformName == 'sqlite')
             $result = $this->session->executeQuery("select tbl_name from sqlite_master 
                 where type = 'table' and tbl_name in (?, ?, ?)", $tables);
         else
             $result = $this->session->executeQuery("select lower(table_name) from information_schema.tables 
                 where table_schema = ? and table_name in (?, ?, ?)", [$this->name, ...$tables]);
 
-        $found = [];
+        $foundTables = [];
         while (($t = $result->fetchOne()) !== false)
-            $found[] = $t;
+            $foundTables[] = $t;
 
         /* any cinch tables missing? */
-        if ($found && ($missing = array_diff($tables, $found))) {
-            $missing = implode(', ', $missing);
-            throw new CorruptSchemaException("'{$this->name}' missing cinch table(s) $missing");
-        }
+        if ($foundTables && ($missing = array_diff($tables, $foundTables)))
+            throw new CorruptSchemaException(sprintf("'%s' missing cinch table(s) %s",
+                $this->name, implode(', ', $missing)));
 
         /* postgresql also has a collation */
-        if ($name == 'pgsql') {
+        if ($platformName == 'pgsql') {
             $haveCollation = $this->collationExists($collation);
 
-            if ($found && !$haveCollation)
-                throw new CorruptSchemaException("'{$this->name}' missing cinch collation $collation");
+            if ($foundTables && !$haveCollation)
+                throw new CorruptSchemaException("'$this->name' missing cinch collation $collation");
 
-            if (!$found && $haveCollation) {
-                $missing = implode(', ', $tables);
-                throw new CorruptSchemaException("'{$this->name}' missing cinch table(s) $missing");
-            }
+            if (!$foundTables && $haveCollation)
+                throw new CorruptSchemaException(sprintf("'%s' missing cinch table(s) %s",
+                    $this->name, implode(', ', $tables)));
         }
 
-        $exists = !!$found;
+        $exists = !!$foundTables;
 
         if ($exists)
             $this->state |= self::OBJECTS;
