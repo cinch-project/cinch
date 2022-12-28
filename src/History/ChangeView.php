@@ -31,16 +31,13 @@ class ChangeView
 
         $params = [];
         $pathIn = $this->whereIn($paths, $params, 'where', alias: '');
-        $policyIn = $this->whereIn($policies, $params, 'where');
-        $statusIn = $this->whereIn($statuses, $params, $policyIn ? 'and' : 'where');
+        $wherePolicyStatus = $this->wherePolicyStatus($policies, $statuses, $params);
 
-        $result = $this->session->executeQuery("
+        return $this->restoreChanges($this->session->executeQuery("
             select c.* from $change c join (
                 select max(deployed_at) as deployed_at from $change $pathIn group by path
-            ) c2 on c.deployed_at = c2.deployed_at $policyIn $statusIn order by c.deployed_at desc", $params
-        );
-
-        return $this->getChangesFromResult($result);
+            ) c2 on c.deployed_at = c2.deployed_at $wherePolicyStatus order by c.deployed_at desc", $params
+        ));
     }
 
     /** Gets the most recent changes since a specific tag. This is used by rollbacks.
@@ -57,14 +54,13 @@ class ChangeView
         $deployment = $this->schema->table('deployment');
 
         $params = [$tag->value];
-        $policyIn = $this->whereIn($policies, $params, 'where');
-        $statusIn = $this->whereIn($statuses, $params, $policyIn ? 'and' : 'where');
+        $wherePolicyStatus = $this->wherePolicyStatus($policies, $statuses, $params);
 
-        return $this->getChangesFromResult($this->session->executeQuery("
+        return $this->restoreChanges($this->session->executeQuery("
             select c.* from $change c join (
                 select max(c1.deployed_at) as deployed_at from $change c1, $deployment d
                 where d.tag = ? and c1.deployed_at > d.ended_at group by c1.path
-            ) t on c.deployed_at = t.deployed_at $policyIn $statusIn order by c.deployed_at desc", $params
+            ) t on c.deployed_at = t.deployed_at $wherePolicyStatus order by c.deployed_at desc", $params
         ));
     }
 
@@ -82,13 +78,12 @@ class ChangeView
         $change = $this->schema->table('change');
 
         $params = [$this->session->getPlatform()->formatDateTime($date)];
-        $policyIn = $this->whereIn($policies, $params, 'where');
-        $statusIn = $this->whereIn($statuses, $params, $policyIn ? 'and' : 'where');
+        $wherePolicyStatus = $this->wherePolicyStatus($policies, $statuses, $params);
 
-        return $this->getChangesFromResult($this->session->executeQuery("
+        return $this->restoreChanges($this->session->executeQuery("
             select c.* from $change c join (
                 select max(deployed_at) as deployed_at from $change where deployed_at > ? group by path
-            ) t on c.deployed_at = t.deployed_at $policyIn $statusIn order by c.deployed_at desc", $params
+            ) t on c.deployed_at = t.deployed_at $wherePolicyStatus order by c.deployed_at desc", $params
         ));
     }
 
@@ -109,34 +104,45 @@ class ChangeView
 
         /* sql server performed terribly using the LEFT JOIN technique. */
         if ($this->session->getPlatform()->getName() == 'mssql') {
-            $policyIn = $this->whereIn($policies, $params, 'where');
-            $statusIn = $this->whereIn($statuses, $params, $policyIn ? 'and' : 'where');
+            $wherePolicyStatus = $this->wherePolicyStatus($policies, $statuses, $params);
 
             $query = "
                 select top $count c.* from $change c join (
                     select max(deployed_at) as deployed_at from $change group by path
-                ) c2 on c.deployed_at = c2.deployed_at $policyIn $statusIn order by c.deployed_at desc;";
+                ) c2 on c.deployed_at = c2.deployed_at $wherePolicyStatus order by c.deployed_at desc;";
         }
         else {
-            $policyIn = $this->whereIn($policies, $params, 'and');
-            $statusIn = $this->whereIn($statuses, $params, 'and');
+            $wherePolicyStatus = $this->whereIn($policies, $params, 'and');
+            $wherePolicyStatus .= $this->whereIn($statuses, $params, 'and');
 
             $query = "
                 select c.* from $change c left join $change c2 
                 on c.path = c2.path and c.deployed_at < c2.deployed_at
-                where c2.deployed_at is null $policyIn $statusIn order by c.deployed_at desc limit $count";
+                where c2.deployed_at is null $wherePolicyStatus order by c.deployed_at desc limit $count";
         }
 
-        return $this->getChangesFromResult($this->session->executeQuery($query, $params));
+        return $this->restoreChanges($this->session->executeQuery($query, $params));
     }
 
     /**
      * @return Change[]
      * @throws Exception
      */
-    private function getChangesFromResult(Result $r): array
+    private function restoreChanges(Result $r): array
     {
         return array_map(fn(array $row) => Change::restore($row), $r->fetchAllAssociative());
+    }
+
+    /**
+     * @param MigratePolicy[] $policies
+     * @param ChangeStatus[] $statuses
+     * @param array $params
+     * @return string
+     */
+    private function wherePolicyStatus(array $policies, array $statuses, array &$params): string
+    {
+        $policyIn = $this->whereIn($policies, $params, 'where');
+        return $policyIn . $this->whereIn($statuses, $params, $policyIn ? 'and' : 'where');
     }
 
     /**
@@ -155,7 +161,7 @@ class ChangeView
 
         foreach ($values as $v) {
             $params[] = $v->value; // string backed enum or Cinch\Common\SingleValue
-            $placeholders .= ($placeholders ? ',' : '') . '?';
+            $placeholders .= ($placeholders ? ',?' : '?');
         }
 
         $column = $alias ? "$alias." : '';
@@ -167,6 +173,6 @@ class ChangeView
         else
             $column .= 'path';
 
-        return sprintf('%s %s in (%s)', $prefix, $column, $placeholders);
+        return sprintf('%s %s in (%s) ', $prefix, $column, $placeholders);
     }
 }

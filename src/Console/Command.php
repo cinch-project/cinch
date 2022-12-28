@@ -22,7 +22,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 abstract class Command extends BaseCommand implements SignalableCommandInterface, EventSubscriberInterface
 {
-    /* lookup table for commonly used options: see getOptionByName() */
+    /* lookup table for commonly used options: see addOptionByName() */
     private const OPTIONS = [
         'env' => [null, InputOption::VALUE_REQUIRED, 'Sets the environment [default: project:environments.default]'],
         'tag' => [null, InputOption::VALUE_REQUIRED, 'Deployment tag [default: version 7 UUID]'],
@@ -70,19 +70,19 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
 
     public function onTaskStarted(Task\StartedEvent $task): void
     {
-        static $nameLength = 32;
+        static $nameWidth = 32;
 
         $descWidth = $this->terminal->getWidth() - $this->logger->getIndent() - 60;
 
         if ($task->isUndo)
-            $message = sprintf("<fg=red>UNDO</> <fg=gray>%-{$nameLength}s</> <fg=gray>%-{$descWidth}s</> ",
+            $message = sprintf("<fg=red>UNDO</> <fg=gray>%-{$nameWidth}s</> <fg=gray>%-{$descWidth}s</> ",
                 "#$task->id $task->name",
                 'undoing previous action...'
             );
         else
-            $message = sprintf("<fg=yellow>(%2d)</> %-{$nameLength}s %-{$descWidth}s ",
+            $message = sprintf("<fg=yellow>(%2d)</> %-{$nameWidth}s %-{$descWidth}s ",
                 $task->id,
-                self::strtrunc($task->name, $nameLength),
+                self::strtrunc($task->name, $nameWidth),
                 self::strtrunc($task->description, $descWidth)
             );
 
