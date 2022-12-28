@@ -10,7 +10,6 @@
 {% set restrict = 'restrict' %}
 {% set bigint = 'bigint' %}
 {% set release_date_type = 'date not null' %}
-{% set index_prefix = '' %}
 {% set path_pkindex = 'primary key' %}
 {% set requires_fkindex = true %}
 
@@ -37,7 +36,6 @@
     {% set bigint = 'integer' %}
     {% set release_date_type = 'text not null constraint "invalid release_date: YYYY-MM-DD format" ' ~
         "check (strftime('%Y-%m-%d', release_date) is not null)" %}
-    {% set index_prefix = schema.name ~ '.' %}
     {% set collate_ascii = 'collate binary' %}
     {% set collate_utf8ci = 'collate nocase' %}
     {% set json = 'text' %}
@@ -97,12 +95,12 @@ create table {{ deployment }}
         check (error is not null or error_details is null)
 ) {{ table_options }};
 
-create index {{ index_prefix }}deployment_deployer_idx on {{ deployment|strip_schema }} (deployer);
-create index {{ index_prefix }}deployment_command_idx on {{ deployment|strip_schema }} (command);
-create index {{ index_prefix }}deployment_error_idx on {{ deployment|strip_schema }} (error);
+create index {{ 'deployment'|index('deployer_idx') }} on {{ deployment|strip_schema }} (deployer);
+create index {{ 'deployment'|index('command_idx') }} on {{ deployment|strip_schema }} (command);
+create index {{ 'deployment'|index('error_idx') }} on {{ deployment|strip_schema }} (error);
 
 {% if requires_fkindex %}
-create index {{ index_prefix }}deployment_schema_version_idx on {{ deployment|strip_schema }} (schema_version);
+create index {{ 'deployment'|index('schema_version_idx') }} on {{ deployment|strip_schema }} (schema_version);
 {% endif %}
 
 create table {{ change }}
@@ -128,10 +126,11 @@ create table {{ change }}
 ) {{ table_options }};
 
 {% if requires_fkindex %}
-create index {{ index_prefix }}change_tag_idx on {{ change|strip_schema }} (tag);
+create index {{ 'change'|index('tag_idx') }} on {{ change|strip_schema }} (tag);
 {% endif %}
 
-create index {{ index_prefix }}change_labels_idx on {{ change|strip_schema }} (labels);
-create index {{ index_prefix }}change_status_idx on {{ change|strip_schema }} (status);
+create index {{ 'change'|index('labels_idx') }} on {{ change|strip_schema }} (labels);
+create index {{ 'change'|index('status_idx') }} on {{ change|strip_schema }} (status);
+
 {# most common use case is reading in desc order #}
-create unique index {{ index_prefix }}change_deployed_at_idx on {{ change|strip_schema }} (deployed_at desc);
+create unique index {{ 'change'|index('deployed_at_idx') }} on {{ change|strip_schema }} (deployed_at desc);

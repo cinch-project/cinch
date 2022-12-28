@@ -179,6 +179,23 @@ class History
             return $string;
         }));
 
+        /* index names: {{ 'table'|index('created_at_idx') }}
+         *     others: "raw_table_created_at_idx"
+         *     sqlite: "main"."raw_table_created_at_idx"
+         *
+         * This ensures index names contain the "raw" table name, which means they include the table_prefix.
+         * This also ensures sqlite is schema-qualified (this is always 'main'). Without this, you can't
+         * create a second set of history tables in the same schema.
+         */
+        $this->twig->addFilter(new TwigFilter('index', function (string $tableName, string $idxName) {
+            $name = $this->schema->rawTable($tableName) . '_' . $idxName;
+
+            if ($this->session->getPlatform()->getName() == 'sqlite')
+                $name = $this->schema->name() . ".$name";
+
+            return $this->session->quoteIdentifier($name);
+        }));
+
         /* identifier quoting: {{ 'identifier_name'|quote }} */
         $this->twig->addFilter(new TwigFilter('quote', function (string $string) {
             return $this->session->quoteIdentifier($string);
