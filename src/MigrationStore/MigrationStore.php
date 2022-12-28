@@ -14,6 +14,7 @@ use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 use Symfony\Component\Yaml\Yaml;
 use Twig\Environment as Twig;
 
@@ -26,12 +27,6 @@ class MigrationStore
 
     /** @var Directory[] */
     private array|null $directories = null;
-
-    /* only used to know if we created store.yml as part of create-project or add-env. If something fails
-     * during those commands, we need to delete the store.yml just created.
-     */
-    private bool $createdStoreConfig = false;
-
     private bool $populatedDirectories = false;
     private bool $followLinks = false;
 
@@ -52,7 +47,9 @@ class MigrationStore
      */
     public function get(StorePath $path): Migration
     {
-        return $this->getDirectoryFor($path)->get($path);
+        if (($dir = $this->getDirectoryFor($path)) === null)
+            throw new DirectoryNotFoundException("cannot find directory for $path");
+        return $dir->get($path);
     }
 
     /** Gets all migrations within store in directory migrate order.
@@ -96,10 +93,11 @@ class MigrationStore
     /**
      * @throws Exception
      */
-    public function createConfig(): void
+    public function createConfig(): bool
     {
         try {
             $this->getDirectories();
+            $created = false;
         }
         catch (FileNotFoundException) {
             $this->adapter->addFile(
@@ -108,8 +106,10 @@ class MigrationStore
                 'created ' . self::CONFIG_FILE
             );
 
-            $this->createdStoreConfig = true;
+            $created = true;
         }
+
+        return $created;
     }
 
     /** Deletes the store file, not the directory.
@@ -117,8 +117,7 @@ class MigrationStore
      */
     public function deleteConfig(): void
     {
-        if ($this->createdStoreConfig)
-            $this->adapter->deleteFile(self::CONFIG_FILE, 'deleted ' . self::CONFIG_FILE);
+        $this->adapter->deleteFile(self::CONFIG_FILE, 'deleted ' . self::CONFIG_FILE);
     }
 
     /**

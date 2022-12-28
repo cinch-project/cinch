@@ -12,6 +12,7 @@ use Cinch\MigrationStore\MigrationStoreFactory;
     "opening store and creating the default '" . MigrationStore::CONFIG_FILE . "' file", canUndo: true)]
 class CreateMigrationStore extends Task
 {
+    private bool $shouldDelete;
     private MigrationStore $store;
 
     public function __construct(
@@ -27,11 +28,12 @@ class CreateMigrationStore extends Task
     protected function doRun(): void
     {
         $this->store = $this->migrationStoreFactory->create($this->dsn);
-        $this->store->createConfig();
+        $this->shouldDelete = $this->store->createConfig();
     }
 
     protected function doUndo(): void
     {
-        $this->store->deleteConfig();
+        if ($this->shouldDelete)
+            $this->store->deleteConfig();
     }
 }
