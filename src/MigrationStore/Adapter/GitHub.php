@@ -3,11 +3,10 @@
 namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
-use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\File;
-use Cinch\MigrationStore\GitMigration;
+use Cinch\MigrationStore\StoreDsn;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
@@ -16,7 +15,6 @@ class GitHub extends Git
 {
     const RAW = 'application/vnd.github.raw';
     const JSON = 'application/vnd.github+json';
-    const TOKEN_ENV_NAME = 'CINCH_GITHUB_TOKEN';
 
     /**
      * @param int $flags
@@ -26,7 +24,7 @@ class GitHub extends Git
     {
         $encodedPath = rawurlencode($this->storeDir);
         $ref = $encodedPath ? "$this->branch:$encodedPath" : $this->branch; // extended SHA-1 syntax ... <ref>:<path>
-        $tree = $this->getTree("$this->baseUri/git/trees/$ref?recursive=1");
+        $tree = $this->getTree("$this->basePath/git/trees/$ref?recursive=1");
 
         /* GitHub sets this to 7MB or 100,000 entries. However: after calculating the approx (small) size of an
          * entry (200 bytes), only ~36,000 entries can fit within 7MB? Should be plenty for cinch though.
@@ -46,7 +44,7 @@ class GitHub extends Git
      */
     public function addFile(string $path, string $content, string $message): void
     {
-        $this->client->put("$this->baseUri/contents/{$this->resolvePath($path)}", [
+        $this->client->put("$this->basePath/contents/{$this->resolvePath($path)}", [
             'json' => [
                 'message' => $this->buildCommitMessage($message),
                 'branch' => $this->branch,
@@ -60,7 +58,7 @@ class GitHub extends Git
      */
     public function deleteFile(string $path, string $message): void
     {
-        $this->client->delete("$this->baseUri/contents/{$this->resolvePath($path)}", [
+        $this->client->delete("$this->basePath/contents/{$this->resolvePath($path)}", [
             'json' => [
                 'message' => $this->buildCommitMessage($message),
                 'branch' => $this->branch,
@@ -77,7 +75,7 @@ class GitHub extends Git
         if (!($path = $this->resolvePath($path)))
             throw new RuntimeException("cannot get file without a path");
 
-        $data = $this->getFileByUri("$this->baseUri/contents/$path", [
+        $data = $this->getFileByUri("$this->basePath/contents/$path", [
             'query' => ['ref' => $this->branch]
         ]);
 
@@ -99,7 +97,7 @@ class GitHub extends Git
             throw new RuntimeException("cannot get contents without a path");
 
         /* note: github blocks files > 100M, plenty for cinch. */
-        return $this->getContentsByUri("$this->baseUri/contents/$path", [
+        return $this->getContentsByUri("$this->basePath/contents/$path", [
             'headers' => ['Accept' => self::RAW],
             'query' => ['ref' => $this->branch]
         ]);
@@ -108,29 +106,9 @@ class GitHub extends Git
     /**
      * @throws Exception
      */
-    public static function fromDsn(Dsn $dsn, string $userAgent): static
+    public static function fromDsn(StoreDsn $dsn, string $userAgent): static
     {
-        // github:owner/repo/storeDir?branch=branch&token=token
-
-        Assert::equals($dsn->getScheme(), 'github', "expected github dsn");
-        Assert::empty($dsn->getHost(), 'github host not supported');
-
-        $parts = explode('/', trim($dsn->getPath(), '/'), 3);
-        $owner = Assert::notEmpty(array_shift($parts), 'github owner');
-        $repo = Assert::notEmpty(array_shift($parts), 'github repo');
-        $storeDir = array_shift($parts) ?: '';
-
-        $branch = Assert::notEmpty($dsn->getOption('branch'), 'github branch');
-
-        return new static("/repos/$owner/$repo", $branch, $storeDir, [
-            'base_uri' => 'https://api.github.com',
-            'connect_timeout' => $dsn->getConnectTimeout(),
-            'read_timeout' => $dsn->getTimeout() / 1000,
-            'headers' => [
-                'User-Agent' => $userAgent,
-                'Accept' => self::JSON,
-                'Authorization' => 'Bearer ' . self::getToken($dsn)
-            ], ...self::getSslConfig($dsn)
-        ]);
+        Assert::equals($dsn->driver, 'github', "expected github dsn");
+        return parent::fromDsn($dsn, $userAgent);
     }
 }

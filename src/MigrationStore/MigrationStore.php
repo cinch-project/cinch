@@ -216,7 +216,7 @@ class MigrationStore
     private function parseVariables(object $obj, string $docPath): array
     {
         $v = Assert::ifProp($obj, 'variables', (object) [], $docPath)->object()->value();
-        return objectToArray($v);
+        return arrayify($v);
     }
 
     private function parseSortPolicy(object $dir, string $docPath): SortPolicy

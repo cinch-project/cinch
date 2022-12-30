@@ -31,7 +31,7 @@ class MigrationAdd extends Command
             $this->projectId,
             $path,
             MigratePolicy::from($input->getOption('migrate-policy')),
-            new Author($input->getOption('author') ?: get_system_user()),
+            new Author($input->getOption('author') ?: system_user()),
             new DateTimeImmutable(timezone: new DateTimeZone('UTC')),
             new Description($input->getArgument('description')),
             new Labels($input->getOption('label'))

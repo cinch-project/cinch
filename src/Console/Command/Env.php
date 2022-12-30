@@ -24,13 +24,15 @@ class Env extends Command
         $default = $map->getDefaultName();
 
         foreach ($map->all() as $name => $env) {
-            $createSchema = $env->createSchema ? 'true' : 'false';
+            $autoCreate = $env->autoCreate ? 'true' : 'false';
             $output->writeln([
                 "<info>$name" . ($name == $default ? ' (default)' : '') . "</>",
                 "  deploy_timeout $env->deployTimeout",
                 "  target '$env->targetDsn'",
                 "  history '$env->historyDsn'",
-                "    - schema '$env->schema', table_prefix '$env->tablePrefix', create_schema $createSchema"
+                "  schema '$env->schema'",
+                "  table_prefix '$env->tablePrefix'",
+                "  auto_create $autoCreate"
             ]);
         }
 

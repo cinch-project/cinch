@@ -5,10 +5,10 @@ namespace Cinch\Command\Task;
 use Cinch\Command\AddMigration as AddMigrationCommand;
 use Cinch\Command\Task;
 use Cinch\Command\TaskAttribute;
-use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
+use Cinch\MigrationStore\StoreDsn;
 
 #[TaskAttribute('add migration script', 'adding a migration script using a template', canUndo: true)]
 class AddMigration extends Task
@@ -17,7 +17,7 @@ class AddMigration extends Task
     private readonly MigrationStore $store;
 
     public function __construct(
-        private readonly Dsn $dsn,
+        private readonly StoreDsn $dsn,
         private readonly AddMigrationCommand $command,
         private readonly MigrationStoreFactory $migrationStoreFactory)
     {

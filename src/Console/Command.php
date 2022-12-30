@@ -27,7 +27,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         'env' => [null, InputOption::VALUE_REQUIRED, 'Sets the environment [default: project:environments.default]'],
         'tag' => [null, InputOption::VALUE_REQUIRED, 'Deployment tag [default: version 7 UUID]'],
         'deployer' => [null, InputOption::VALUE_REQUIRED, 'User or application performing deployment [default: current user]'],
-        'migration-store' => ['m', InputOption::VALUE_REQUIRED, 'Migration Store DSN', '.'],
+        'migration-store' => ['m', InputOption::VALUE_REQUIRED, 'Migration Store DSN', 'driver=fs store_dir=.'],
     ];
 
     protected readonly ProjectId $projectId;
@@ -188,7 +188,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
             $value = substr($value, 0, -strlen($m[1]));
         }
         else {
-            $timeZone = new DateTimeZone(get_system_time_zone());
+            $timeZone = new DateTimeZone(system_time_zone());
         }
 
         $date = str_contains($value, '-');

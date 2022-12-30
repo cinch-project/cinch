@@ -140,7 +140,7 @@ class Deployment
 
     private function clear(): void
     {
-        ignoreException($this->schema->unlock(...));
+        silent_call($this->schema->unlock(...));
         $this->schema = $this->session = $this->tag = null;
     }
 }

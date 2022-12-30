@@ -2,7 +2,6 @@
 
 namespace Cinch\Database;
 
-use Cinch\Common\Dsn;
 use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
@@ -50,19 +49,19 @@ abstract class Platform
         return $this->version;
     }
 
-    /** Adds platform-specific connection parameters.
-     * @param Dsn $dsn
+    /** Adds platform-specific connection parameters just before connecting.
+     * @param DatabaseDsn $dsn
      * @param array $params current parameters
      * @return array updated version of $params
      */
-    public abstract function addParams(Dsn $dsn, array $params): array;
+    public abstract function addParams(DatabaseDsn $dsn, array $params): array;
 
-    /** Initializes a session. All platforms should perform version checking.
+    /** Initializes a session just after connecting. All platforms should perform version checking.
      * @param Session $session
-     * @param Dsn $dsn
+     * @param DatabaseDsn $dsn
      * @throws Exception|UnsupportedVersionException
      */
-    public abstract function initSession(Session $session, Dsn $dsn): Session;
+    public abstract function initSession(Session $session, DatabaseDsn $dsn): Session;
 
     /** Locks a session. This is an application (advisory) lock, not a table lock.
      * @param Session $session

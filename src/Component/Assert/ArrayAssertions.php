@@ -8,26 +8,26 @@ trait ArrayAssertions
 {
     /** Asserts array key exists and uses value in a chain.
      * @note this is a `property_exists` check
-     * @param mixed $object must be an object
-     * @param string $property property name
+     * @param mixed $array must be an array
+     * @param string $key key name
      * @param string $message
      * @return AssertChain
      */
-    public static function thatKey(mixed $object, string $property, string $message = ''): AssertChain
+    public static function thatKey(mixed $array, string $key, string $message = ''): AssertChain
     {
-        return static::that(static::key($object, $property, $message), $message);
+        return static::that(static::key($array, $key, $message), $message);
     }
 
     /** Asserts array key exists and and it's not null and uses value in a chain.
      * @note this is a `isset` check
-     * @param mixed $object must be an object
-     * @param string $property property name
+     * @param mixed $array must be an array
+     * @param string $key key name
      * @param string $message
      * @return AssertChain
      */
-    public static function thatKeySet(mixed $object, string $property, string $message = ''): AssertChain
+    public static function thatKeySet(mixed $array, string $key, string $message = ''): AssertChain
     {
-        return static::that(static::keySet($object, $property, $message), $message);
+        return static::that(static::keySet($array, $key, $message), $message);
     }
 
     /** Asserts that a countable (array or Countable object) contains the given number of elements.

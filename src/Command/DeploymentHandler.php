@@ -73,7 +73,7 @@ abstract class DeploymentHandler extends Handler
         }
         catch (Exception $e) {
             if ($this->isSingleTransactionMode)
-                ignoreException($this->target->rollBack(...));
+                silent_call($this->target->rollBack(...));
 
             $error = DeploymentError::fromException($e);
             throw $e;
@@ -81,7 +81,7 @@ abstract class DeploymentHandler extends Handler
         finally {
             /* if we already have an error, ignore exceptions. Otherwise, let them be thrown */
             if ($error)
-                ignoreException($this->deployment->close(...), $error);
+                silent_call($this->deployment->close(...), $error);
             else
                 $this->deployment->close();
         }

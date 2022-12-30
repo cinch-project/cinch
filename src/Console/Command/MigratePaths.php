@@ -32,7 +32,7 @@ class MigratePaths extends Command
         $this->executeCommand(new \Cinch\Command\Migrate(
             $this->projectId,
             new DeploymentTag($input->getArgument('tag')),
-            new Author($input->getOption('deployer') ?: get_system_user()),
+            new Author($input->getOption('deployer') ?: system_user()),
             new MigrateOptions($paths),
             $this->envName
         ), "Migrating migration store paths: " . implode(', ', $rawPaths));

@@ -3,80 +3,100 @@
 namespace Cinch\Common;
 
 use Cinch\Component\Assert\Assert;
-use GuzzleHttp\Psr7\Uri;
+use Cinch\Component\Assert\AssertException;
+use ReflectionObject;
+use ReflectionProperty;
 
-class Dsn extends Uri
+abstract class Dsn
 {
-    private const SCHEMES = ['file', 'mysql', 'pgsql', 'mssql', 'sqlite', 'github', 'gitlab', 'azure'];
+    const DEFAULT_CONNECT_TIMEOUT = 10;
+    const DEFAULT_TIMEOUT = 15000;
 
-    private readonly string $user;
-    private readonly string $password;
-    private readonly array $options;
+    public readonly string $driver;
+    public readonly int $connectTimeout;
+    public readonly int $timeout;
+    public readonly string|null $sslca;
+    public readonly string|null $sslcert;
+    public readonly string|null $sslkey;
 
-    public function __construct(string $dsn)
+    /* parameters that should be hidden when requesting a 'secure' string representation: snake case */
+    protected array $hidden = [];
+
+    public function __construct(string|array|object $dsn)
     {
-        $uri = new Uri(Assert::notEmpty($dsn, 'dsn'));
-
-        if (!$uri->getScheme())
-            $uri = $uri->withScheme('file');
-        else
-            Assert::in($uri->getScheme(), self::SCHEMES, 'DSN scheme');
-
-        parent::__construct((string) $uri);
-
-        $q = [];
-        parse_str($this->getQuery(), $q);
-        $this->options = $q;
-
-        $parts = explode(':', $this->getUserInfo(), 2);
-        $this->user = array_shift($parts) ?? '';
-        $this->password = array_shift($parts) ?? '';
+        if (is_object($dsn))
+            $dsn = arrayify($dsn);
+        else if (is_string($dsn))
+            $dsn = $this->parseParameters($dsn);
+        $this->setParameters($dsn);
     }
 
-    public function getUser(string $default = ''): string
+    protected function setParameters(array $params): void
     {
-        return $this->user ?: $default;
+        $k = 'connect_timeout';
+        $this->driver = Assert::thatKey($params, 'driver', 'driver')->notEmpty()->value();
+        $this->connectTimeout = isset($params[$k]) ? Assert::int($params[$k], $k) : self::DEFAULT_CONNECT_TIMEOUT;
+        $this->timeout = isset($params['timeout']) ? Assert::int($params['timeout'], 'timeout') : self::DEFAULT_TIMEOUT;
+        $this->sslca = isset($params['sslca']) ? Assert::file($params['sslca'], 'sslca') : null;
+        $this->sslcert = isset($params['sslcert']) ? Assert::file($params['sslcert'], 'sslcert') : null;
+        $this->sslkey = isset($params['sslkey']) ? Assert::file($params['sslkey'], 'sslkey') : null;
     }
 
-    public function getPassword(): string
+    public function snapshot(): array
     {
-        return $this->password;
+        return $this->getParameters();
     }
 
-    public function getOption(string $name, mixed $default = null): mixed
+    /** Gets a string representation of dsn.
+     * @param bool $secure generate a secure version, which means hidden values are set to '****'.
+     * @return string
+     */
+    public function toString(bool $secure = true): string
     {
-        return $this->hasOption($name) ? $this->options[$name] : $default;
+        $dsn = '';
+
+        foreach ($this->getParameters() as $name => $value) {
+            if ($secure && in_array($name, $this->hidden))
+                $value = '****';
+            else if (strcspn($value, " \t") != strlen($value)) // space|tab requires quoting value
+                $value = "'" . str_replace(["\\", "'"], ["\\\\", "\'"], $value) . "'";
+
+            $dsn .= "$name=$value ";
+        }
+
+        return substr($dsn, 0, -1);
     }
 
-    public function getFile(string $name, mixed $default = null): mixed
+    public function __toString(): string
     {
-        return $this->hasOption($name) ? Assert::exists($this->getOption($name), $name) : $default;
+        return $this->toString();
     }
 
-    public function getConnectTimeout(): int
+    /** Gets all non-null public readonly properties.
+     * @return array keys are converted to snake_case
+     */
+    protected function getParameters(): array
     {
-        return $this->getIntOption('connect_timeout', 10);
+        $params = [];
+
+        foreach ((new ReflectionObject($this))->getProperties(ReflectionProperty::IS_PUBLIC) as $p)
+            if ($p->isReadOnly() && ($value = $p->getValue($this)) !== null)
+                $params[snakecase($p->getName())] = $value;
+
+        return $params;
     }
 
-    public function getTimeout(): int
+    private function parseParameters(string $dsn): array
     {
-        return $this->getIntOption('timeout', 10000);
-    }
+        static $pattern = "~([a-zA-Z_]+)\s*=\s*('[^'\\\]*'|\S+)~";
 
-    public function getIntOption(string $name, int $default): int
-    {
-        if (!$this->hasOption($name))
-            return $default;
-        return Assert::digit($this->options[$name], "option '$name'");
-    }
+        if (preg_match_all($pattern, $dsn, $matches, PREG_SET_ORDER) === false)
+            throw new AssertException("DSN '$dsn' does not match $pattern");
 
-    public function hasOption(string $name): bool
-    {
-        return isset($this->options[$name]);
-    }
+        $params = [];
+        foreach ($matches as $p)
+            $params[$p[1]] = str_replace(["\\\\", "\\'"], ['\\', "'"], trim($p[2], "'"));
 
-    public function equals(Dsn $dsn): bool
-    {
-        return (string) $this == (string) $dsn;
+        return $params;
     }
 }

@@ -2,11 +2,11 @@
 
 namespace Cinch\Project;
 
-use Cinch\Common\Dsn;
 use Cinch\Common\Environment;
 use Cinch\Component\Assert\Assert;
-use Cinch\Component\Assert\AssertException;
+use Cinch\Database\DatabaseDsn;
 use Cinch\LastErrorException;
+use Cinch\MigrationStore\StoreDsn;
 use Exception;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
@@ -36,7 +36,7 @@ class YamlProjectRepository implements ProjectRepository
         return new Project(
             $id,
             $name,
-            new Dsn(Assert::stringProp($state, 'migration_store', "migration_store")),
+            new StoreDsn(Assert::objectProp($state, 'migration_store', "migration_store")),
             $this->createEnvironmentMap($state, $name),
             $this->createHooks($state),
             Assert::ifPropSet($state, 'single_transaction', true, 'single_transaction')->bool()->value()
@@ -59,7 +59,7 @@ class YamlProjectRepository implements ProjectRepository
             $this->update($project);
         }
         catch (Exception $e) {
-            ignoreException($this->remove(...), $project->getId());
+            silent_call($this->remove(...), $project->getId());
             throw $e;
         }
     }
@@ -109,59 +109,27 @@ class YamlProjectRepository implements ProjectRepository
     {
         $tablePrefix = '';
         $schema = sprintf(Environment::DEFAULT_SCHEMA_FORMAT, $projectName);
-        $createSchema = Environment::DEFAULT_CREATE_SCHEMA;
-        $deployTimeout = Environment::DEFAULT_DEPLOY_TIMEOUT;
+        $autoCreate = Environment::DEFAULT_AUTO_CREATE;
 
-        /* 'env_name: dsn' */
-        if (is_string($value)) {
-            $targetDsn = $historyDsn = new Dsn($value);
-        }
-        /* 'env_name: {target: dsn, history: dsn}', history optional */
-        else if (is_object($value)) {
-            if (property_exists($value, 'deploy_timeout'))
-                $deployTimeout = Assert::that($value->deploy_timeout, "$path.deploy_timeout")
-                    ->int()->greaterThanEqualTo(0)->value();
+        $target = Assert::thatProp($value, 'target', "$path.target")->object()->value();
+        $history = Assert::ifProp($value, 'history', $target, "$path.history")->object()->value();
+        $deployTimeout = Assert::ifProp($value, 'deploy_timeout', Environment::DEFAULT_DEPLOY_TIMEOUT, "$path.deploy_timeout")->int()->greaterThanEqualTo(0)->value();
 
-            $target = Assert::thatProp($value, 'target', "$path.target")
-                ->string()->notEmpty()->value();
+        if (property_exists($history, 'schema') && is_object($history->schema)) {
+            $s = $history->schema;
+            $path = "$path.history.schema";
+            $schema = Assert::ifPropSet($s, 'name', $schema, "$path.name")->string()->value();
+            $tablePrefix = Assert::ifPropSet($s, 'table_prefix', $tablePrefix, "$path.table_prefix")->string()->value();
+            $autoCreate = Assert::ifPropSet($s, 'auto_create', $autoCreate, "$path.auto_create")->bool()->value();
 
-            /* history key not present */
-            if (!property_exists($value, 'history')) {
+            unset($history->schema);
+
+            /* if history is empty after deleting 'schema' property, make a verbatim copy of target */
+            if (!($history = arrayify($history)))
                 $history = $target;
-            }
-            /* 'history: dsn' */
-            else if (is_string($value->history)) {
-                $history = $value->history;
-            }
-            /* 'history: {}' */
-            else if (is_object($value->history)) {
-                $h = $value->history;
-
-                $history = Assert::ifPropSet($h, 'dsn', $target, "$path.history")
-                    ->string()->notEmpty()->value();
-
-                $schema = Assert::ifPropSet($h, 'schema', $schema, "$path.schema")
-                    ->string()->value();
-
-                $tablePrefix = Assert::ifPropSet($h, 'table_prefix', $tablePrefix, "$path.table_prefix")
-                    ->string()->value();
-
-                $createSchema = Assert::ifPropSet($h, 'create_schema',
-                    $createSchema, "$path.create_schema")->bool()->value();
-            }
-            else {
-                throw new Exception("$path.history must be a string|object, found " .
-                    get_debug_type($value->history));
-            }
-
-            $targetDsn = new Dsn($target);
-            $historyDsn = new Dsn($history);
-        }
-        else {
-            throw new AssertException("$path must be an object|string, found " . get_debug_type($value));
         }
 
-        return new Environment($targetDsn, $historyDsn, $schema, $tablePrefix, $deployTimeout, $createSchema);
+        return new Environment(new DatabaseDsn($target), new DatabaseDsn($history), $schema, $tablePrefix, $deployTimeout, $autoCreate);
     }
 
     /**

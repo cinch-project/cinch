@@ -2,50 +2,51 @@
 
 namespace Cinch\Common;
 
+use Cinch\Database\DatabaseDsn;
+
 class Environment
 {
     const DEFAULT_SCHEMA_FORMAT = 'cinch_%s';
     const DEFAULT_DEPLOY_TIMEOUT = 10;
-    const DEFAULT_CREATE_SCHEMA = true;
+    const DEFAULT_AUTO_CREATE = true;
 
     public readonly string $schema;
-    public readonly bool $createSchema;
+    public readonly bool $autoCreate;
 
     public function __construct(
-        public readonly Dsn $targetDsn,
-        public readonly Dsn $historyDsn,
+        public readonly DatabaseDsn $targetDsn,
+        public readonly DatabaseDsn $historyDsn,
         string $schema,
         public readonly string $tablePrefix,
         public readonly int $deployTimeout,
-        bool $createSchema)
+        bool $autoCreate)
     {
         /* these options are not supported in sqlite, it has a 'main' schema and you cannot create more. You
          * would have to attach another db file.
          */
-        if ($this->historyDsn->getScheme() == 'sqlite') {
+        if ($this->historyDsn->driver == 'sqlite') {
             $schema = 'main';
-            $createSchema = false;
+            $autoCreate = false;
         }
 
         $this->schema = $schema;
-        $this->createSchema = $createSchema;
+        $this->autoCreate = $autoCreate;
     }
 
     public function snapshot(): array
     {
-        $data = [
+        $dsn = $this->targetDsn != $this->historyDsn ? $this->historyDsn->snapshot() : [];
+        return [
             'deploy_timeout' => $this->deployTimeout,
-            'target' => (string) $this->targetDsn,
+            'target' => $this->targetDsn->snapshot(),
             'history' => [
-                'schema' => $this->schema,
-                'table_prefix' => $this->tablePrefix,
-                'create_schema' => $this->createSchema
+                ...$dsn,
+                'schema' => [
+                    'name' => $this->schema,
+                    'table_prefix' => $this->tablePrefix,
+                    'auto_create' => $this->autoCreate
+                ]
             ]
         ];
-
-        if (!$this->targetDsn->equals($this->historyDsn))
-            $data['history']['dsn'] = (string) $this->historyDsn;
-
-        return $data;
     }
 }

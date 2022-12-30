@@ -62,8 +62,8 @@ class History
         $creator = $state & Schema::EXISTS ? 0 : Schema::CREATOR;
 
         if (!$this->schema->autoCreate() && $creator)
-            throw new SchemaConflictException("create_schema is disabled and schema " .
-                "'{$this->schema->name()}' does not exist. Please create this schema or configure an existing one.");
+            throw new SchemaConflictException("history.schema.auto_create is disabled and schema " .
+                "'{$this->schema->name()}' does not exist. Please create schema or select an existing one.");
 
         $Q = $this->session->quoteString(...);
         $version = $this->schema->version();
@@ -95,7 +95,7 @@ class History
             $this->schema->setState(Schema::EXISTS | Schema::OBJECTS | $creator);
         }
         catch (Exception $e) {
-            ignoreException(function () use ($withinTransaction, $creator) {
+            silent_call(function () use ($withinTransaction, $creator) {
                 if ($withinTransaction)
                     $this->session->rollBack();
                 else
@@ -138,7 +138,7 @@ class History
         }
         catch (Exception $e) {
             if ($withinTransaction)
-                ignoreException($this->session->rollBack(...));
+                silent_call($this->session->rollBack(...));
             throw $e;
         }
     }

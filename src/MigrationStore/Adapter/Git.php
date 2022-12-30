@@ -9,7 +9,7 @@ use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Cinch\MigrationStore\Adapter;
 use Cinch\MigrationStore\File;
-use Exception;
+use Cinch\MigrationStore\StoreDsn;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -26,14 +26,14 @@ abstract class Git extends Adapter
     private readonly string $messagePrefix;
 
     /**
-     * @param string $baseUri should include owner, project, repo, API version, etc.
+     * @param string $basePath should include owner, project, repo, API version, etc.
      * @param string $storeDir this is the relative path from the root of the repo, unlike the local
      * adapter which must be absolute. Example: $repo/database/cinch_sales is "database/cinch_sales".
      * @param string $branch
      * @param array $config guzzle config
      */
     public function __construct(
-        protected readonly string $baseUri,
+        protected readonly string $basePath,
         protected readonly string $branch,
         string $storeDir,
         array $config)
@@ -45,11 +45,6 @@ abstract class Git extends Adapter
         $this->client = new Client($config);
         parent::__construct(trim($storeDir, '/'));
     }
-
-    /**
-     * @throws Exception
-     */
-    public abstract static function fromDsn(Dsn $dsn, string $userAgent): static;
 
     /**
      * @throws GuzzleException
@@ -143,26 +138,33 @@ abstract class Git extends Adapter
         return $files;
     }
 
+    public static function fromDsn(StoreDsn $dsn, string $userAgent): static
+    {
+        return new static($dsn->basePath, $dsn->branch, $dsn->storeDir, [
+            'base_uri' => $dsn->baseUri,
+            'connect_timeout' => $dsn->connectTimeout,
+            'read_timeout' => $dsn->timeout / 1000,
+            'headers' => [
+                'User-Agent' => $userAgent,
+                'Authorization' => $dsn->getAuthorization()
+            ], ...self::getSslConfig($dsn)
+        ]);
+    }
+
     /** Gets the guzzle/http SSL config options.
      * @param Dsn $dsn
      * @return array
      */
-    protected static function getSslConfig(Dsn $dsn): array
+    private static function getSslConfig(Dsn $dsn): array
     {
-        $config = ['verify' => $dsn->getFile('sslca', true)];
+        $config = ['verify' => $dsn->sslca ?? true];
 
-        if ($value = $dsn->getFile('sslcert'))
+        if ($value = $dsn->sslcert)
             $config['cert'] = $value;
 
-        if ($value = $dsn->getFile('sslkey'))
+        if ($value = $dsn->sslkey)
             $config['ssl_key'] = $value;
 
         return $config;
-    }
-
-    protected static function getToken(Dsn $dsn): string
-    {
-        $token = $dsn->getOption('token', getenv(static::TOKEN_ENV_NAME) ?: '');
-        return Assert::that($token, static::TOKEN_ENV_NAME)->string()->notEmpty()->value();
     }
 }

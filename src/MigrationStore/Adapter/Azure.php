@@ -3,10 +3,10 @@
 namespace Cinch\MigrationStore\Adapter;
 
 use Cinch\Common\Checksum;
-use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\File;
+use Cinch\MigrationStore\StoreDsn;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use RuntimeException;
@@ -14,13 +14,12 @@ use RuntimeException;
 /** This supports Azure DevOps Services (cloud), not Azure DevOps Server (on-premise). */
 class Azure extends Git
 {
-    const TOKEN_ENV_NAME = 'CINCH_AZURE_TOKEN';
     private const API_VERSION = '7.0';
     private readonly array $branchInfo;
 
-    public function __construct(string $baseUri, string $branch, string $storeDir, array $config)
+    public function __construct(string $basePath, string $branch, string $storeDir, array $config)
     {
-        parent::__construct($baseUri, $branch, $storeDir, $config);
+        parent::__construct($basePath, $branch, $storeDir, $config);
         $this->branchInfo = [
             'searchCriteria.compareVersion.version' => $this->branch,
             'searchCriteria.compareVersion.versionType' => 'branch'
@@ -41,7 +40,7 @@ class Azure extends Git
             ...$this->branchInfo
         ]);
 
-        $tree = $this->getTree("$this->baseUri/items?$query");
+        $tree = $this->getTree("$this->basePath/items?$query");
         return $this->getFilesFromTree($tree['values'], 'path', 'gitObjectType', 'objectId');
     }
 
@@ -50,7 +49,7 @@ class Azure extends Git
      */
     public function addFile(string $path, string $content, string $message): void
     {
-        $this->client->post("$this->baseUri/pushes?api-version=" . self::API_VERSION, [
+        $this->client->post("$this->basePath/pushes?api-version=" . self::API_VERSION, [
             'json' => [
                 "refUpdates" => [
                     [
@@ -82,7 +81,7 @@ class Azure extends Git
      */
     public function deleteFile(string $path, string $message): void
     {
-        $this->client->post("$this->baseUri/pushes?api-version=" . self::API_VERSION, [
+        $this->client->post("$this->basePath/pushes?api-version=" . self::API_VERSION, [
             'json' => [
                 "refUpdates" => [
                     [
@@ -111,7 +110,7 @@ class Azure extends Git
     public function getFile(string $path): File
     {
         $query = $this->getItemsQueryString($path);
-        $data = $this->getFileByUri("$this->baseUri/items?$query", [
+        $data = $this->getFileByUri("$this->basePath/items?$query", [
             'headers' => ['Accept' => 'application/json'] // metadata and content
         ]);
 
@@ -124,7 +123,7 @@ class Azure extends Git
     public function getContents(string $path): string
     {
         $query = $this->getItemsQueryString($path);
-        return $this->getContentsByUri("$this->baseUri/items?$query", [
+        return $this->getContentsByUri("$this->basePath/items?$query", [
             'headers' => ['Accept' => 'text/plain'] // only content
         ]);
     }
@@ -152,46 +151,16 @@ class Azure extends Git
             'api-version' => self::API_VERSION
         ]);
 
-        $stats = $this->toJson($this->client->get("$this->baseUri/stats/branches?$query"));
+        $stats = $this->toJson($this->client->get("$this->basePath/stats/branches?$query"));
         return $stats['commit']['commitId'];
     }
 
     /**
      * @throws Exception
      */
-    public static function fromDsn(Dsn $dsn, string $userAgent): static
+    public static function fromDsn(StoreDsn $dsn, string $userAgent): static
     {
-        // azure:organization/<project>/<repo>/rootDir?branch=branch
-
-        Assert::equals($dsn->getScheme(), 'azure', "expected azure dsn");
-        Assert::empty($dsn->getHost(), 'gitlab host not supported');
-
-        $parts = explode('/', trim($dsn->getPath(), '/'), 4);
-
-        /* azure limits org name to ASCII letters and digits for the first and last character and allows
-         * ASCII letters, digits and hyphen for middle characters.
-         */
-        $pattern = '~^(?:[a-z\d]|[a-z\d][a-z\d-]*[a-z\d])$~i';
-        $org = Assert::regex(array_shift($parts), $pattern, 'azure organization');
-
-        $project = Assert::notEmpty(array_shift($parts), 'azure project');
-        $repo = Assert::notEmpty(array_shift($parts), 'azure repo');
-        $storeDir = array_shift($parts) ?? '';
-
-        $branch = Assert::notEmpty($dsn->getOption('branch'), 'azure branch');
-
-        $baseUri = sprintf('%s/%s/_apis/git/repositories/%s',
-            rawurlencode($org), rawurlencode($project), rawurlencode($repo));
-
-        return new static($baseUri, $branch, $storeDir, [
-            'base_uri' => "https://dev.azure.com",
-            'connect_timeout' => $dsn->getConnectTimeout(),
-            'read_timeout' => $dsn->getTimeout() / 1000,
-            'headers' => [
-                'User-Agent' => $userAgent,
-                // user:token, don't need user but colon must be present
-                'Authorization' => 'Basic ' . base64_encode(':' . self::getToken($dsn))
-            ], ...self::getSslConfig($dsn)
-        ]);
+        Assert::equals($dsn->driver, 'azure', "expected azure dsn");
+        return parent::fromDsn($dsn, $userAgent);
     }
 }

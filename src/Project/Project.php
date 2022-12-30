@@ -2,8 +2,8 @@
 
 namespace Cinch\Project;
 
-use Cinch\Common\Dsn;
 use Cinch\Common\Environment;
+use Cinch\MigrationStore\StoreDsn;
 use Exception;
 
 class Project
@@ -14,7 +14,7 @@ class Project
     public function __construct(
         private readonly ProjectId $id,
         private readonly ProjectName $name,
-        private Dsn $migrationStoreDsn,
+        private StoreDsn $migrationStoreDsn,
         private EnvironmentMap $envMap,
         private array $hooks = [],
         private readonly bool $isSingleTransactionMode = true)
@@ -67,7 +67,7 @@ class Project
         return $this->name;
     }
 
-    public function getMigrationStoreDsn(): Dsn
+    public function getMigrationStoreDsn(): StoreDsn
     {
         return $this->migrationStoreDsn;
     }
@@ -87,7 +87,7 @@ class Project
             $hooks[$name] = $hook->snapshot();
 
         return [
-            'migration_store' => (string) $this->migrationStoreDsn,
+            'migration_store' => $this->migrationStoreDsn->snapshot(),
             'single_transaction' => $this->isSingleTransactionMode,
             'environments' => $this->envMap->snapshot(),
             'hooks' => (object) $hooks

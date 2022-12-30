@@ -2,7 +2,7 @@
 
 namespace Cinch\Database\Platform;
 
-use Cinch\Common\Dsn;
+use Cinch\Database\DatabaseDsn;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -12,32 +12,28 @@ use RuntimeException;
 
 class MsSql extends Platform
 {
-    public function addParams(Dsn $dsn, array $params): array
+    public function addParams(DatabaseDsn $dsn, array $params): array
     {
-        $params['user'] = $dsn->getUser(default: 'sa'); // standard administrator
-        $params['port'] = $dsn->getPort() ?? 1433;
-        $params['driverOptions']['LoginTimeout'] = $dsn->getConnectTimeout();
+        $params['driverOptions']['LoginTimeout'] = $dsn->connectTimeout;
         $params['driverOptions']['Encrypt'] = 1;
         $params['driverOptions']['ApplicationIntent'] = 'ReadWrite';
         $params['driverOptions']['TrustServerCertificate'] = 1;
         return $params;
     }
 
-    public function initSession(Session $session, Dsn $dsn): Session
+    public function initSession(Session $session, DatabaseDsn $dsn): Session
     {
         /** @var PDO $pdo */
         $pdo = $session->getNativeConnection();
 
         /* cannot be passed to constructor according to PDO and Microsoft docs */
         $pdo->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
-        $pdo->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, (int) ($dsn->getTimeout() / 1000));
+        $pdo->setAttribute(PDO::SQLSRV_ATTR_QUERY_TIMEOUT, (int) ($dsn->timeout / 1000));
         $pdo->setAttribute(PDO::SQLSRV_ATTR_FETCHES_NUMERIC_TYPE, true);
-
-        $dbname = trim($dsn->getPath(), '/');
 
         /* select 'compatibility_level' but also grab some properties (avoid 2nd query) */
         $result = $session->executeQuery("select compatibility_level, serverproperty('ProductVersion'),
-            serverproperty('Edition') from sys.databases where name = ?", [$dbname]);
+            serverproperty('Edition') from sys.databases where name = ?", [$dsn->dbname]);
 
         [$compatLevel, $version, $edition] = $result->fetchNumeric();
         $this->version = (float) $version;

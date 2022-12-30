@@ -2,7 +2,7 @@
 
 namespace Cinch\Database\Platform;
 
-use Cinch\Common\Dsn;
+use Cinch\Database\DatabaseDsn;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -18,16 +18,16 @@ class Sqlite extends Platform
     private $lockStream = null;
     private readonly string $lockPath; // sqlite db path from dsn
 
-    public function addParams(Dsn $dsn, array $params): array
+    public function addParams(DatabaseDsn $dsn, array $params): array
     {
-        $params['path'] = $dsn->getPath();
+        $params['path'] = $dsn->dbname;
         $params['driverOptions'][PDO::ATTR_EMULATE_PREPARES] = 1;
         return $params;
     }
 
-    public function initSession(Session $session, Dsn $dsn): Session
+    public function initSession(Session $session, DatabaseDsn $dsn): Session
     {
-        $this->lockPath = $dsn->getPath();
+        $this->lockPath = $dsn->dbname;
 
         $this->version = (float) $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
         if ($this->version < 3.0)

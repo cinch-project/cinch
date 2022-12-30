@@ -2,7 +2,7 @@
 
 namespace Cinch\Database\Platform;
 
-use Cinch\Common\Dsn;
+use Cinch\Database\DatabaseDsn;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -11,43 +11,35 @@ use PDO;
 
 class PgSql extends Platform
 {
-    public function addParams(Dsn $dsn, array $params): array
+    public function addParams(DatabaseDsn $dsn, array $params): array
     {
-        $params['user'] = $dsn->getUser(default: 'postgres');
-        $params['port'] = $dsn->getPort() ?? 5432;
         $params['driverOptions'][PDO::ATTR_EMULATE_PREPARES] = 1;
-        $params['driverOptions'][PDO::ATTR_TIMEOUT] = $dsn->getConnectTimeout();
+        $params['driverOptions'][PDO::ATTR_TIMEOUT] = $dsn->connectTimeout;
 
-        $count = count($params);
+        $params['sslmode'] = $dsn->sslmode ?? 'prefer';
 
-        if ($value = $dsn->getOption('sslmode'))
-            $params['sslmode'] = $value;
+        if ($dsn->sslca)
+            $params['sslrootcert'] = $dsn->sslca;
 
-        if ($value = $dsn->getFile('sslca'))
-            $params['sslrootcert'] = $value;
+        if ($dsn->sslcert)
+            $params['sslcert'] = $dsn->sslcert;
 
-        if ($value = $dsn->getFile('sslcert'))
-            $params['sslcert'] = $value;
-
-        if ($value = $dsn->getFile('sslkey'))
-            $params['sslkey'] = $value;
-
-        if (!isset($params['sslmode']))
-            $params['sslmode'] = count($params) != $count ? 'verify-full' : 'prefer';
+        if ($dsn->sslkey)
+            $params['sslkey'] = $dsn->sslkey;
 
         return $params;
     }
 
-    public function initSession(Session $session, Dsn $dsn): Session
+    public function initSession(Session $session, DatabaseDsn $dsn): Session
     {
         $this->version = (float) $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
 
         if ($this->version < 12.0)
             throw new UnsupportedVersionException('PostgreSQL', $this->version, 12.0);
 
-        $charset = $session->quoteString($dsn->getOption('charset', 'UTF8'));
+        $charset = $session->quoteString($dsn->charset);
 
-        if ($searchPath = $dsn->getOption('search_path', '')) {
+        if ($searchPath = ($dsn->searchPath ?? '')) {
             $schemas = preg_split('~\s*,\s*~', $searchPath, flags: PREG_SPLIT_NO_EMPTY);
             $schemas = implode(',', array_map(fn($s) => $session->quoteIdentifier($s), $schemas));
             $searchPath = "set search_path to $schemas;";
@@ -56,7 +48,7 @@ class PgSql extends Platform
         $session->executeStatement("
             $searchPath
             set client_encoding to $charset;
-            set statement_timeout={$dsn->getTimeout()}; 
+            set statement_timeout=$dsn->timeout; 
             set time zone '+00:00';");
 
         return $session;

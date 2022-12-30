@@ -27,9 +27,8 @@ catch (Exception $e) {
     $exitCode = 255;
     $app->renderThrowable($e, $logger->getOutput()->getErrorOutput());
 }
-finally {
-    if ($exitCode = min(255, $exitCode))
-        $logger->setIndent()->debug("application exit code $exitCode");
 
-    exit($exitCode);
-}
+if ($exitCode = min(255, $exitCode))
+    $logger->setIndent()->debug("application exit code $exitCode");
+
+exit($exitCode);

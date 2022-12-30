@@ -2,7 +2,6 @@
 
 namespace Cinch\MigrationStore\Adapter;
 
-use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
@@ -11,6 +10,7 @@ use Cinch\MigrationStore\Adapter;
 use Cinch\MigrationStore\File;
 use Cinch\MigrationStore\LocalFile;
 use Cinch\MigrationStore\MigrationStore;
+use Cinch\MigrationStore\StoreDsn;
 use Exception;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Filesystem;
@@ -20,11 +20,10 @@ use Symfony\Component\Finder\SplFileInfo;
 
 class Local extends Adapter
 {
-    public static function fromDsn(Dsn $dsn, string $defaultBaseDir): self
+    public static function fromDsn(StoreDsn $dsn, string $defaultBaseDir): self
     {
-        Assert::equals($dsn->getScheme(), 'file', "expected file dsn");
-
-        $dir = $dsn->getPath();
+        Assert::equals($dsn->driver, 'fs', "expected fs dsn");
+        $dir = $dsn->storeDir;
 
         if (Path::isRelative($dir)) {
             Assert::notEmpty($defaultBaseDir, 'migration store requires baseDir for relative URIs');

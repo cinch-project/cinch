@@ -2,7 +2,7 @@
 
 namespace Cinch\Database\Platform;
 
-use Cinch\Common\Dsn;
+use Cinch\Database\DatabaseDsn;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -34,30 +34,28 @@ class MySql extends Platform
         return $dt->format($this->dateTimeFormat);
     }
 
-    public function addParams(Dsn $dsn, array $params): array
+    public function addParams(DatabaseDsn $dsn, array $params): array
     {
-        $params['user'] = $dsn->getUser(default: 'root');
-        $params['port'] = $dsn->getPort() ?? 3306;
         $params['driverOptions'][PDO::ATTR_EMULATE_PREPARES] = 1;
-        $params['driverOptions'][PDO::ATTR_TIMEOUT] = $dsn->getConnectTimeout();
+        $params['driverOptions'][PDO::ATTR_TIMEOUT] = $dsn->connectTimeout;
 
         $count = count($params['driverOptions']);
 
-        if ($value = $dsn->getFile('sslca'))
-            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_CA] = $value;
+        if ($dsn->sslca)
+            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_CA] = $dsn->sslca;
 
-        if ($value = $dsn->getFile('sslcert'))
-            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_CERT] = $value;
+        if ($dsn->sslcert)
+            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_CERT] = $dsn->sslcert;
 
-        if ($value = $dsn->getFile('sslkey'))
-            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_KEY] = $value;
+        if ($dsn->sslkey)
+            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_KEY] = $dsn->sslkey;
 
         $params['driverOptions'][PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = count($params['driverOptions']) != $count;
 
         return $params;
     }
 
-    public function initSession(Session $session, Dsn $dsn): Session
+    public function initSession(Session $session, DatabaseDsn $dsn): Session
     {
         $version = $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
         [$version, $minVersion, $this->name] = $this->parseVersion($version);
@@ -72,11 +70,11 @@ class MySql extends Platform
         if ($this->version < $minVersion)
             throw new UnsupportedVersionException($this->name, $this->version, $minVersion);
 
-        $charset = $session->quoteString($dsn->getOption('charset', 'utf8mb4'));
+        $charset = $session->quoteString($dsn->charset);
         $session->executeStatement("
             set autocommit = 1;
             set character set $charset;
-            set session max_execution_time={$dsn->getTimeout()}; 
+            set session max_execution_time=$dsn->timeout; 
             set session time_zone = '+00:00';");
 
         return $session;

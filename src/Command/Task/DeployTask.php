@@ -54,9 +54,9 @@ class DeployTask extends Task
         }
         catch (Exception $e) {
             if (!$this->isSingleTransactionMode) {
-                ignoreException($this->target->rollBack(...));
+                silent_call($this->target->rollBack(...));
                 if ($addedChange)
-                    ignoreException($this->deployment->removeChange(...), $this->migration->getPath());
+                    silent_call($this->deployment->removeChange(...), $this->migration->getPath());
             }
 
             throw $e;

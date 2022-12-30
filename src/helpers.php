@@ -1,17 +1,25 @@
 <?php
 // avoid function_exists checks so we "actually" see redefinition errors
 
-function ignoreException(callable $c, ...$args): void
+function silent_call(callable $c, ...$args): mixed
 {
+    static $mask = E_WARNING | E_NOTICE | E_USER_WARNING | E_USER_NOTICE | E_DEPRECATED | E_USER_DEPRECATED | E_STRICT;
+
+    $old = error_reporting();
+    error_reporting($old & ~$mask);
+
     try {
-        $c(...$args);
+        $result = $c(...$args);
     }
     catch (Throwable) {
+        $result = null;
     }
+
+    error_reporting($old);
+    return $result;
 }
 
-/** Slurps a file into a string.
- */
+/** Slurps a file into a string. */
 function slurp(string $path, string $exceptionClass = Exception::class): string
 {
     if (($content = @file_get_contents($path)) === false)
@@ -26,12 +34,21 @@ function classname(string $class): string
     return $class;
 }
 
-function objectToArray(object|array $value): array
+/** Recursively converts all objects to arrays.
+ * @param object|array $value
+ * @return array
+ */
+function arrayify(object|array $value): array
 {
     $result = [];
     foreach ($value as $k => $v)
-        $result[$k] = is_array($v) || is_object($v) ? objectToArray($v) : $v;
+        $result[$k] = is_array($v) || is_object($v) ? arrayify($v) : $v;
     return $result;
+}
+
+function snakecase(string $camel): string
+{
+    return strtolower(preg_replace('~(?<!^)[A-Z]~', '_$0', $camel));
 }
 
 function nanosleep(int $nanoseconds): bool
@@ -48,7 +65,7 @@ function nanosleep(int $nanoseconds): bool
 /** Gets local system time zone, nothing to do with php or php.ini.
  * @return string
  */
-function get_system_time_zone(): string
+function system_time_zone(): string
 {
     $tz = 'UTC';
 
@@ -66,10 +83,13 @@ function get_system_time_zone(): string
             $tz = substr($path, $pos + 10);
     }
 
-    return $tz;
+    return $tz;// Bandit, decade of deception
 }
 
-function get_system_user(): string
+/** Gets the system user, not the php script owner.
+ * @return string
+ */
+function system_user(): string
 {
     if (PHP_OS_FAMILY == 'Windows') {
         /* one of these should always exist */

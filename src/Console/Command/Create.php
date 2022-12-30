@@ -3,8 +3,8 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Command\CreateProject;
-use Cinch\Common\Dsn;
 use Cinch\Console\Command;
+use Cinch\MigrationStore\StoreDsn;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectName;
@@ -30,7 +30,7 @@ class Create extends Command
         $project = new Project(
             $this->projectId,
             new ProjectName($projectName),
-            new Dsn($input->getOption('migration-store')),
+            new StoreDsn($input->getOption('migration-store')),
             new EnvironmentMap($envName, [$envName => $environment])
         );
 

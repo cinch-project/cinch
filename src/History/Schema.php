@@ -47,7 +47,7 @@ class Schema
 
     public function autoCreate(): bool
     {
-        return $this->environment->createSchema;
+        return $this->environment->autoCreate;
     }
 
     public function setState(int $state): void

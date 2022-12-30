@@ -4,10 +4,10 @@ namespace Cinch\Command\Task;
 
 use Cinch\Command\Task;
 use Cinch\Command\TaskAttribute;
-use Cinch\Common\Dsn;
 use Cinch\Common\StorePath;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
+use Cinch\MigrationStore\StoreDsn;
 
 #[TaskAttribute('remove migration script', 'removing migration script')]
 class RemoveMigration extends Task
@@ -15,7 +15,7 @@ class RemoveMigration extends Task
     private readonly MigrationStore $store;
 
     public function __construct(
-        private readonly Dsn $dsn,
+        private readonly StoreDsn $dsn,
         private readonly StorePath $path,
         private readonly MigrationStoreFactory $migrationStoreFactory)
     {

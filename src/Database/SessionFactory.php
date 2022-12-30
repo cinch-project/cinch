@@ -2,7 +2,6 @@
 
 namespace Cinch\Database;
 
-use Cinch\Common\Dsn;
 use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Doctrine\DBAL\DriverManager;
@@ -14,14 +13,14 @@ class SessionFactory
     /**
      * @throws Exception
      */
-    public function create(Dsn $dsn): Session
+    public function create(DatabaseDsn $dsn): Session
     {
-        $platform = match ($driver = $dsn->getScheme()) {
+        $platform = match ($driver = $dsn->driver) {
             'pgsql' => new Platform\PgSql,
             'mysql' => new Platform\MySql,
             'mssql' => new Platform\MsSql,
             'sqlite' => new Platform\Sqlite,
-            default => throw new AssertException("unknown database platform '$driver'")
+            default => throw new AssertException("unknown database platform '$dsn-˘driver'")
         };
 
         if ($driver == 'mssql')
@@ -31,9 +30,11 @@ class SessionFactory
             'cinch.platform' => $platform,
             'driver' => "pdo_$driver",
             'wrapperClass' => Session::class, // allows us to extend Doctrine's built-in Connection
-            'dbname' => Assert::notEmpty(trim($dsn->getPath(), '/'), 'dsn dbname'),
-            'password' => $dsn->getPassword(),
-            'host' => $dsn->getHost() ?: '127.0.0.1',
+            'dbname' => $dsn->dbname,
+            'user' => $dsn->user,
+            'password' => $dsn->password,
+            'host' => $dsn->host,
+            'port' => $dsn->port,
             'driverOptions' => [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC

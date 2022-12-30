@@ -2,7 +2,6 @@
 
 namespace Cinch\MigrationStore;
 
-use Cinch\Common\Dsn;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -24,14 +23,14 @@ class MigrationStoreFactory
     /**
      * @throws Exception
      */
-    public function create(Dsn $dsn): MigrationStore
+    public function create(StoreDsn $dsn): MigrationStore
     {
-        $adapter = match ($dsn->getScheme()) {
-            'file' => Adapter\Local::fromDsn($dsn, $this->projectDir),
+        $adapter = match ($dsn->driver) {
+            'fs' => Adapter\Local::fromDsn($dsn, $this->projectDir),
             'github' => Adapter\GitHub::fromDsn($dsn, $this->userAgent),
             'gitlab' => Adapter\GitLab::fromDsn($dsn, $this->userAgent),
             'azure' => Adapter\Azure::fromDsn($dsn, $this->userAgent),
-            default => throw new RuntimeException("unsupported migration store adapter '{$dsn->getScheme()}'")
+            default => throw new RuntimeException("unsupported migration store adapter '$dsn->driver'")
         };
 
         return new MigrationStore($adapter, $this->scriptLoader, $this->twig, $this->logger, $this->resourceDir);
