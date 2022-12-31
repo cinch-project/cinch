@@ -38,8 +38,8 @@ abstract class Dsn
     protected function setParameters(array $params): void
     {
         $this->driver = Assert::thatKey($params, 'driver', 'driver')->regex('~^[a-z\-]{1,16}$~')->value();
-        $this->connectTimeout = Assert::int($params['connect_timeout'] ?? self::DEFAULT_CONNECT_TIMEOUT, "$this->driver connect_timeout");
-        $this->timeout = Assert::int($params['timeout'] ?? self::DEFAULT_TIMEOUT, "$this->driver timeout");
+        $this->connectTimeout = Assert::ifKey($params, 'connect_timeout', self::DEFAULT_CONNECT_TIMEOUT, "$this->driver connect_timeout")->int()->greaterThan(0)->value();
+        $this->timeout = Assert::ifKey($params, 'timeout', self::DEFAULT_TIMEOUT, "$this->driver timeout")->int()->greaterThan(0)->value();
         $this->sslca = isset($params['sslca']) ? Assert::file($params['sslca'], "$this->driver sslca") : null;
         $this->sslcert = isset($params['sslcert']) ? Assert::file($params['sslcert'], "$this->driver sslcert") : null;
         $this->sslkey = isset($params['sslkey']) ? Assert::file($params['sslkey'], "$this->driver sslkey") : null;

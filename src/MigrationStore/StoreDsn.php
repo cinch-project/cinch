@@ -83,14 +83,9 @@ class StoreDsn extends Dsn
 
     private function setGitlabParameters(array $params): void
     {
-        $this->parameters['host'] = Assert::hostOrIp($params['host'] ?? 'gitlab.com', 'gitlab host');
-
-        $port = $params['port'] ?? 443;
-        if (!is_int($port))
-            $port = Assert::between((int) Assert::digit($port, 'gitlab port'), 1, 65535, 'gitlab port');
-        $this->parameters['port'] = $port;
-
-        $this->baseUri = sprintf('https://%s:%s', $this->parameters['host'], $port);
+        $this->parameters['host'] = Assert::ifKey($params, 'host', 'gitlab.com', 'gitlab host')->hostOrIp()->value();
+        $this->parameters['port'] = (int) Assert::ifKey($params, 'port', 443, 'gitlab port')->digit()->between(1, 65535)->value();
+        $this->baseUri = sprintf('https://%s:%s', $this->parameters['host'], $this->parameters['port']);
         $this->token = $this->getToken($params, 'CINCH_GITLAB_TOKEN');
         $this->basePath = sprintf('/api/v4/projects/%s/repository',
             $this->parameters['project_id'] = (int) Assert::thatKey($params, 'project_id', 'gitlab project_id')->digit()->value());
@@ -108,6 +103,6 @@ class StoreDsn extends Dsn
 
     private function getToken(array $params, string $envName): string
     {
-        return $params['token'] ?? Assert::notEmpty(getenv($envName) ?: '', "$this->driver token");
+        return Assert::ifKey($params, 'token', getenv($envName) ?: '', "$this->driver token")->notEmpty()->value();
     }
 }

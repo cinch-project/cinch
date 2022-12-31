@@ -131,10 +131,14 @@ trait StringAssertions
      */
     public static function regex(string $string, string $pattern, string $message = ''): string
     {
-        if (preg_match($pattern, $string))
+        if ($r = @preg_match($pattern, $string))
             return $string;
 
-        static::fail($message, "value %s does not match %s", static::strval($string), static::strval($pattern));
+        static::fail($message, "value %s does not match %s %s",
+            static::strval($string),
+            static::strval($pattern),
+            $r === false ? '- ' . error_get_last()['message'] : ''
+        );
     }
 
     /** Asserts that a string only contains ASCII digits.

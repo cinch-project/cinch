@@ -7,13 +7,13 @@ use Countable;
 trait ArrayAssertions
 {
     /** Asserts array key exists and uses value in a chain.
-     * @note this is a `property_exists` check
+     * @note this is an `array_key_exists` check
      * @param mixed $array must be an array
-     * @param string $key key name
+     * @param string|int $key key name
      * @param string $message
      * @return AssertChain
      */
-    public static function thatKey(mixed $array, string $key, string $message = ''): AssertChain
+    public static function thatKey(mixed $array, string|int $key, string $message = ''): AssertChain
     {
         return static::that(static::key($array, $key, $message), $message);
     }
@@ -21,13 +21,45 @@ trait ArrayAssertions
     /** Asserts array key exists and and it's not null and uses value in a chain.
      * @note this is a `isset` check
      * @param mixed $array must be an array
-     * @param string $key key name
+     * @param string|int $key key name
      * @param string $message
      * @return AssertChain
      */
-    public static function thatKeySet(mixed $array, string $key, string $message = ''): AssertChain
+    public static function thatKeySet(mixed $array, string|int $key, string $message = ''): AssertChain
     {
         return static::that(static::keySet($array, $key, $message), $message);
+    }
+
+    /** Use key value in a chain if it exists, otherwise use the given default.
+     * @note this is an `array_key_exists` check
+     * @param mixed $array must be an array
+     * @param string|int $key key name
+     * @param mixed $default value to use if key does not exist
+     * @param string $message
+     * @return AssertChain
+     */
+    public static function ifKey(mixed $array, string|int $key, mixed $default, string $message = ''): AssertChain
+    {
+        if (array_key_exists($key, static::array($array, $message)))
+            $value = $array[$key];
+        else
+            $value = $default;
+
+        return static::that($value, $message);
+    }
+
+    /** Use key value in a chain if it exists and it's not null, otherwise use the given default.
+     * @note this is an `isset` check
+     * @param mixed $array must be an array
+     * @param string|int $key key name
+     * @param mixed $default value to use if key does not exist or is null
+     * @param string $message
+     * @return AssertChain
+     */
+    public static function ifKeySet(mixed $array, string|int $key, mixed $default, string $message = ''): AssertChain
+    {
+        static::array($array, $message);
+        return static::that($array[$key] ?? $default, $message);
     }
 
     /** Asserts that a countable (array or Countable object) contains the given number of elements.
