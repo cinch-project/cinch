@@ -25,11 +25,15 @@ class Env extends Command
 
         foreach ($map->all() as $name => $env) {
             $autoCreate = $env->autoCreate ? 'true' : 'false';
+            $targetDsn = $env->targetDsn->toString(secure: false);
+            $historyDsn = $env->historyDsn->toString(secure: false);
+            $defstr = $name == $default ? '(default)' : '';
+
             $output->writeln([
-                "<info>$name" . ($name == $default ? ' (default)' : '') . "</>",
+                "<info>$name $defstr</>",
                 "  deploy_timeout $env->deployTimeout",
-                "  target '$env->targetDsn'",
-                "  history '$env->historyDsn'",
+                "  target '$targetDsn'",
+                "  history '$historyDsn'",
                 "  schema '$env->schema'",
                 "  table_prefix '$env->tablePrefix'",
                 "  auto_create $autoCreate"
