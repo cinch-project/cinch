@@ -20,8 +20,6 @@ use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 
 abstract class Git extends Adapter
 {
-    const TOKEN_ENV_NAME = '';
-
     protected readonly Client $client;
     private readonly string $messagePrefix;
 

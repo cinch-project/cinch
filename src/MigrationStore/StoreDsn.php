@@ -8,11 +8,6 @@ use Cinch\Component\Assert\AssertException;
 
 class StoreDsn extends Dsn
 {
-    private const GITHUB_BASE_URI = 'https://api.github.com';
-    private const AZURE_BASE_URI = 'https://dev.azure.com';
-    private const GITLAB_HOST = 'gitlab.com';
-    private const GITLAB_PORT = 443;
-
     public readonly string|null $baseUri;
     public readonly string|null $basePath;
     public readonly string|null $storeDir;
@@ -20,10 +15,16 @@ class StoreDsn extends Dsn
     public readonly string|null $token;
     protected array $hidden = ['token'];
 
+    /* These parameters are only used within string|array DSNs. They compose basePath and/or baseUri and don't need
+     * to be accessible outside this class. They are needed in order to recreate a string|array DSN.
+     */
+    private array $parameters = ['org' => null, 'owner' => null, 'project' => null, 'project_id' => null,
+        'repo' => null, 'host' => null, 'port' => null];
+
     public function getAuthorization(): string
     {
         return match ($this->driver) {
-            // user:token, don't need user but colon must be present
+            // azure expects user:token, we don't need user but the colon must still be present
             'azure' => 'Basic ' . base64_encode(':' . $this->token),
             'github', 'gitlab' => "Bearer $this->token",
             default => ''
@@ -34,63 +35,79 @@ class StoreDsn extends Dsn
     {
         parent::setParameters($params);
 
-        $token = $params['token'] ?? null;
-        $branch = $params['branch'] ?? null;
-        $this->storeDir = Assert::thatKey($params, 'store_dir', 'store_dir')->notEmpty()->value();
+        $setDriverParameters = 'set' . ucfirst($this->driver) . 'Parameters';
+        if (!method_exists($this, $setDriverParameters))
+            throw new AssertException("unknown migration store driver '$this->driver'");
 
-        if ($this->driver == 'fs')
-            $this->basePath = $this->baseUri = $this->token = $this->branch = null;
-        else
-            $this->branch = Assert::notEmpty($branch, "$this->driver branch");
+        /* all drivers require storeDir */
+        $this->storeDir = Assert::thatKey($params, 'store_dir', "$this->driver store_dir")->notEmpty()->value();
 
-        switch ($this->driver) {
-            case 'fs':
-                break;
+        /* all git drivers require branch */
+        if ($this->driver != 'fs')
+            $this->branch = Assert::thatKey($params, 'branch', "$this->driver branch")->notEmpty()->value();
 
-            case 'github':
-            {
-                $this->baseUri = self::GITHUB_BASE_URI;
-                $this->token = $token ?: Assert::notEmpty(getenv('CINCH_GITHUB_TOKEN') ?: '', 'github token');
-                $this->basePath = sprintf('/repos/%s/%s',
-                    Assert::thatKey($params, 'owner', 'owner')->notEmpty()->value(),
-                    Assert::thatKey($params, 'repo', 'repo')->notEmpty()->value());
-                break;
-            }
-
-            case 'gitlab':
-            {
-                $this->baseUri = sprintf('https://%s:%d', $params['host'] ?? self::GITLAB_HOST, $params['port'] ?? self::GITLAB_PORT);
-                $this->token = $token ?: Assert::notEmpty(getenv('CINCH_GITLAB_TOKEN') ?: '', 'gitlab token');
-                $this->basePath = sprintf('/api/v4/projects/%s/repository',
-                    Assert::thatKey($params, 'project_id', 'project_id')->xdigit()->value());
-                break;
-            }
-
-            case 'azure':
-            {
-                $this->baseUri = self::AZURE_BASE_URI;
-                $this->token = $token ?: Assert::notEmpty(getenv('CINCH_AZURE_TOKEN') ?: '', 'azure token');
-                $this->basePath = sprintf('/%s/%s/_apis/git/repositories/%s',
-                    rawurlencode(Assert::thatKey($params, 'org', 'org')->notEmpty()->value()),
-                    rawurlencode(Assert::thatKey($params, 'project', 'project')->notEmpty()->value()),
-                    rawurlencode(Assert::thatKey($params, 'repo', 'repo')->notEmpty()->value()));
-                break;
-            }
-
-            default:
-                throw new AssertException("unknown store driver '$this->driver'");
-        }
+        $this->$setDriverParameters($params);
     }
 
     protected function getParameters(): array
     {
+        if ($this->driver == 'fs')
+            return ['driver' => 'fs', 'store_dir' => $this->storeDir];
+
         $params = parent::getParameters();
 
-        if ($this->driver == 'fs')
-            $params = ['driver' => 'fs', 'store_dir' => $params['store_dir']];
-        else
-            unset($params['basePath'], $params['baseUri']);
+        /* part of OO model only, these are composed of parameters */
+        unset($params['basePath'], $params['baseUri']);
+
+        /* add driver-specific parameters: if not used by driver, they will be null */
+        foreach ($this->parameters as $name => $value)
+            if ($value !== null)
+                $params[$name] = $value;
 
         return $params;
+    }
+
+    private function setFsParameters(array $params): void
+    {
+        $this->basePath = $this->baseUri = $this->token = $this->branch = null;
+    }
+
+    private function setGithubParameters(array $params): void
+    {
+        $this->baseUri = 'https://api.github.com';
+        $this->token = $this->getToken($params, 'CINCH_GITHUB_TOKEN');
+        $this->basePath = sprintf('/repos/%s/%s',
+            $this->parameters['owner'] = Assert::thatKey($params, 'owner', 'github owner')->notEmpty()->value(),
+            $this->parameters['repo'] = Assert::thatKey($params, 'repo', 'github repo')->notEmpty()->value());
+    }
+
+    private function setGitlabParameters(array $params): void
+    {
+        $this->parameters['host'] = Assert::hostOrIp($params['host'] ?? 'gitlab.com', 'gitlab host');
+
+        $port = $params['port'] ?? 443;
+        if (!is_int($port))
+            $port = Assert::between((int) Assert::digit($port, 'gitlab port'), 1, 65535, 'gitlab port');
+        $this->parameters['port'] = $port;
+
+        $this->baseUri = sprintf('https://%s:%s', $this->parameters['host'], $port);
+        $this->token = $this->getToken($params, 'CINCH_GITLAB_TOKEN');
+        $this->basePath = sprintf('/api/v4/projects/%s/repository',
+            $this->parameters['project_id'] = (int) Assert::thatKey($params, 'project_id', 'gitlab project_id')->digit()->value());
+    }
+
+    private function setAzureParameters(array $params): void
+    {
+        $this->baseUri = 'https://dev.azure.com';
+        $this->token = $this->getToken($params, 'CINCH_AZURE_TOKEN');
+        $this->basePath = sprintf('/%s/%s/_apis/git/repositories/%s',
+            rawurlencode($this->parameters['org'] = Assert::thatKey($params, 'org', 'azure org')->notEmpty()->value()),
+            rawurlencode($this->parameters['project'] = Assert::thatKey($params, 'project', 'azure project')->notEmpty()->value()),
+            rawurlencode($this->parameters['repo'] = Assert::thatKey($params, 'repo', 'azure repo')->notEmpty()->value()));
+    }
+
+    private function getToken(array $params, string $envName): string
+    {
+        return $params['token'] ?? Assert::notEmpty(getenv($envName) ?: '', "$this->driver token");
     }
 }
