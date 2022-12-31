@@ -51,6 +51,11 @@ function snakecase(string $camel): string
     return strtolower(preg_replace('~(?<!^)[A-Z]~', '_$0', $camel));
 }
 
+function camelcase(string $input, string $delimiter = '_'): string
+{
+    return lcfirst(str_replace(' ', '', ucwords(str_replace($delimiter, ' ', $input))));
+}
+
 function nanosleep(int $nanoseconds): bool
 {
     $seconds = floor($nanoseconds / 1e9);
