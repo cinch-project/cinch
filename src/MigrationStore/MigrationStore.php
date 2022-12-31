@@ -134,13 +134,13 @@ class MigrationStore
         if (!($directories = $this->getDirectories()))
             return;
 
+        $this->populatedDirectories = true;
         $flags = $this->followLinks ? self::FOLLOW_LINKS : 0;
+
         if (!($files = $this->adapter->getFiles($flags))) {
             $this->logger->warning("migration store does not contain any migration scripts");
             return;
         }
-
-        $this->populatedDirectories = true;
 
         /* Since we have an unsorted list of all files, we need to match them to a directory. This finds the
          * deepest matching base-dir: /a/b/c.php should be added to /a/b rather than /a (see getDirectoryFor).
@@ -205,10 +205,10 @@ class MigrationStore
             );
         }
 
-        if (!$directories)
-            $this->logger->warning(self::CONFIG_FILE . " has no directories configured");
-        else
+        if ($directories)
             $this->logger->debug(self::CONFIG_FILE . ': found ' . count($directories) . ' directories');
+        else
+            $this->logger->warning(self::CONFIG_FILE . " has no directories configured");
 
         return $this->directories = $directories;
     }
@@ -222,8 +222,7 @@ class MigrationStore
     private function parseSortPolicy(object $dir, string $docPath): SortPolicy
     {
         $default = SortPolicy::NATURAL->value;
-        $sort = Assert::ifPropSet($dir, 'sort', $default, $docPath)->string()->value();
-        return SortPolicy::from($sort);
+        return SortPolicy::from(Assert::ifPropSet($dir, 'sort', $default, $docPath)->string()->value());
     }
 
     private function parseFlags(object $dir, string $docPath): int
