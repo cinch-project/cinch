@@ -3,12 +3,11 @@
 namespace Cinch\MigrationStore;
 
 use Cinch\Common\StorePath;
-use Cinch\Component\Assert\AssertException;
+use Cinch\Component\Assert\Assert;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use Exception;
 
-/** migration store directory object
- */
+/** migration store directory object */
 class Directory
 {
     /** recursively search directory - yaml 'recursive: true' */
@@ -36,8 +35,9 @@ class Directory
         private readonly SortPolicy $sortPolicy,
         private readonly int $flags)
     {
-        $this->assertExclude();
         $this->depth = substr_count($this->path, '/');
+        foreach ($this->exclude as $i => $expr)
+            Assert::that($expr, "directory.exclude[$i]")->string()->notEmpty()->regex('');
     }
 
     public function getPath(): string
@@ -116,16 +116,6 @@ class Directory
     {
         $file = $this->adapter->getFile($path->value);
         return new Migration($file, $this->scriptLoader, $this->variables, $this->flags);
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function assertExclude(): void
-    {
-        foreach ($this->exclude as $i => $e)
-            if (!is_string($e))
-                throw new AssertException("directory.exclude[$i] is not a string, found " . get_debug_type($e));
     }
 }
 
