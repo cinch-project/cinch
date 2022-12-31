@@ -36,18 +36,18 @@ class SqlScript extends Script
     /**
      * @throws Exception
      */
-    public function migrate(Session $session): void
+    public function migrate(Session $target): void
     {
         if ($this->migrate)
-            $session->executeStatement($this->migrate);
+            $target->executeStatement($this->migrate);
     }
 
     /**
      * @throws Exception
      */
-    public function rollback(Session $session): void
+    public function rollback(Session $target): void
     {
         if ($this->rollback)
-            $session->executeStatement($this->rollback);
+            $target->executeStatement($this->rollback);
     }
 }
