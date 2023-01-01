@@ -84,11 +84,12 @@ class StoreDsn extends Dsn
     private function setGitlabParameters(array $params): void
     {
         $this->parameters['host'] = Assert::ifKey($params, 'host', 'gitlab.com', 'gitlab host')->hostOrIp()->value();
-        $this->parameters['port'] = (int) Assert::ifKey($params, 'port', 443, 'gitlab port')->digit()->between(1, 65535)->value();
+        $this->parameters['port'] = (int) Assert::ifKey($params, 'port', 443, 'gitlab port')->between(1, 65535)->value();
         $this->baseUri = sprintf('https://%s:%s', $this->parameters['host'], $this->parameters['port']);
         $this->token = $this->getToken($params, 'CINCH_GITLAB_TOKEN');
-        $this->basePath = sprintf('/api/v4/projects/%s/repository',
-            $this->parameters['project_id'] = (int) Assert::thatKey($params, 'project_id', 'gitlab project_id')->digit()->value());
+
+        $this->parameters['project_id'] = (int) Assert::thatKey($params, 'project_id', 'gitlab project_id')->greaterThan(0)->value();
+        $this->basePath = sprintf('/api/v4/projects/%d/repository', $this->parameters['project_id']);
     }
 
     private function setAzureParameters(array $params): void
