@@ -56,7 +56,7 @@ class MigrationNode
                 $b = mb_convert_case($b->name, MB_CASE_FOLD, 'UTF-8');
             }
 
-            return $strcmp($a, $b);
+            return $strcmp($a->name, $b->name);
         });
 
         /* sort grandchildren */
