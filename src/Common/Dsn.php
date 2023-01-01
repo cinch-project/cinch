@@ -6,6 +6,7 @@ use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use ReflectionObject;
 use ReflectionProperty;
+use Stringable;
 
 abstract class Dsn
 {
@@ -26,18 +27,22 @@ abstract class Dsn
      */
     protected array $hidden = [];
 
+    /**
+     * @param string|array|object $dsn string key/value format, assoc array or object. In all cases, the keys are
+     * expected to be in snake_case.
+     */
     public function __construct(string|array|object $dsn)
     {
-        if (is_object($dsn))
-            $dsn = arrayify($dsn);
-        else if (is_string($dsn))
-            $dsn = $this->parseParameters($dsn);
-        $this->setParameters($dsn);
+        $this->setParameters(match (gettype($dsn)) {
+            'string' => $this->parseParameters($dsn),
+            'object' => arrayify($dsn),
+            'array' => $dsn
+        });
     }
 
     protected function setParameters(array $params): void
     {
-        $this->driver = Assert::thatKey($params, 'driver', 'driver')->regex('~^[a-z\-]{1,16}$~')->value();
+        $this->driver = Assert::thatKey($params, 'driver', 'dsn driver')->regex('~^[a-z\-]{1,32}$~')->value();
         $this->connectTimeout = Assert::ifKey($params, 'connect_timeout', self::DEFAULT_CONNECT_TIMEOUT, "$this->driver connect_timeout")->int()->greaterThan(0)->value();
         $this->timeout = Assert::ifKey($params, 'timeout', self::DEFAULT_TIMEOUT, "$this->driver timeout")->int()->greaterThan(0)->value();
         $this->sslca = isset($params['sslca']) ? Assert::file($params['sslca'], "$this->driver sslca") : null;
@@ -51,27 +56,24 @@ abstract class Dsn
     }
 
     /** Gets a string representation of dsn.
-     * @param bool $secure generate a secure version, which means hidden values are set to '****'.
+     * @param bool $secure generate a secure version, which means hidden values are set to '****': like passwords,
+     * tokens, secrets, etc.
      * @return string
      */
     public function toString(bool $secure = true): string
     {
         $dsn = '';
 
-        foreach ($this->getParameters() as $name => $value) {
-            /* hide actual value when in secure mode */
-            if ($secure && in_array($name, $this->hidden))
-                $value = '****';
-            /* if a string has a space or tab, quote the value */
-            else if (is_string($value) && strcspn($value, " \t") != strlen($value))
-                $value = "'" . str_replace(["\\", "'"], ["\\\\", "\'"], $value) . "'";
-
-            $dsn .= "$name=$value ";
-        }
+        foreach ($this->getParameters() as $k => $v)
+            $dsn .= "$k=" . ($secure && in_array($k, $this->hidden) ? '****' : $this->escapeParameterValue($v)) . ' ';
 
         return substr($dsn, 0, -1);
     }
 
+    /** Gets the "secure" string representation.
+     * @return string
+     * @see toString
+     */
     public function __toString(): string
     {
         return $this->toString();
@@ -100,11 +102,26 @@ abstract class Dsn
             throw new AssertException("DSN '$dsn' does not match $pattern");
 
         $params = [];
-        $unescape = static fn($v) => $v[0] == "'" ? str_replace(["\\\\", "\\'"], ['\\', "'"], substr($v, 1, -1)) : $v;
 
         foreach ($matches as $m)
-            $params[$m[1]] = $unescape($m[2]);
+            $params[$m[1]] = $this->unescapeParameterValue($m[2]);
 
         return $params;
+    }
+
+    private function escapeParameterValue(mixed $v): string
+    {
+        if ($v instanceof Stringable)
+            $v = (string) $v;
+
+        if (is_string($v) && strcspn($v, " \t") != strlen($v))
+            $v = sprintf("'%s'", str_replace(["\\", "'"], ["\\\\", "\'"], $v));
+
+        return $v;
+    }
+
+    private function unescapeParameterValue(string $v): string
+    {
+        return $v[0] == "'" ? str_replace(["\\\\", "\\'"], ['\\', "'"], substr($v, 1, -1)) : $v;
     }
 }
