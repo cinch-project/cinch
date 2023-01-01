@@ -8,6 +8,8 @@ use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
 use Cinch\MigrationStore\LocalFile;
 use Exception;
+use RuntimeException;
+use Throwable;
 use Twig\Environment as Twig;
 
 class ScriptLoader
@@ -57,12 +59,24 @@ class ScriptLoader
 
     private function requireFile(LocalFile $file): Script
     {
-        return $this->assertScript(require $file->getAbsolutePath(), $file->getPath());
+        try {
+            return $this->assertScript(require $file->getAbsolutePath(), $file->getPath());
+        }
+        catch (Throwable $e) {
+            throw new RuntimeException(sprintf('require(%s) failed - %s in %s:%d', $file->getPath(),
+                $e->getMessage(), $e->getFile(), $e->getLine()));
+        }
     }
 
     private function evalFile(StorePath $path, string $contents): Script
     {
-        return $this->assertScript(eval('?>' . $contents), $path);
+        try {
+            return $this->assertScript(eval('?>' . $contents), $path);
+        }
+        catch (Throwable $e) {
+            throw new RuntimeException(sprintf('eval(%s) failed - %s in %s:%d', $path,
+                $e->getMessage(), $e->getFile(), $e->getLine()));
+        }
     }
 
     private function assertScript(mixed $script, StorePath $path): Script
