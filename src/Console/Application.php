@@ -156,7 +156,7 @@ class Application extends BaseApplication
         $input = $event->getInput();
         $workingDir = $input->getOption('working-dir') ?? getcwd();
         $workingDir = Assert::directory(Path::makeAbsolute($workingDir, getcwd()), 'working-dir');
-        $projectDir = Path::join($workingDir, new ProjectName($input->getArgument('project')));
+        $projectDir = Path::join($workingDir, new ProjectName($input->getArgument('project') ?? ''));
         $container = $this->compileContainer($projectDir);
 
         $command->setLogger($this->logger);
