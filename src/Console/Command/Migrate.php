@@ -21,7 +21,7 @@ class Migrate extends Command
     {
         $this->executeCommand(new \Cinch\Command\Migrate(
             $this->projectId,
-            new DeploymentTag($input->getArgument('tag')),
+            new DeploymentTag($input->getOption('tag')),
             new Author($input->getOption('deployer') ?: system_user()),
             new MigrateOptions(),
             $this->envName
