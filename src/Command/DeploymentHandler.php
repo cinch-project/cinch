@@ -26,7 +26,6 @@ abstract class DeploymentHandler extends Handler
     protected History $history;
     private Session $target;
     private Deployment $deployment;
-    private DeploymentCommand $command;
     private readonly bool $isSingleTransactionMode;
 
     public function __construct(
@@ -35,8 +34,6 @@ abstract class DeploymentHandler extends Handler
         private readonly HistoryFactory $historyFactory,
         private readonly ProjectRepository $projectRepository)
     {
-        $command = substr(classname(static::class), 0, -strlen('Handler'));
-        $this->command = DeploymentCommand::from(strtolower($command));
     }
 
     /** Called by deploy() after opening a deployment. */
@@ -58,10 +55,10 @@ abstract class DeploymentHandler extends Handler
     /**
      * @throws Exception
      */
-    protected function deploy(DeploymentTag $tag, Author $deployer): void
+    protected function deploy(DeploymentCommand $command, DeploymentTag $tag, Author $deployer): void
     {
         $error = null;
-        $this->deployment = $this->history->openDeployment($this->command, $tag, $deployer, $this->isSingleTransactionMode);
+        $this->deployment = $this->history->openDeployment($command, $tag, $deployer, $this->isSingleTransactionMode);
 
         if ($this->isSingleTransactionMode)
             $this->target->beginTransaction();

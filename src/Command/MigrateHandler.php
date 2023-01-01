@@ -5,6 +5,7 @@ namespace Cinch\Command;
 use Cinch\Common\MigratePolicy;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
+use Cinch\History\DeploymentCommand;
 use Cinch\MigrationStore\Migration;
 use Exception;
 
@@ -19,7 +20,7 @@ class MigrateHandler extends DeploymentHandler
     {
         $this->migrateOptions = $c->options;
         $this->prepare($c->projectId, $c->envName);
-        $this->deploy($c->tag, $c->deployer);
+        $this->deploy(DeploymentCommand::MIGRATE, $c->tag, $c->deployer);
     }
 
     /**
@@ -51,13 +52,12 @@ class MigrateHandler extends DeploymentHandler
             if (!($status = $this->getStatus($migration, $change)))
                 continue;
 
-            $task = $this->createDeployTask($migration, $status);
-
             /* in most cases: getScript() must actually load the script, which could be a remote API call. However,
              * at this point it is "known" that this script should be deployed. This avoids wasting API calls on
              * scripts that will ultimately be skipped.
              */
             $migratePolicy = $migration->getScript()->getMigratePolicy();
+            $task = $this->createDeployTask($migration, $status);
 
             if ($migratePolicy->isBefore()) {
                 $beforeTasks[] = $task;

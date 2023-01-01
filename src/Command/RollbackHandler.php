@@ -5,6 +5,7 @@ namespace Cinch\Command;
 use Cinch\Common\MigratePolicy;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
+use Cinch\History\DeploymentCommand;
 use Exception;
 
 class RollbackHandler extends DeploymentHandler
@@ -36,7 +37,7 @@ class RollbackHandler extends DeploymentHandler
             return;
         }
 
-        $this->deploy($c->tag, $c->deployer);
+        $this->deploy(DeploymentCommand::ROLLBACK, $c->tag, $c->deployer);
     }
 
     /**
