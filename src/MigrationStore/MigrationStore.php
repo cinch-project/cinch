@@ -185,7 +185,7 @@ class MigrationStore
         $contents = $this->adapter->getContents(self::CONFIG_FILE);
         $store = Yaml::parse($contents, self::PARSE_FLAGS);
         $variables = $this->parseVariables($store, 'store.variables'); // top-level (global) variables
-        $this->followLinks = Assert::ifPropSet($store, 'follow_links', false, "store.follow_links")
+        $this->followLinks = Assert::ifProp($store, 'follow_links', false, "store.follow_links")
             ->bool()->value();
 
         $directories = [];
@@ -222,20 +222,20 @@ class MigrationStore
     private function parseSortPolicy(object $dir, string $docPath): SortPolicy
     {
         $default = SortPolicy::NATURAL->value;
-        return SortPolicy::from(Assert::ifPropSet($dir, 'sort', $default, $docPath)->string()->value());
+        return SortPolicy::from(Assert::ifProp($dir, 'sort', $default, $docPath)->string()->value());
     }
 
     private function parseFlags(object $dir, string $docPath): int
     {
         $flags = 0;
 
-        if (Assert::ifPropSet($dir, 'recursive', false, "$docPath.recursive")->bool()->value())
+        if (Assert::ifProp($dir, 'recursive', false, "$docPath.recursive")->bool()->value())
             $flags |= Directory::RECURSIVE;
 
-        if (Assert::ifPropSet($dir, 'error_if_empty', false, "$docPath.error_if_empty")->bool()->value())
+        if (Assert::ifProp($dir, 'error_if_empty', false, "$docPath.error_if_empty")->bool()->value())
             $flags |= Directory::ERROR_IF_EMPTY;
 
-        if (Assert::ifPropSet($dir, 'environment', false, "$docPath.environment")->bool()->value())
+        if (Assert::ifProp($dir, 'environment', false, "$docPath.environment")->bool()->value())
             $flags |= Directory::ENVIRONMENT;
 
         return $flags;
