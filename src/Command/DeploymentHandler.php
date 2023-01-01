@@ -36,9 +36,6 @@ abstract class DeploymentHandler extends Handler
     {
     }
 
-    /** Called by deploy() after opening a deployment. */
-    protected abstract function runMigrations(): void;
-
     /**
      * @throws Exception
      */
@@ -64,7 +61,7 @@ abstract class DeploymentHandler extends Handler
             $this->target->beginTransaction();
 
         try {
-            $this->runMigrations();
+            $this->runTasks();
             if ($this->isSingleTransactionMode)
                 $this->target->commit();
         }

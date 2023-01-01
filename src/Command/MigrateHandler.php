@@ -11,41 +11,32 @@ use Exception;
 
 class MigrateHandler extends DeploymentHandler
 {
-    private MigrateOptions $migrateOptions;
-
     /**
      * @throws Exception
      */
     public function handle(Migrate $c): void
     {
-        $this->migrateOptions = $c->options;
         $this->prepare($c->projectId, $c->envName);
-        $this->deploy(DeploymentCommand::MIGRATE, $c->tag, $c->deployer);
-    }
 
-    /**
-     * @throws Exception
-     */
-    protected function runMigrations(): void
-    {
         $changes = [];
-        $paths = $this->migrateOptions->getPaths() ?? [];
+        $paths = $c->options->getPaths() ?? [];
 
-        /* convert indexed array to assoc. with path keys */
-        foreach ($this->history->getChangeView()->getMostRecentChanges($paths) as $c)
-            $changes[mb_strtolower($c->path, 'UTF-8')] = $c;
+        foreach ($this->history->getChangeView()->getMostRecentChanges($paths) as $change)
+            $changes[mb_strtolower($change->path, 'UTF-8')] = $change;
 
         $beforeTasks = [];
         $onceTasks = [];
         $afterTasks = [];
-        $count = $this->migrateOptions->getCount();
+        $count = $c->options->getCount();
 
-        if ($paths)
+        if (!$changes)
+            $migrations = [];
+        else if ($paths)
             $migrations = array_map(fn($p) => $this->migrationStore->get($p), $paths);
         else
             $migrations = $this->migrationStore->all();
 
-        /* find eligible migrations (still filtering). also put them in the before/after order */
+        /* find eligible migrations (still filtering). also put them in before/after order */
         foreach ($migrations as $migration) {
             $change = $changes[mb_strtolower($migration->getPath(), 'UTF-8')] ?? null;
 
@@ -72,9 +63,6 @@ class MigrateHandler extends DeploymentHandler
             }
         }
 
-        $this->logger->notice(sprintf("found %d before, %d new, %d after eligible migrations out of %d",
-            count($beforeTasks), count($onceTasks), count($afterTasks), count($migrations)));
-
         foreach ($beforeTasks as $task)
             $this->addTask($task);
 
@@ -84,8 +72,16 @@ class MigrateHandler extends DeploymentHandler
         foreach ($afterTasks as $task)
             $this->addTask($task);
 
+        if ($this->getTaskCount() == 0) {
+            $this->logger->warning("no migrations to migrate");
+            return;
+        }
+
+        $this->logger->notice(sprintf("found %d before, %d new, %d after eligible migrations out of %d",
+            count($beforeTasks), count($onceTasks), count($afterTasks), count($migrations)));
+
         unset($migrations, $beforeTasks, $onceTasks, $afterTasks, $changes);
-        $this->runTasks();
+        $this->deploy(DeploymentCommand::MIGRATE, $c->tag, $c->deployer);
     }
 
     /**
@@ -120,7 +116,7 @@ class MigrateHandler extends DeploymentHandler
             return null;
         }
 
-        /* migrate policy must be always-* or onchange-*, this must be a remigrate */
+        /* migrate policy must be always-* or onchange-*, this a remigrate */
         return ChangeStatus::REMIGRATED;
     }
 }
