@@ -125,6 +125,27 @@ class ChangeView
     }
 
     /**
+     * @return string|null
+     * @throws Exception
+     */
+    public function findFirstRollbackToTag(): string|null
+    {
+        $change = $this->schema->table('change');
+        $deployment = $this->schema->table('deployment');
+
+        $params = [DeploymentCommand::MIGRATE->value, MigratePolicy::ONCE->value, ChangeStatus::MIGRATED->value];
+
+        /* select the last two migrate deployments that have at least one change */
+        $rows = $this->session->executeQuery("
+            select c.tag from $deployment d left join $change c on d.tag = c.tag 
+                where d.command = ? and c.migrate_policy = ? and c.status = ?
+                group by c.tag, d.ended_at having count(c.tag) > 0 order by d.ended_at desc limit 2", $params
+        )->fetchAllNumeric();
+
+        return count($rows) == 2 ? $rows[1][0] : null;
+    }
+
+    /**
      * @return Change[]
      * @throws Exception
      */
@@ -157,13 +178,6 @@ class ChangeView
         if (!$values)
             return '';
 
-        $placeholders = '';
-
-        foreach ($values as $v) {
-            $params[] = $v->value; // string backed enum or Cinch\Common\SingleValue
-            $placeholders .= ($placeholders ? ',?' : '?');
-        }
-
         $column = $alias ? "$alias." : '';
 
         if ($values[0] instanceof MigratePolicy)
@@ -173,6 +187,18 @@ class ChangeView
         else
             $column .= 'path';
 
-        return sprintf('%s %s in (%s) ', $prefix, $column, $placeholders);
+        if (count($values) == 1) {
+            $params[] = $values[0]->value;
+            return sprintf(' %s %s = ? ', $prefix, $column);
+        }
+
+        $placeholders = '';
+
+        foreach ($values as $v) {
+            $params[] = $v->value; // string backed enum or inherits from Cinch\Common\SingleValue
+            $placeholders .= ($placeholders ? ',?' : '?');
+        }
+
+        return sprintf(' %s %s in (%s) ', $prefix, $column, $placeholders);
     }
 }

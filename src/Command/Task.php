@@ -27,10 +27,10 @@ abstract class Task
             throw new RuntimeException(sprintf('%s must define %s',
                 static::class, TaskAttribute::class));
 
-        $asTask = $attrs[0]->newInstance();
-        $this->setName($asTask->name);
-        $this->setDescription($asTask->description);
-        $this->canUndo = $asTask->canUndo;
+        $attr = $attrs[0]->newInstance();
+        $this->setName($attr->name);
+        $this->setDescription($attr->description);
+        $this->canUndo = $attr->canUndo;
     }
 
     /**

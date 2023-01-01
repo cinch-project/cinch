@@ -12,9 +12,9 @@ class RollbackBy
     const TAG = 'tag';
     const DATE = 'date';
     const COUNT = 'count';
-    const PATHS = 'paths';
+    const SCRIPT = 'script';
 
-    public static function tag(DeploymentTag $tag): self
+    public static function tag(DeploymentTag|null $tag): self
     {
         return new self(self::TAG, $tag);
     }
@@ -29,17 +29,25 @@ class RollbackBy
         return new self(self::COUNT, Assert::greaterThan($count, 0, 'rollback-by-count'));
     }
 
-    public static function paths(array $paths): self
+    /**
+     * @param StorePath[] $paths
+     * @return static
+     */
+    public static function script(array $paths): self
     {
-        Assert::notEmpty($paths, 'rollback-by-path');
+        Assert::notEmpty($paths, 'rollback-by-script');
         foreach ($paths as $i => $p)
-            Assert::class($p, StorePath::class, "rollback-by-path[$i]");
-        return new self(self::PATHS, $paths);
+            Assert::class($p, StorePath::class, "rollback-by-script[$i]");
+        return new self(self::SCRIPT, $paths);
     }
 
+    /**
+     * @param string $type
+     * @param int|DeploymentTag|DateTimeInterface|array|null $value only TAG supports a null value
+     */
     private function __construct(
         public readonly string $type,
-        public readonly int|DeploymentTag|DateTimeInterface|array $value)
+        public readonly int|DeploymentTag|DateTimeInterface|array|null $value)
     {
     }
 }

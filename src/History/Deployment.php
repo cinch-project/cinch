@@ -48,9 +48,7 @@ class Deployment
         $this->schema->lock();
 
         try {
-            $table = $this->schema->table('deployment');
-
-            $this->session->insert($table, [
+            $this->session->insert($this->schema->table('deployment'), [
                 'tag' => $this->tag->value,
                 'deployer' => $deployer->value,
                 'command' => $command->value,
