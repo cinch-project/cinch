@@ -39,7 +39,8 @@ abstract class DeploymentHandler extends Handler
     /**
      * @throws Exception
      */
-    protected function prepare(ProjectId $projectId, string $envName): void
+    protected function prepare(ProjectId $projectId, string $envName, DeploymentCommand $command,
+        DeploymentTag $tag, Author $deployer): void
     {
         $project = $this->projectRepository->get($projectId);
         $environment = $project->getEnvironmentMap()->get($envName);
@@ -47,15 +48,16 @@ abstract class DeploymentHandler extends Handler
         $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
         $this->history = $this->historyFactory->create($environment);
         $this->isSingleTransactionMode = $project->isSingleTransactionMode();
+        $this->deployment = $this->history->createDeployment($command, $tag, $deployer, $this->isSingleTransactionMode);
     }
 
     /**
      * @throws Exception
      */
-    protected function deploy(DeploymentCommand $command, DeploymentTag $tag, Author $deployer): void
+    protected function deploy(): void
     {
         $error = null;
-        $this->deployment = $this->history->openDeployment($command, $tag, $deployer, $this->isSingleTransactionMode);
+        $this->deployment->open();
 
         if ($this->isSingleTransactionMode)
             $this->target->beginTransaction();

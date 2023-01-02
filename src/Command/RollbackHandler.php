@@ -15,7 +15,7 @@ class RollbackHandler extends DeploymentHandler
      */
     public function handle(Rollback $c): void
     {
-        $this->prepare($c->projectId, $c->envName);
+        $this->prepare($c->projectId, $c->envName, DeploymentCommand::ROLLBACK, $c->tag, $c->deployer);
         $changes = $this->getChanges($c->rollbackBy);
 
         foreach ($changes as $change) {
@@ -36,7 +36,7 @@ class RollbackHandler extends DeploymentHandler
         $this->logger->notice(sprintf('found %d changes for rollback out of %d', $this->getTaskCount(), count($changes)));
 
         unset($changes);
-        $this->deploy(DeploymentCommand::ROLLBACK, $c->tag, $c->deployer);
+        $this->deploy();
     }
 
     /**
