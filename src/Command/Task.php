@@ -8,8 +8,6 @@ use Cinch\Component\Assert\Assert;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
-use ReflectionObject;
-use RuntimeException;
 
 abstract class Task
 {
@@ -17,33 +15,14 @@ abstract class Task
     private readonly EventDispatcherInterface $dispatcher;
     private bool $success = false;
     private int $id = 0;
-    private string $name;
-    private string $description;
-    private readonly bool $canUndo;
 
-    public function __construct()
+    public function __construct(
+        private readonly string $name,
+        private readonly string $description,
+        private readonly bool $canUndo = false)
     {
-        if (!($attrs = (new ReflectionObject($this))->getAttributes(TaskAttribute::class)))
-            throw new RuntimeException(sprintf('%s must define %s',
-                static::class, TaskAttribute::class));
-
-        $attr = $attrs[0]->newInstance();
-        $this->setName($attr->name);
-        $this->setDescription($attr->description);
-        $this->canUndo = $attr->canUndo;
-    }
-
-    /**
-     * @param string $name
-     */
-    protected function setName(string $name): void
-    {
-        $this->name = Assert::notEmpty($name, 'task name');
-    }
-
-    protected function setDescription(string $description): void
-    {
-        $this->description = Assert::notEmpty($description, 'task description');
+        Assert::notEmpty($name, 'task name');
+        Assert::notEmpty($description, 'task description');
     }
 
     public function setId(int $id): void

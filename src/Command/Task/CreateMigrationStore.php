@@ -3,13 +3,10 @@
 namespace Cinch\Command\Task;
 
 use Cinch\Command\Task;
-use Cinch\Command\TaskAttribute;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\MigrationStore\StoreDsn;
 
-#[TaskAttribute('create migration store',
-    "opening store and creating the default '" . MigrationStore::CONFIG_FILE . "' file", canUndo: true)]
 class CreateMigrationStore extends Task
 {
     private bool $shouldDelete;
@@ -19,7 +16,8 @@ class CreateMigrationStore extends Task
         private readonly StoreDsn $dsn,
         private readonly MigrationStoreFactory $migrationStoreFactory)
     {
-        parent::__construct();
+        $file = MigrationStore::CONFIG_FILE;
+        parent::__construct('create migration store', "opening store and creating default '$file' file", canUndo: true);
     }
 
     /**

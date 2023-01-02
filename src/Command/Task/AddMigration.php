@@ -4,13 +4,11 @@ namespace Cinch\Command\Task;
 
 use Cinch\Command\AddMigration as AddMigrationCommand;
 use Cinch\Command\Task;
-use Cinch\Command\TaskAttribute;
 use Cinch\Common\StorePath;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\MigrationStore\StoreDsn;
 
-#[TaskAttribute('add migration script', 'adding a migration script using a template', canUndo: true)]
 class AddMigration extends Task
 {
     private readonly StorePath $path;
@@ -21,7 +19,7 @@ class AddMigration extends Task
         private readonly AddMigrationCommand $command,
         private readonly MigrationStoreFactory $migrationStoreFactory)
     {
-        parent::__construct();
+        parent::__construct('add migration script', 'adding migration script from template', canUndo: true);
     }
 
     /**

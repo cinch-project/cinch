@@ -3,18 +3,16 @@
 namespace Cinch\Command\Task;
 
 use Cinch\Command\Task;
-use Cinch\Command\TaskAttribute;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 
-#[TaskAttribute('create project', 'creating project directory and saving configuration', canUndo: true)]
 class AddProject extends Task
 {
     public function __construct(
         private readonly Project $project,
         private readonly ProjectRepository $projectRepository)
     {
-        parent::__construct();
+        parent::__construct('create project', 'creating project directory and saving configuration', canUndo: true);
     }
 
     protected function doRun(): void

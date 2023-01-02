@@ -3,12 +3,10 @@
 namespace Cinch\Command\Task;
 
 use Cinch\Command\Task;
-use Cinch\Command\TaskAttribute;
 use Cinch\Common\Environment;
 use Cinch\Project\Project;
 use Exception;
 
-#[TaskAttribute('remove environment', 'removing environment from the project configuration', canUndo: true)]
 class RemoveEnvironment extends Task
 {
     private readonly Environment $env;
@@ -21,7 +19,7 @@ class RemoveEnvironment extends Task
         private readonly string $envName)
     {
         $this->env = $this->project->getEnvironmentMap()->get($this->envName);
-        parent::__construct();
+        parent::__construct('remove environment', 'removing environment from the project configuration', canUndo: true);
     }
 
     protected function doRun(): void

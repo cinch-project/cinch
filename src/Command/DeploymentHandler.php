@@ -2,7 +2,7 @@
 
 namespace Cinch\Command;
 
-use Cinch\Command\Task\DeployTask;
+use Cinch\Command\Task\Deploy;
 use Cinch\Common\Author;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
@@ -86,8 +86,8 @@ abstract class DeploymentHandler extends Handler
     /**
      * @throws Exception
      */
-    protected function createDeployTask(Migration $migration, ChangeStatus $status): DeployTask
+    protected function createDeployTask(Migration $migration, ChangeStatus $status): Deploy
     {
-        return new DeployTask($migration, $status, $this->target, $this->deployment);
+        return new Deploy($migration, $status, $this->target, $this->deployment);
     }
 }

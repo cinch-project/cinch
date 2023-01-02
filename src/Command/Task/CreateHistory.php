@@ -3,19 +3,17 @@
 namespace Cinch\Command\Task;
 
 use Cinch\Command\Task;
-use Cinch\Command\TaskAttribute;
 use Cinch\Common\Environment;
 use Cinch\History\History;
 use Cinch\History\HistoryFactory;
 
-#[TaskAttribute('create history', 'connecting to history and creating cinch schema', canUndo: true)]
 class CreateHistory extends Task
 {
     private History $history;
 
     public function __construct(private readonly Environment $env, private readonly HistoryFactory $historyFactory)
     {
-        parent::__construct();
+        parent::__construct('create history', 'connecting to history and creating cinch schema', canUndo: true);
     }
 
     /**

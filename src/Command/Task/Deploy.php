@@ -3,7 +3,6 @@
 namespace Cinch\Command\Task;
 
 use Cinch\Command\Task;
-use Cinch\Command\TaskAttribute;
 use Cinch\Database\Session;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
@@ -14,8 +13,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 
-#[TaskAttribute('this is', 'not used')]
-class DeployTask extends Task
+class Deploy extends Task
 {
     /**
      * @throws Exception
@@ -26,15 +24,12 @@ class DeployTask extends Task
         private readonly Session $target,
         private readonly Deployment $deployment)
     {
-        parent::__construct();
-
         if ($this->deployment->getCommand() == DeploymentCommand::ROLLBACK)
             $name = 'rolling back script';
         else
             $name = 'migrating script (' . $this->migration->getScript()->getMigratePolicy()->value . ')';
 
-        $this->setName($name);
-        $this->setDescription($this->migration->getPath());
+        parent::__construct($name, $this->migration->getPath()->value);
     }
 
     protected function doRun(): void
