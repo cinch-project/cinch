@@ -39,8 +39,8 @@ abstract class DeploymentHandler extends Handler
     /**
      * @throws Exception
      */
-    protected function prepare(ProjectId $projectId, string $envName, DeploymentCommand $command,
-        DeploymentTag $tag, Author $deployer): void
+    protected function prepare(DeploymentCommand $command, ProjectId $projectId, DeploymentTag $tag,
+        Author $deployer, string $envName): void
     {
         $project = $this->projectRepository->get($projectId);
         $environment = $project->getEnvironmentMap()->get($envName);
@@ -88,6 +88,6 @@ abstract class DeploymentHandler extends Handler
      */
     protected function createDeployTask(Migration $migration, ChangeStatus $status): DeployTask
     {
-        return new DeployTask($migration, $status, $this->target, $this->deployment, $this->isSingleTransactionMode);
+        return new DeployTask($migration, $status, $this->target, $this->deployment);
     }
 }

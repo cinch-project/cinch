@@ -16,7 +16,7 @@ class MigrateHandler extends DeploymentHandler
      */
     public function handle(Migrate $c): void
     {
-        $this->prepare($c->projectId, $c->envName, DeploymentCommand::MIGRATE, $c->tag, $c->deployer);
+        $this->prepare(DeploymentCommand::MIGRATE, $c->projectId, $c->tag, $c->deployer, $c->envName);
 
         $changes = [];
         $paths = $c->options->getPaths() ?? [];
