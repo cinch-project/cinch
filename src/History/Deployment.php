@@ -19,10 +19,10 @@ class Deployment
      */
     public function __construct(
         Schema $schema,
-        DeploymentCommand $command,
+        private readonly DeploymentCommand $command,
         DeploymentTag $tag,
-        Author $deployer,
-        string $application,
+        private readonly Author $deployer,
+        private readonly string $application,
         private readonly bool $isSingleTransactionMode)
     {
         if (!($schema->state() & Schema::OBJECTS))
@@ -31,8 +31,6 @@ class Deployment
         $this->tag = $tag;
         $this->schema = $schema;
         $this->session = $schema->session();
-
-        $this->open($command, $deployer, $application);
     }
 
     public function getTag(): DeploymentTag|null
@@ -43,16 +41,16 @@ class Deployment
     /**
      * @throws Exception
      */
-    private function open(DeploymentCommand $command, Author $deployer, string $application): void
+    public function open(): void
     {
         $this->schema->lock();
 
         try {
             $this->session->insert($this->schema->table('deployment'), [
                 'tag' => $this->tag->value,
-                'deployer' => $deployer->value,
-                'command' => $command->value,
-                'application' => $application,
+                'deployer' => $this->deployer->value,
+                'command' => $this->command->value,
+                'application' => $this->application,
                 'schema_version' => $this->schema->version()->version,
                 'started_at' => $this->session->getPlatform()->formatDateTime()
             ]);

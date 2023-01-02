@@ -114,6 +114,7 @@ class Application extends BaseApplication
             new Command\MigrationAdd(),
             new Command\MigrationRemove(),
             new Command\Rollback(),
+            new Command\RollbackCount(),
         ];
     }
 

@@ -12,24 +12,22 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('rollback', 'Rollback to previous deployment or optional tag')]
-class Rollback extends Command
+#[AsCommand('rollback:count', 'Rollback a specific number of changes')]
+class RollbackCount extends Command
 {
     /**
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (($tag = $input->getArgument('tag')) !== null)
-            $tag = new DeploymentTag($tag);
-
+        $count = $input->getArgument('count');
         $this->executeCommand(new \Cinch\Command\Rollback(
             $this->projectId,
             new Author($input->getOption('deployer') ?: system_user()),
             new DeploymentTag($input->getOption('tag')),
-            RollbackBy::tag($tag),
+            RollbackBy::count($count),
             $this->envName
-        ), $tag ? "rolling back to '$tag'" : 'rolling back to previous deployment');
+        ), "rolling back $count changes");
 
         return self::SUCCESS;
     }
@@ -38,21 +36,17 @@ class Rollback extends Command
     {
         $this
             ->addProjectArgument()
-            ->addArgument('tag', InputArgument::OPTIONAL, 'Rollback deployments since this tag')
+            ->addArgument('count', InputArgument::REQUIRED, 'Number of migrations to rollback')
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
-When <info><tag></info> is not provided, the latest migrate deployment that has at least one change, is 
-rolled back. When <info><tag></info> is provided, the latest migrate deployments that have at least one
-change, and occurred since tag, are rolled back.
+The <info><count></info> argument only includes changes that can be rolled back: 'once' migrations with 
+a status of 'migrated'. The first <info><count></info> changes (descending) matching this state, will 
+be rolled back. Note: the changes rolled back can belong to more than one deployment.
  
-<code-comment># rollback TO the previous deployment (ie: rollback the latest deployment)</>
-<code>cinch rollback project-name</>
-
-<code-comment># rollback TO deployment. if v1.2.3 is the latest deployment, 
-# nothing is rolled back, since the target database is already at tag v1.2.3.</>
-<code>cinch rollback project-name v1.2.3</>
+<code-comment># rollback 5 changes, also specify a deployment tag</>
+<code>cinch rollback project-name 5 --tag=hello</>
 HELP
             );
     }
