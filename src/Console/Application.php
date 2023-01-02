@@ -110,7 +110,7 @@ class Application extends BaseApplication
             new Command\EnvRemove(),
             new Command\Migrate(),
             new Command\MigrateCount(),
-            new Command\MigratePaths(),
+            new Command\MigrateScript(),
             new Command\MigrationAdd(),
             new Command\MigrationRemove(),
             new Command\Rollback(),

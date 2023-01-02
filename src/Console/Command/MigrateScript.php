@@ -13,8 +13,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate:paths', 'Migrate one or more migration store paths')]
-class MigratePaths extends Command
+#[AsCommand('migrate:script', 'Migrate one or more migration scripts')]
+class MigrateScript extends Command
 {
     /**
      * @throws Exception
@@ -35,7 +35,7 @@ class MigratePaths extends Command
             new Author($input->getOption('deployer') ?: system_user()),
             new MigrateOptions($paths),
             $this->envName
-        ), "Migrating migration store paths: " . implode(', ', $rawPaths));
+        ), "Migrating migration scripts " . implode(', ', $rawPaths));
 
         return self::SUCCESS;
     }
