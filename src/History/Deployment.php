@@ -39,6 +39,22 @@ class Deployment
     }
 
     /**
+     * @return DeploymentCommand
+     */
+    public function getCommand(): DeploymentCommand
+    {
+        return $this->command;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSingleTransactionMode(): bool
+    {
+        return $this->isSingleTransactionMode;
+    }
+
+    /**
      * @throws Exception
      */
     public function open(): void

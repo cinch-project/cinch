@@ -8,16 +8,15 @@ use Cinch\Database\Session;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
 use Cinch\History\Deployment;
+use Cinch\History\DeploymentCommand;
 use Cinch\MigrationStore\Migration;
 use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 
-#[TaskAttribute('deploy', 'performing deployment')]
+#[TaskAttribute('this is', 'not used')]
 class DeployTask extends Task
 {
-    private string $command;
-
     /**
      * @throws Exception
      */
@@ -25,35 +24,37 @@ class DeployTask extends Task
         private readonly Migration $migration,
         private readonly ChangeStatus $status,
         private readonly Session $target,
-        private readonly Deployment $deployment,
-        private readonly bool $isSingleTransactionMode)
+        private readonly Deployment $deployment)
     {
         parent::__construct();
 
-        $this->command = $this->status != ChangeStatus::ROLLBACKED ? 'migrate' : 'rollback';
-        $policy = $this->command == 'migrate' ? $this->migration->getScript()->getMigratePolicy()->value : '';
+        if ($this->deployment->getCommand() == DeploymentCommand::ROLLBACK)
+            $name = 'rolling back script';
+        else
+            $name = 'migrating script (' . $this->migration->getScript()->getMigratePolicy()->value . ')';
 
-        /* special case: override TaskAttribute settings */
-        $this->setName("$this->command $policy"); // ex: 'migrate once, 'migrate always-before', 'rollback', etc.
+        $this->setName($name);
         $this->setDescription($this->migration->getPath());
     }
 
     protected function doRun(): void
     {
         $addedChange = false;
+        $isSingleTransactionMode = $this->deployment->isSingleTransactionMode();
 
         try {
-            if (!$this->isSingleTransactionMode)
+            if (!$isSingleTransactionMode)
                 $this->target->beginTransaction();
 
-            $this->migration->getScript()->{$this->command}($this->target);
+            $command = $this->deployment->getCommand()->value;
+            $this->migration->getScript()->$command($this->target);
             $addedChange = $this->addChange($this->status, $this->migration);
 
-            if (!$this->isSingleTransactionMode)
+            if (!$isSingleTransactionMode)
                 $this->target->commit();
         }
         catch (Exception $e) {
-            if (!$this->isSingleTransactionMode) {
+            if (!$isSingleTransactionMode) {
                 silent_call($this->target->rollBack(...));
                 if ($addedChange)
                     silent_call($this->deployment->removeChange(...), $this->migration->getPath());

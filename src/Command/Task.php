@@ -8,6 +8,7 @@ use Cinch\Component\Assert\Assert;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
+use ReflectionObject;
 use RuntimeException;
 
 abstract class Task
@@ -22,8 +23,7 @@ abstract class Task
 
     public function __construct()
     {
-        $attrs = (new \ReflectionObject($this))->getAttributes(TaskAttribute::class);
-        if (!$attrs)
+        if (!($attrs = (new ReflectionObject($this))->getAttributes(TaskAttribute::class)))
             throw new RuntimeException(sprintf('%s must define %s',
                 static::class, TaskAttribute::class));
 
