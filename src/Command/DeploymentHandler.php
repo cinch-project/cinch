@@ -2,21 +2,16 @@
 
 namespace Cinch\Command;
 
-use Cinch\Command\Task\Deploy;
-use Cinch\Common\Author;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
 use Cinch\History\ChangeStatus;
 use Cinch\History\Deployment;
-use Cinch\History\DeploymentCommand;
 use Cinch\History\DeploymentError;
-use Cinch\History\DeploymentTag;
 use Cinch\History\History;
 use Cinch\History\HistoryFactory;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
-use Cinch\Project\ProjectId;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
@@ -39,16 +34,17 @@ abstract class DeploymentHandler extends Handler
     /**
      * @throws Exception
      */
-    protected function prepare(DeploymentCommand $command, ProjectId $projectId, DeploymentTag $tag,
-        Author $deployer, string $envName): void
+    protected function prepare(Deploy $deploy): void
     {
-        $project = $this->projectRepository->get($projectId);
-        $environment = $project->getEnvironmentMap()->get($envName);
+        $project = $this->projectRepository->get($deploy->projectId);
+        $environment = $project->getEnvironmentMap()->get($deploy->envName);
+
         $this->target = $this->sessionFactory->create($environment->targetDsn);
         $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
         $this->history = $this->historyFactory->create($environment);
         $this->isSingleTransactionMode = $project->isSingleTransactionMode();
-        $this->deployment = $this->history->createDeployment($command, $tag, $deployer, $this->isSingleTransactionMode);
+        $this->deployment = $this->history->createDeployment($deploy->command, $deploy->tag,
+            $deploy->deployer, $deploy->isDryRun, $this->isSingleTransactionMode);
     }
 
     /**
@@ -86,8 +82,8 @@ abstract class DeploymentHandler extends Handler
     /**
      * @throws Exception
      */
-    protected function createDeployTask(Migration $migration, ChangeStatus $status): Deploy
+    protected function createDeployTask(Migration $migration, ChangeStatus $status): Task\Deploy
     {
-        return new Deploy($migration, $status, $this->target, $this->deployment);
+        return new Task\Deploy($migration, $status, $this->target, $this->deployment);
     }
 }

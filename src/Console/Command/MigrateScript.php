@@ -3,10 +3,8 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Command\MigrateOptions;
-use Cinch\Common\Author;
 use Cinch\Common\StorePath;
 use Cinch\Console\Command;
-use Cinch\History\DeploymentTag;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -29,14 +27,8 @@ class MigrateScript extends Command
             $rawPaths[] = $p;
         }
 
-        $this->executeCommand(new \Cinch\Command\Migrate(
-            $this->projectId,
-            new DeploymentTag($input->getArgument('tag')),
-            new Author($input->getOption('deployer') ?: system_user()),
-            new MigrateOptions($paths),
-            $this->envName
-        ), "Migrating migration scripts " . implode(', ', $rawPaths));
-
+        $title = 'Migrating migration scripts ' . implode(', ', $rawPaths);
+        $this->executeMigrate($input, new MigrateOptions($paths), $title);
         return self::SUCCESS;
     }
 
@@ -47,12 +39,13 @@ class MigrateScript extends Command
             ->addArgument('paths', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'One or more migration store paths')
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
+            ->addOptionByName('dry-run')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
 The <info><paths></> are deployed in the order they are specified.
 
 <code-comment># deploy 2 migrations in the given order</>
-<code>cinch migrate project-name 2022/create-pricing.php 2022/drop-old-pricing.sql --tag=pricing-2.0</>
+<code>cinch migrate project 2022/create-pricing.php 2022/drop-old-pricing.sql --tag=pricing-2.0</>
 HELP
             );
     }

@@ -195,7 +195,7 @@ EMAIL;
     {
         static::string($string, $message);
 
-        $dt = DateTime::createFromFormat($string, $format);
+        $dt = DateTime::createFromFormat($format, $string);
         if ($dt !== false && $dt->format($format) === $string)
             return $string;
 

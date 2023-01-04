@@ -41,8 +41,11 @@ class Deploy extends Task
             if (!$isSingleTransactionMode)
                 $this->target->beginTransaction();
 
-            $command = $this->deployment->getCommand()->value;
-            $this->migration->getScript()->$command($this->target);
+            if (!$this->deployment->isDryRun()) {
+                $command = $this->deployment->getCommand()->value;
+                $this->migration->getScript()->$command($this->target);
+            }
+
             $addedChange = $this->addChange($this->status, $this->migration);
 
             if (!$isSingleTransactionMode)

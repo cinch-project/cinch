@@ -23,6 +23,7 @@ class Deployment
         DeploymentTag $tag,
         private readonly Author $deployer,
         private readonly string $application,
+        private readonly bool $isDryRun,
         private readonly bool $isSingleTransactionMode)
     {
         if (!($schema->state() & Schema::OBJECTS))
@@ -46,6 +47,11 @@ class Deployment
         return $this->command;
     }
 
+    public function isDryRun(): bool
+    {
+        return $this->isDryRun;
+    }
+
     /**
      * @return bool
      */
@@ -62,14 +68,15 @@ class Deployment
         $this->schema->lock();
 
         try {
-            $this->session->insert($this->schema->table('deployment'), [
-                'tag' => $this->tag->value,
-                'deployer' => $this->deployer->value,
-                'command' => $this->command->value,
-                'application' => $this->application,
-                'schema_version' => $this->schema->version()->version,
-                'started_at' => $this->session->getPlatform()->formatDateTime()
-            ]);
+            if (!$this->isDryRun)
+                $this->session->insert($this->schema->table('deployment'), [
+                    'tag' => $this->tag->value,
+                    'deployer' => $this->deployer->value,
+                    'command' => $this->command->value,
+                    'application' => $this->application,
+                    'schema_version' => $this->schema->version()->version,
+                    'started_at' => $this->session->getPlatform()->formatDateTime()
+                ]);
         }
         catch (Exception $e) {
             $this->clear();
@@ -92,7 +99,9 @@ class Deployment
      */
     public function addChange(Change $change): void
     {
-        /* if NOT isSingleTransactionMode, a single insert handled by autocommit */
+        if ($this->isDryRun)
+            return;
+
         $formatDateTime = $this->session->getPlatform()->formatDateTime(...);
         $this->session->insert($this->schema->table('change'), $change->snapshot($formatDateTime));
     }
@@ -103,10 +112,11 @@ class Deployment
      */
     public function removeChange(StorePath $path): void
     {
-        $this->session->delete($this->schema->table('change'), [
-            'path' => $path->value,
-            'tag' => $this->tag->value
-        ]);
+        if (!$this->isDryRun)
+            $this->session->delete($this->schema->table('change'), [
+                'path' => $path->value,
+                'tag' => $this->tag->value
+            ]);
     }
 
     /**
@@ -139,11 +149,12 @@ class Deployment
         }
 
         try {
-            $this->session->update($this->schema->table('deployment'), [
-                'error' => $error?->message,
-                'error_details' => $error ? json_encode($error, JSON_UNESCAPED_SLASHES) : null,
-                'ended_at' => $this->session->getPlatform()->formatDateTime()
-            ], ['tag' => $this->tag->value]);
+            if (!$this->isDryRun)
+                $this->session->update($this->schema->table('deployment'), [
+                    'error' => $error?->message,
+                    'error_details' => $error ? json_encode($error, JSON_UNESCAPED_SLASHES) : null,
+                    'ended_at' => $this->session->getPlatform()->formatDateTime()
+                ], ['tag' => $this->tag->value]);
         }
         finally {
             $this->clear();

@@ -3,7 +3,6 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Command\RollbackBy;
-use Cinch\Common\Author;
 use Cinch\Console\Command;
 use Cinch\History\DeploymentTag;
 use Exception;
@@ -23,14 +22,8 @@ class Rollback extends Command
         if (($tag = $input->getArgument('tag')) !== null)
             $tag = new DeploymentTag($tag);
 
-        $this->executeCommand(new \Cinch\Command\Rollback(
-            $this->projectId,
-            new Author($input->getOption('deployer') ?: system_user()),
-            new DeploymentTag($input->getOption('tag')),
-            RollbackBy::tag($tag),
-            $this->envName
-        ), $tag ? "rolling back to '$tag'" : 'rolling back to previous deployment');
-
+        $title = $tag ? "rolling back to '$tag'" : 'rolling back to previous deployment';
+        $this->executeRollback($input, RollbackBy::tag($tag), $title);
         return self::SUCCESS;
     }
 
@@ -41,6 +34,7 @@ class Rollback extends Command
             ->addArgument('tag', InputArgument::OPTIONAL, 'Rollback deployments since this tag')
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
+            ->addOptionByName('dry-run')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
 When <info><tag></info> is not provided, the latest migrate deployment that has at least one change, is 
@@ -48,11 +42,11 @@ rolled back. When <info><tag></info> is provided, the latest migrate deployments
 change, and occurred since tag, are rolled back.
  
 <code-comment># rollback TO the previous deployment (ie: rollback the latest deployment)</>
-<code>cinch rollback project-name</>
+<code>cinch rollback project</>
 
 <code-comment># rollback TO deployment. if v1.2.3 is the latest deployment, 
 # nothing is rolled back, since the target database is already at tag v1.2.3.</>
-<code>cinch rollback project-name v1.2.3</>
+<code>cinch rollback project v1.2.3</>
 HELP
             );
     }

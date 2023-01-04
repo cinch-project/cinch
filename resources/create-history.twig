@@ -12,9 +12,9 @@
 {% set release_date_type = 'date not null' %}
 {% set path_pkindex = 'primary key' %}
 {% set requires_fkindex = true %}
+{% set table_options = '' %}
 
 {% if db.name == 'pgsql' %}
-    {% set table_options = '' %}
     {% set collate_ascii = 'collate "C"' %}
     {% set collate_utf8ci = 'collate ' ~ utf8_ci_ai %} {# utf8_ci_ai defined in php #}
     {% set json = 'jsonb' %}
@@ -25,7 +25,7 @@
     {% set legacy = db.name == 'mysql' and db.version == 5.7 %}
     {% set utf8bin = legacy ? 'utf8mb4_bin' : 'utf8mb4_0900_bin' %}
     {% set table_options = 'engine=InnoDB row_format=dynamic charset=utf8mb4 collate=' ~ utf8bin %}
-    {% set requires_fkindex = false %} {# mysql automatically creates index for FK colum #}
+    {% set requires_fkindex = false %} {# mysql automatically creates index for FK column #}
     {% set collate_ascii = 'charset ascii collate ascii_bin' %}
     {% set collate_utf8ci = legacy ? 'collate utf8_unicode_520_ci' : 'collate utf8mb4_0900_ai_ci' %}
     {% set json = 'json' %}
@@ -42,7 +42,6 @@
     {% set bool = 'integer' %}
     {% set datetime = 'text' %} {# stored in ISO 8601 format #}
 {% elseif db.name == 'mssql' %}
-    {% set table_options = '' %}
     {% set length = 'len' %}
     {% set restrict = 'no action' %}
     {# path(512) is 1024 bytes (USC2), mssql PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}

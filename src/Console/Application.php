@@ -92,7 +92,6 @@ class Application extends BaseApplication
         $definition->setOptions([
             new InputOption('working-dir', 'w', InputOption::VALUE_REQUIRED, 'Sets the working directory [default: pwd]'),
             new InputOption('time-zone', 'z', InputOption::VALUE_REQUIRED, 'Sets the time zone for logging and display [default: system]'),
-            new InputOption('dry-run', null, InputOption::VALUE_NONE, 'Performs all actions and logging without executing [default: off]'),
             ...array_filter($default->getOptions(), fn($o) => $o->getName() != 'no-interaction')
         ]);
 
@@ -115,6 +114,8 @@ class Application extends BaseApplication
             new Command\MigrationRemove(),
             new Command\Rollback(),
             new Command\RollbackCount(),
+            new Command\RollbackDate(),
+            new Command\RollbackScript(),
         ];
     }
 

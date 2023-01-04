@@ -2,13 +2,20 @@
 
 namespace Cinch\Console;
 
+use Cinch\Command\Migrate;
+use Cinch\Command\MigrateOptions;
+use Cinch\Command\Rollback;
+use Cinch\Command\RollbackBy;
 use Cinch\Command\Task;
+use Cinch\Common\Author;
 use Cinch\Component\Assert\Assert;
+use Cinch\History\DeploymentTag;
 use Cinch\Project\ProjectId;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
 use Exception;
+use InvalidArgumentException;
 use League\Tactician\CommandBus;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command as BaseCommand;
@@ -28,6 +35,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         'tag' => [null, InputOption::VALUE_REQUIRED, 'Tag assigned to deployment [default: version 7 UUID]'],
         'deployer' => [null, InputOption::VALUE_REQUIRED, 'User or application performing deployment [default: current user]'],
         'migration-store' => ['m', InputOption::VALUE_REQUIRED, 'Migration Store DSN', 'driver=fs store_dir=.'],
+        'dry-run' => [null, InputOption::VALUE_NONE, 'Performs all actions and logging without executing [default: off]'],
     ];
 
     protected readonly ProjectId $projectId;
@@ -132,6 +140,36 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     /**
      * @throws Exception
      */
+    protected function executeMigrate(InputInterface $input, MigrateOptions $options, string $title = ''): void
+    {
+        $this->executeCommand(new Migrate(
+            $this->projectId,
+            new DeploymentTag($input->getOption('tag')),
+            new Author($input->getOption('deployer') ?: system_user()),
+            $options,
+            $input->getOption('dry-run') === true,
+            $this->envName
+        ), $title);
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function executeRollback(InputInterface $input, RollbackBy $rollbackBy, string $title = ''): void
+    {
+        $this->executeCommand(new Rollback(
+            $this->projectId,
+            new DeploymentTag($input->getOption('tag')),
+            new Author($input->getOption('deployer') ?: system_user()),
+            $rollbackBy,
+            $input->getOption('dry-run') === true,
+            $this->envName
+        ), $title);
+    }
+
+    /**
+     * @throws Exception
+     */
     protected function executeCommand(object $command, string $title = ''): void
     {
         $success = false;
@@ -181,18 +219,24 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     /**
      * @throws Exception
      */
-    protected function parseDateValue(string $value): DateTimeInterface|null
+    protected function parseDateValue(string $value): DateTimeInterface
     {
-        if (preg_match('~([+\-]\d\d:?\d\d)$~', $value, $m)) {
+        $v = $value;
+
+        if (preg_match('~([+\-]\d\d:?\d\d)$~', $v, $m)) {
             $timeZone = new DateTimeZone($m[1]);
-            $value = substr($value, 0, -strlen($m[1]));
+            $v = substr($v, 0, -strlen($m[1]));
         }
         else {
             $timeZone = new DateTimeZone(system_time_zone());
         }
 
-        $date = str_contains($value, '-');
-        $time = str_contains($value, ':');
+        $date = str_contains($v, '-');
+        $colons = substr_count($v, ':');
+        $time = $colons > 0;
+
+        if ($colons == 1)
+            $v .= ':00';
 
         if ($date && $time)
             $format = 'Y-m-d\TH:i:s';
@@ -201,14 +245,10 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         else if ($time)
             $format = 'H:i:s';
         else
-            $format = '';
+            return throw new InvalidArgumentException("invalid date format: '$value'");
 
-        if ($format) {
-            Assert::date($value, $format, '(date) value argument');
-            return new DateTimeImmutable($value, $timeZone);
-        }
-
-        return null;
+        Assert::date($v, $format, 'date argument');
+        return new DateTimeImmutable($v, $timeZone);
     }
 
     protected function getIntOption(InputInterface $input, string $name, int $default = 0): int

@@ -42,9 +42,9 @@ class History
      * @throws Exception
      */
     public function createDeployment(DeploymentCommand $command, DeploymentTag $tag,
-        Author $deployer, bool $isSingleTransactionMode): Deployment
+        Author $deployer, bool $isDryRun, bool $isSingleTransactionMode): Deployment
     {
-        return new Deployment($this->schema, $command, $tag, $deployer, $this->application, $isSingleTransactionMode);
+        return new Deployment($this->schema, $command, $tag, $deployer, $this->application, $isDryRun, $isSingleTransactionMode);
     }
 
     /**

@@ -3,9 +3,7 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Command\MigrateOptions;
-use Cinch\Common\Author;
 use Cinch\Console\Command;
-use Cinch\History\DeploymentTag;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,13 +17,7 @@ class Migrate extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->executeCommand(new \Cinch\Command\Migrate(
-            $this->projectId,
-            new DeploymentTag($input->getOption('tag')),
-            new Author($input->getOption('deployer') ?: system_user()),
-            new MigrateOptions(),
-            $this->envName
-        ), 'Migrating all eligible migrations');
+        $this->executeMigrate($input, new MigrateOptions(), 'Migrating all eligible migrations');
 
         // cinch create <project> <target>
 
@@ -60,10 +52,11 @@ class Migrate extends Command
             ->addProjectArgument()
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
+            ->addOptionByName('dry-run')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
 <code-comment># migrate all eligible migrations</>
-<code>cinch migrate project-name --tag=v12.9.3</>
+<code>cinch migrate project --tag=v12.9.3</>
 HELP
             );
     }

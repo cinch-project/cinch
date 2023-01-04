@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migration:remove', 'Removes a migration')]
+#[AsCommand('migration:remove', 'Remove a migration')]
 class MigrationRemove extends Command
 {
     /**
@@ -31,7 +31,6 @@ class MigrationRemove extends Command
 
     protected function configure()
     {
-        // cinch migration:remove <project> <path>
         $this
             ->addProjectArgument()
             ->addArgument('path', InputArgument::REQUIRED, 'Migration store path (relative to store root)')
