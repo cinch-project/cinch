@@ -22,8 +22,8 @@ abstract class Deploy
         public readonly ProjectId $projectId,
         public readonly DeploymentTag $tag,
         public readonly Author $deployer,
-        public readonly bool $isDryRun = false,
-        public readonly string $envName = '')
+        public readonly string $envName,
+        public readonly bool $isDryRun)
     {
     }
 }

@@ -14,17 +14,17 @@ class Migrate extends Deploy
      * @param DeploymentTag $tag
      * @param Author $deployer
      * @param MigrateOptions $options
-     * @param bool $isDryRun
      * @param string $envName
+     * @param bool $isDryRun
      */
     public function __construct(
         ProjectId $projectId,
         DeploymentTag $tag,
         Author $deployer,
         public readonly MigrateOptions $options,
-        bool $isDryRun = false,
-        string $envName = '')
+        string $envName = '',
+        bool $isDryRun = false)
     {
-        parent::__construct(DeploymentCommand::MIGRATE, $projectId, $tag, $deployer, $isDryRun, $envName);
+        parent::__construct(DeploymentCommand::MIGRATE, $projectId, $tag, $deployer, $envName, $isDryRun);
     }
 }

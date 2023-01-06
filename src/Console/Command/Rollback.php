@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('rollback', 'Rollback to previous deployment or optional tag')]
+#[AsCommand('rollback', 'Roll back to previous deployment or optional tag')]
 class Rollback extends Command
 {
     /**
@@ -22,7 +22,7 @@ class Rollback extends Command
         if (($tag = $input->getArgument('tag')) !== null)
             $tag = new DeploymentTag($tag);
 
-        $title = $tag ? "rolling back to '$tag'" : 'rolling back to previous deployment';
+        $title = $tag ? "rolling back to deployment tag '$tag'" : 'rolling back to previous deployment';
         $this->executeRollback($input, RollbackBy::tag($tag), $title);
         return self::SUCCESS;
     }
@@ -41,10 +41,10 @@ When <info><tag></info> is not provided, the latest migrate deployment that has 
 rolled back. When <info><tag></info> is provided, the latest migrate deployments that have at least one
 change, and occurred since tag, are rolled back.
  
-<code-comment># rollback TO the previous deployment (ie: rollback the latest deployment)</>
+<code-comment># roll back TO the previous deployment (ie: roll back the latest deployment)</>
 <code>cinch rollback project</>
 
-<code-comment># rollback TO deployment. if v1.2.3 is the latest deployment, 
+<code-comment># roll back TO a deployment tag. if v1.2.3 is the latest deployment, 
 # nothing is rolled back, since the target database is already at tag v1.2.3.</>
 <code>cinch rollback project v1.2.3</>
 HELP

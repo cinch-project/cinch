@@ -19,8 +19,8 @@ class MigrateCount extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $count = (int) Assert::digit($input->getArgument('count'), 'count argument');
-        $this->executeMigrate($input, new MigrateOptions($count), "Migrating the next $count migration(s)");
+        $num = (int) Assert::digit($input->getArgument('number'), 'number argument');
+        $this->executeMigrate($input, new MigrateOptions($num), "Migrating the next $num migration(s)");
         return self::SUCCESS;
     }
 
@@ -28,7 +28,7 @@ class MigrateCount extends Command
     {
         $this
             ->addProjectArgument()
-            ->addArgument('number', InputArgument::REQUIRED, 'The number of eligible migrations to migrate')
+            ->addArgument('number', InputArgument::OPTIONAL, 'The number of eligible migrations to migrate', 1)
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
             ->addOptionByName('dry-run')

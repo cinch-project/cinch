@@ -27,7 +27,7 @@ class Deploy extends Task
         if ($this->deployment->getCommand() == DeploymentCommand::ROLLBACK)
             $name = 'rolling back script';
         else
-            $name = 'migrating script (' . $this->migration->getScript()->getMigratePolicy()->value . ')';
+            $name = 'migrating ' . $this->migration->getScript()->getMigratePolicy()->value . ' script';
 
         parent::__construct($name, $this->migration->getPath()->value);
     }

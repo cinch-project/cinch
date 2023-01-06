@@ -93,9 +93,9 @@ class SqlScriptParser
                 $section = $m[1];
 
                 if ($section == 'migrate' && $migrate !== null)
-                    throw new AssertException("second migrate section found at line $line");
+                    throw new AssertException("second @migrate found at line $line");
                 else if ($section == 'rollback' && $rollback !== null)
-                    throw new AssertException("second rollback section found at line $line");
+                    throw new AssertException("second @rollback found at line $line");
 
                 $$section = '';
             }
@@ -105,7 +105,7 @@ class SqlScriptParser
         }
 
         if ($migrate === null && $rollback === null)
-            throw new AssertException("no migrate or rollback section found");
+            throw new AssertException("no @migrate or @rollback found");
 
         return [trim($migrate ?? ''), trim($rollback ?? '')];
     }

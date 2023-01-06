@@ -4,6 +4,8 @@ namespace Cinch\Console\Command;
 
 use Cinch\Command\RollbackBy;
 use Cinch\Console\Command;
+use DateTimeInterface;
+use DateTimeZone;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,8 +20,10 @@ class RollbackDate extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $date = $this->parseDateValue($input->getArgument('date'));
-        $this->executeRollback($input, RollbackBy::date($date), 'rolling back to ' . $date->format('Y-m-d\TH:i:sP'));
+        $dateTime = $this->parseDateTime($input->getArgument('date'));
+        $title = 'rolling back to ' . $dateTime->format(DateTimeInterface::RFC3339);
+        $rollbackBy = RollbackBy::date($dateTime->setTimezone(new DateTimeZone('UTC')));
+        $this->executeRollback($input, $rollbackBy, $title);
         return self::SUCCESS;
     }
 

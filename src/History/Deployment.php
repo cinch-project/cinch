@@ -10,7 +10,7 @@ use RuntimeException;
 
 class Deployment
 {
-    private DeploymentTag|null $tag = null;
+    private DeploymentTag|null $tag;
     private Session|null $session;
     private Schema|null $schema;
 

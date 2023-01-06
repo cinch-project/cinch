@@ -5,7 +5,6 @@ namespace Cinch\Command;
 use Cinch\Common\MigratePolicy;
 use Cinch\History\Change;
 use Cinch\History\ChangeStatus;
-use Cinch\History\DeploymentCommand;
 use Cinch\MigrationStore\Migration;
 use Exception;
 
@@ -73,7 +72,7 @@ class MigrateHandler extends DeploymentHandler
             $this->addTask($task);
 
         if ($this->getTaskCount() == 0) {
-            $this->logger->warning("no migrations to migrate");
+            $this->logger->info("nothing to migrate");
             return;
         }
 

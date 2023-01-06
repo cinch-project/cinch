@@ -23,16 +23,12 @@ class ConsoleLogger implements LoggerInterface
     protected const styleMap = [
         'raw' => ['header' => '', 'message' => ''],
 
-        /* cinch never uses emergency, alert or critical. merely satisfying LoggerInterface */
-        LogLevel::EMERGENCY => ['header' => '<fg=white;bg=red> %s </> ', 'message' => '<options=%s>%s</>'],
-        LogLevel::ALERT => ['header' => '<fg=white;bg=red> %s </> ', 'message' => '<options=%s>%s</>'],
-        LogLevel::CRITICAL => ['header' => '<fg=white;bg=red> %s </> ', 'message' => '<options=%s>%s</>'],
-
-        LogLevel::ERROR => ['header' => '<fg=white;bg=red> %s </> ', 'message' => '<options=%s>%s</>'],
-        LogLevel::WARNING => ['header' => '<fg=black;bg=yellow> %s </> ', 'message' => '<options=%s>%s</>'],
-        LogLevel::NOTICE => ['header' => '<fg=white;bg=blue> %s </> ', 'message' => '<options=%s>%s</>'],
+        /* cinch CLI never uses emergency, alert or critical. they are converted to error */
+        LogLevel::ERROR => ['header' => '<fg=white;bg=red> %-7s </> ', 'message' => '<options=%s>%s</>'],
+        LogLevel::WARNING => ['header' => '<fg=black;bg=yellow> %-7s </> ', 'message' => '<options=%s>%s</>'],
+        LogLevel::NOTICE => ['header' => '<fg=black;bg=blue> %-7s </> ', 'message' => '<options=%s>%s</>'],
         LogLevel::INFO => ['header' => '', 'message' => '<fg=green;options=%s>%s</>'],
-        LogLevel::DEBUG => ['header' => '<fg=white;bg=magenta> %s </> ', 'message' => '<options=%s>%s</>']
+        LogLevel::DEBUG => ['header' => '<fg=white;bg=magenta> %-7s </> ', 'message' => '<options=%s>%s</>']
     ];
 
     private int $indent = 0;
@@ -60,19 +56,28 @@ class ConsoleLogger implements LoggerInterface
         return $this;
     }
 
+    public function banner(string $message, string $style = ''): void
+    {
+        if ($message = trim($message)) {
+            $message = "  $message  ";
+            $pad = str_repeat(' ', strlen($message));
+            $this->output->writeln([$style ? "<$style>" : '', $pad, $message, $pad, $style ? '</>' : '']);
+        }
+    }
+
     public function emergency(string|Stringable $message, array $context = [], int $options = self::NEWLINE): void
     {
-        $this->log(LogLevel::EMERGENCY, $message, $context, $options);
+        $this->log(LogLevel::ERROR, $message, $context, $options);
     }
 
     public function alert(string|Stringable $message, array $context = [], int $options = self::NEWLINE): void
     {
-        $this->log(LogLevel::ALERT, $message, $context, $options);
+        $this->log(LogLevel::ERROR, $message, $context, $options);
     }
 
     public function critical(string|Stringable $message, array $context = [], int $options = self::NEWLINE): void
     {
-        $this->log(LogLevel::CRITICAL, $message, $context, $options);
+        $this->log(LogLevel::ERROR, $message, $context, $options);
     }
 
     public function error(string|Stringable $message, array $context = [], int $options = self::NEWLINE): void
@@ -139,9 +144,7 @@ class ConsoleLogger implements LoggerInterface
         }
 
         return match ($level) {
-            LogLevel::EMERGENCY,
-            LogLevel::ALERT,
-            LogLevel::CRITICAL,
+            LogLevel::EMERGENCY, LogLevel::ALERT, LogLevel::CRITICAL => LogLevel::ERROR,
             LogLevel::ERROR,
             LogLevel::WARNING,
             LogLevel::NOTICE,

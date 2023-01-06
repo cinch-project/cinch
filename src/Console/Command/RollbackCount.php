@@ -3,6 +3,7 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Command\RollbackBy;
+use Cinch\Component\Assert\Assert;
 use Cinch\Console\Command;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -18,8 +19,8 @@ class RollbackCount extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $count = $input->getArgument('count');
-        $this->executeRollback($input, RollbackBy::count($count), "rolling back $count changes");
+        $num = (int) Assert::digit($input->getArgument('number'), 'numbers argument');
+        $this->executeRollback($input, RollbackBy::count($num), "rolling back $num changes");
         return self::SUCCESS;
     }
 
@@ -27,7 +28,7 @@ class RollbackCount extends Command
     {
         $this
             ->addProjectArgument()
-            ->addArgument('count', InputArgument::REQUIRED, 'Number of changes to roll back')
+            ->addArgument('number', InputArgument::OPTIONAL, 'Number of changes to roll back', 1)
             ->addOptionByName('deployer')
             ->addOptionByName('tag')
             ->addOptionByName('dry-run')

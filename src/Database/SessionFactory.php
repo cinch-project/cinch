@@ -2,7 +2,6 @@
 
 namespace Cinch\Database;
 
-use Cinch\Component\Assert\Assert;
 use Cinch\Component\Assert\AssertException;
 use Doctrine\DBAL\DriverManager;
 use Exception;

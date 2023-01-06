@@ -11,8 +11,7 @@ use Cinch\Common\Author;
 use Cinch\Component\Assert\Assert;
 use Cinch\History\DeploymentTag;
 use Cinch\Project\ProjectId;
-use DateTimeImmutable;
-use DateTimeInterface;
+use DateTime;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
@@ -43,6 +42,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     protected readonly ConsoleLogger $logger;
     private readonly CommandBus $commandBus;
     private readonly Terminal $terminal;
+    private readonly bool $isDryRun;
 
     /**
      * @throws Exception
@@ -51,6 +51,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     {
         $this->terminal = new Terminal();
         $this->envName = $input->hasOption('env') ? ($input->getOption('env') ?? '') : '';
+        $this->isDryRun = $input->hasOption('dry-run') && $input->getOption('dry-run') === true;
     }
 
     public function setProjectDir(string $projectDir): void
@@ -147,8 +148,8 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
             new DeploymentTag($input->getOption('tag')),
             new Author($input->getOption('deployer') ?: system_user()),
             $options,
-            $input->getOption('dry-run') === true,
-            $this->envName
+            $this->envName,
+            $this->isDryRun,
         ), $title);
     }
 
@@ -162,8 +163,8 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
             new DeploymentTag($input->getOption('tag')),
             new Author($input->getOption('deployer') ?: system_user()),
             $rollbackBy,
-            $input->getOption('dry-run') === true,
-            $this->envName
+            $this->envName,
+            $this->isDryRun,
         ), $title);
     }
 
@@ -174,12 +175,14 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     {
         $success = false;
 
-        if (!$title)
-            $title = $this->getDescription();
+        if ($this->isDryRun)
+            $this->logger->banner('[DRY RUN] The migration store, target database and ' .
+                'history will not be changed', 'fg=black;bg=blue');
+
+        $this->logger->info(($title ?: $this->getDescription()) . "\n");
+        $this->logger->setIndent(2);
 
         try {
-            $this->logger->info("$title\n");
-            $this->logger->setIndent(2);
             $this->commandBus->handle($command);
             $success = true;
         }
@@ -219,36 +222,36 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     /**
      * @throws Exception
      */
-    protected function parseDateValue(string $value): DateTimeInterface
+    protected function parseDateTime(string $datetime): DateTime
     {
-        $v = $value;
+        $value = $datetime;
 
-        if (preg_match('~([+\-]\d\d:?\d\d)$~', $v, $m)) {
+        if (preg_match('~([+\-]\d\d:?\d\d)$~', $value, $m)) {
             $timeZone = new DateTimeZone($m[1]);
-            $v = substr($v, 0, -strlen($m[1]));
+            $value = substr($value, 0, -strlen($m[1]));
         }
         else {
             $timeZone = new DateTimeZone(system_time_zone());
         }
 
-        $date = str_contains($v, '-');
-        $colons = substr_count($v, ':');
-        $time = $colons > 0;
+        $hasDate = str_contains($value, '-');
+        $colons = substr_count($value, ':');
+        $hasTime = $colons > 0;
 
+        /* auto-append seconds if not provided */
         if ($colons == 1)
-            $v .= ':00';
+            $value .= ':00';
 
-        if ($date && $time)
+        if ($hasDate && $hasTime)
             $format = 'Y-m-d\TH:i:s';
-        else if ($date)
+        else if ($hasDate)
             $format = 'Y-m-d';
-        else if ($time)
+        else if ($hasTime)
             $format = 'H:i:s';
         else
-            return throw new InvalidArgumentException("invalid date format: '$value'");
+            return throw new InvalidArgumentException("invalid date: '$datetime'");
 
-        Assert::date($v, $format, 'date argument');
-        return new DateTimeImmutable($v, $timeZone);
+        return new DateTime(Assert::date($value, $format, 'date argument'), $timeZone);
     }
 
     protected function getIntOption(InputInterface $input, string $name, int $default = 0): int

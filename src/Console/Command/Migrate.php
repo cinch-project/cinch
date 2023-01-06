@@ -21,7 +21,6 @@ class Migrate extends Command
 
         // cinch create <project> <target>
 
-        // old
         // cinch env <project> <name> <target>
         // cinch env-list <project>
         // cinch env-delete <project> <name>

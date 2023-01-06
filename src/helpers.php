@@ -88,7 +88,7 @@ function system_time_zone(): string
             $tz = substr($path, $pos + 10);
     }
 
-    return $tz;// Bandit, decade of deception
+    return $tz;
 }
 
 /** Gets the system user, not the php script owner.

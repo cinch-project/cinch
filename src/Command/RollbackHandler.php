@@ -3,8 +3,8 @@
 namespace Cinch\Command;
 
 use Cinch\Common\MigratePolicy;
+use Cinch\Console\ConsoleLogger;
 use Cinch\History\ChangeStatus;
-use Cinch\History\DeploymentCommand;
 use Cinch\History\DeploymentTag;
 use Exception;
 
@@ -29,7 +29,7 @@ class RollbackHandler extends DeploymentHandler
         }
 
         if ($this->getTaskCount() == 0) {
-            $this->logger->warning("rollback-by-{$c->rollbackBy->type}: no changes to rollback");
+            $this->logger->info("nothing to roll back");
             return;
         }
 

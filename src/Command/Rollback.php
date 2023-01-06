@@ -14,17 +14,17 @@ class Rollback extends Deploy
      * @param DeploymentTag $tag
      * @param Author $deployer
      * @param RollbackBy $rollbackBy
-     * @param bool $isDryRun
      * @param string $envName
+     * @param bool $isDryRun
      */
     public function __construct(
         ProjectId $projectId,
         DeploymentTag $tag,
         Author $deployer,
         public readonly RollbackBy $rollbackBy,
-        bool $isDryRun = false,
-        string $envName = '')
+        string $envName = '',
+        bool $isDryRun = false)
     {
-        parent::__construct(DeploymentCommand::ROLLBACK, $projectId, $tag, $deployer, $isDryRun, $envName);
+        parent::__construct(DeploymentCommand::ROLLBACK, $projectId, $tag, $deployer, $envName, $isDryRun);
     }
 }
