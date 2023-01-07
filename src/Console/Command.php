@@ -6,7 +6,6 @@ use Cinch\Command\Migrate;
 use Cinch\Command\MigrateOptions;
 use Cinch\Command\Rollback;
 use Cinch\Command\RollbackBy;
-use Cinch\Command\Task;
 use Cinch\Common\Author;
 use Cinch\Component\Assert\Assert;
 use Cinch\History\DeploymentTag;
@@ -23,10 +22,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Terminal;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-abstract class Command extends BaseCommand implements SignalableCommandInterface, EventSubscriberInterface
+abstract class Command extends BaseCommand implements SignalableCommandInterface
 {
     /* lookup table for commonly used options: see addOptionByName() */
     private const OPTIONS = [
@@ -41,7 +38,6 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     protected readonly string $envName;
     protected readonly ConsoleLogger $logger;
     private readonly CommandBus $commandBus;
-    private readonly Terminal $terminal;
     private readonly bool $isDryRun;
 
     /**
@@ -49,7 +45,6 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
      */
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $this->terminal = new Terminal();
         $this->envName = $input->hasOption('env') ? ($input->getOption('env') ?? '') : '';
         $this->isDryRun = $input->hasOption('dry-run') && $input->getOption('dry-run') === true;
     }
@@ -67,75 +62,6 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     public function setLogger(ConsoleLogger $logger): void
     {
         $this->logger = $logger;
-    }
-
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            Task\StartedEvent::class => 'onTaskStarted',
-            Task\EndedEvent::class => 'onTaskEnded',
-        ];
-    }
-
-    public function onTaskStarted(Task\StartedEvent $task): void
-    {
-        static $nameWidth = 32;
-
-        $descWidth = $this->terminal->getWidth() - $this->logger->getIndent() - 60;
-
-        if ($task->isUndo)
-            $message = sprintf("<fg=red>UNDO</> <fg=gray>%-{$nameWidth}s</> <fg=gray>%-{$descWidth}s</> ",
-                "#$task->id $task->name",
-                'undoing previous action...'
-            );
-        else
-            $message = sprintf("<fg=yellow>(%2d)</> %-{$nameWidth}s %-{$descWidth}s ",
-                $task->id,
-                self::strtrunc($task->name, $nameWidth),
-                self::strtrunc($task->description, $descWidth)
-            );
-
-        $this->logger->info($message, options: ConsoleLogger::RAW);
-    }
-
-    public function onTaskEnded(Task\EndedEvent $task): void
-    {
-        $elapsed = $task->elapsedSeconds;
-
-        /* never display more than 2 digits for seconds, minutes and hours. no support for days. */
-
-        // >5940 seconds (99 minutes): display format 12h47m
-        if ($elapsed > 5940) {
-            $min = (int) $elapsed / 60;
-            $hour = $min / 60;
-            $min = (int) $min % 60;
-            $elapsed = sprintf('%dh%02dm', $hour, $min);
-        }
-        // >99 seconds: display format 12m47s
-        else if ($elapsed > 99) {
-            $sec = (int) $elapsed;
-            $min = $sec / 60;
-            $sec = $sec % 60;
-            $elapsed = sprintf('%dm%02ds', $min, $sec);
-        }
-        // <=99 seconds: display format 12.472s
-        else {
-            $elapsed = sprintf('%.3fs', $elapsed);
-        }
-
-        $status = $task->success ? 'PASS' : 'FAIL';
-        $statusColor = $task->success ? 'green' : 'red';
-        $this->logger->info(
-            sprintf('<fg=%s>%s</> <fg=gray>%s</>', $statusColor, $status, $elapsed),
-            options: ConsoleLogger::RAW | ConsoleLogger::NEWLINE
-        );
-    }
-
-    protected static function strtrunc(string $s, int $maxLength): string
-    {
-        if (strlen($s) > $maxLength)
-            $s = substr($s, 0, $maxLength - 3) . '<fg=gray>...</>';
-        return $s;
     }
 
     /**

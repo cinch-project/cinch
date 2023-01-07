@@ -14,6 +14,10 @@ abstract class Platform
     protected float $version;
     protected string $name;
 
+    public function __construct(protected readonly DatabaseDsn $dsn)
+    {
+    }
+
     /** Gets the platform name.
      * @return string
      */
@@ -22,6 +26,11 @@ abstract class Platform
         if (!isset($this->name))
             $this->name = strtolower(classname(static::class));
         return $this->name;
+    }
+
+    public function getDsn(): DatabaseDsn
+    {
+        return $this->dsn;
     }
 
     public function supportsTransactionalDDL(): bool
@@ -50,18 +59,16 @@ abstract class Platform
     }
 
     /** Adds platform-specific connection parameters just before connecting.
-     * @param DatabaseDsn $dsn
      * @param array $params current parameters
      * @return array updated version of $params
      */
-    public abstract function addParams(DatabaseDsn $dsn, array $params): array;
+    public abstract function addParams(array $params): array;
 
     /** Initializes a session just after connecting. All platforms should perform version checking.
      * @param Session $session
-     * @param DatabaseDsn $dsn
      * @throws Exception|UnsupportedVersionException
      */
-    public abstract function initSession(Session $session, DatabaseDsn $dsn): Session;
+    public abstract function initSession(Session $session): Session;
 
     /** Locks a session. This is an application (advisory) lock, not a table lock.
      * @param Session $session

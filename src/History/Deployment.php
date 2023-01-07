@@ -88,6 +88,7 @@ class Deployment
                 $this->session->beginTransaction();
             }
             catch (Exception $e) {
+                silent_call($this->session->delete(...), ['tag' => $this->tag->value]);
                 $this->clear();
                 throw $e;
             }

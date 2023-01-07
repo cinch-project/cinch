@@ -8,7 +8,7 @@ use Cinch\History\ChangeStatus;
 use Cinch\MigrationStore\Migration;
 use Exception;
 
-class MigrateHandler extends DeploymentHandler
+class MigrateHandler extends DeployHandler
 {
     /**
      * @throws Exception
@@ -57,7 +57,7 @@ class MigrateHandler extends DeploymentHandler
             }
             else {
                 $onceTasks[] = $task;
-                if ($count !== null && --$count == 0) // limit to count, doesn't apply to before|after
+                if ($count !== null && --$count == 0) // limit to once, doesn't apply to before|after
                     break;
             }
         }

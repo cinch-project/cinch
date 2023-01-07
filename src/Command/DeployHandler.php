@@ -2,6 +2,7 @@
 
 namespace Cinch\Command;
 
+use Cinch\Command\Event\BeforeDeploy;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
 use Cinch\History\ChangeStatus;
@@ -12,11 +13,14 @@ use Cinch\History\HistoryFactory;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
+use Cinch\Project\HookEvent;
+use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-abstract class DeploymentHandler extends Handler
+abstract class DeployHandler extends Handler
 {
+    private readonly Project $project;
     protected MigrationStore $migrationStore;
     protected History $history;
     private Session $target;
@@ -35,14 +39,14 @@ abstract class DeploymentHandler extends Handler
      * @throws Exception
      */
     protected function prepare(Deploy $deploy): void
-    {
-        $project = $this->projectRepository->get($deploy->projectId);
-        $environment = $project->getEnvironmentMap()->get($deploy->envName);
+    {;
+        $this->project = $this->projectRepository->get($deploy->projectId);
+        $environment = $this->project->getEnvironmentMap()->get($deploy->envName);
 
         $this->target = $this->sessionFactory->create($environment->targetDsn);
-        $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
+        $this->migrationStore = $this->migrationStoreFactory->create($this->project->getMigrationStoreDsn());
         $this->history = $this->historyFactory->create($environment);
-        $this->isSingleTransactionMode = $project->isSingleTransactionMode();
+        $this->isSingleTransactionMode = $this->project->isSingleTransactionMode();
         $this->deployment = $this->history->createDeployment($deploy->command, $deploy->tag,
             $deploy->deployer, $deploy->isDryRun, $this->isSingleTransactionMode);
     }
@@ -52,11 +56,26 @@ abstract class DeploymentHandler extends Handler
      */
     protected function deploy(): void
     {
+        $this->dispatcher->dispatch(new BeforeDeploy(
+            $this->deployment->getCommand(),
+            $this->project,
+            $this->target,
+            $this->deployment->getTag(),
+            $this->deployment->isDryRun()
+        ));
+
         $error = null;
         $this->deployment->open();
 
-        if ($this->isSingleTransactionMode)
-            $this->target->beginTransaction();
+        if ($this->isSingleTransactionMode) {
+            try {
+                $this->target->beginTransaction();
+            }
+            catch (Exception $e) {
+                silent_call($this->deployment->close(...), DeploymentError::fromException($e));
+                throw $e;
+            }
+        }
 
         try {
             $this->runTasks();
@@ -77,6 +96,14 @@ abstract class DeploymentHandler extends Handler
             else
                 $this->deployment->close();
         }
+
+        $this->dispatcher->dispatch(new AfterDeploy(
+            $this->deployment->getCommand(),
+            $this->project,
+            $this->target,
+            $this->deployment->getTag(),
+            $this->deployment->isDryRun()
+        ));
     }
 
     /**

@@ -80,6 +80,17 @@ class Project
         return $this->hooks;
     }
 
+    /**
+     * @param HookEvent[] $events
+     * @return Hook[]
+     */
+    public function getHooksByEvents(array|HookEvent $events): array
+    {
+        if (!is_array($events))
+            $events = (array) $events;
+        return array_filter($this->hooks, fn(Hook $h) => in_array($h->event, $events));
+    }
+
     public function snapshot(): array
     {
         $hooks = [];

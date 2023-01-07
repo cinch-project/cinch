@@ -15,11 +15,11 @@ class SessionFactory
     public function create(DatabaseDsn $dsn): Session
     {
         $platform = match ($driver = $dsn->driver) {
-            'pgsql' => new Platform\PgSql,
-            'mysql' => new Platform\MySql,
-            'mssql' => new Platform\MsSql,
-            'sqlite' => new Platform\Sqlite,
-            default => throw new AssertException("unknown database platform '$dsn-˘driver'")
+            'pgsql' => new Platform\PgSql($dsn),
+            'mysql' => new Platform\MySql($dsn),
+            'mssql' => new Platform\MsSql($dsn),
+            'sqlite' => new Platform\Sqlite($dsn),
+            default => throw new AssertException("unknown database platform '$dsn'")
         };
 
         if ($driver == 'mssql')
@@ -41,14 +41,7 @@ class SessionFactory
         ];
 
         /** @var Session $session */
-        $session = DriverManager::getConnection($platform->addParams($dsn, $params));
-
-        try {
-            return $platform->initSession($session, $dsn);
-        }
-        catch (Exception $e) {
-            $session->close();
-            throw $e;
-        }
+        $session = DriverManager::getConnection($platform->addParams($params));
+        return $session;
     }
 }

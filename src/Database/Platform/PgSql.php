@@ -2,7 +2,6 @@
 
 namespace Cinch\Database\Platform;
 
-use Cinch\Database\DatabaseDsn;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -11,33 +10,33 @@ use PDO;
 
 class PgSql extends Platform
 {
-    public function addParams(DatabaseDsn $dsn, array $params): array
+    public function addParams(array $params): array
     {
         $params['driverOptions'][PDO::ATTR_EMULATE_PREPARES] = 1;
-        $params['driverOptions'][PDO::ATTR_TIMEOUT] = $dsn->connectTimeout;
+        $params['driverOptions'][PDO::ATTR_TIMEOUT] = $this->dsn->connectTimeout;
 
-        $params['sslmode'] = $dsn->sslmode ?? 'prefer';
+        $params['sslmode'] = $this->dsn->sslmode ?? 'prefer';
 
-        if ($dsn->sslca)
-            $params['sslrootcert'] = $dsn->sslca;
+        if ($this->dsn->sslca)
+            $params['sslrootcert'] = $this->dsn->sslca;
 
-        if ($dsn->sslcert)
-            $params['sslcert'] = $dsn->sslcert;
+        if ($this->dsn->sslcert)
+            $params['sslcert'] = $this->dsn->sslcert;
 
-        if ($dsn->sslkey)
-            $params['sslkey'] = $dsn->sslkey;
+        if ($this->dsn->sslkey)
+            $params['sslkey'] = $this->dsn->sslkey;
 
         return $params;
     }
 
-    public function initSession(Session $session, DatabaseDsn $dsn): Session
+    public function initSession(Session $session): Session
     {
         $this->version = (float) $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
 
         if ($this->version < 12.0)
             throw new UnsupportedVersionException('PostgreSQL', $this->version, 12.0);
 
-        $charset = $session->quoteString($dsn->charset);
+        $charset = $session->quoteString($this->dsn->charset);
 
         if ($searchPath = ($dsn->searchPath ?? '')) {
             $schemas = preg_split('~\s*,\s*~', $searchPath, flags: PREG_SPLIT_NO_EMPTY);
@@ -48,7 +47,7 @@ class PgSql extends Platform
         $session->executeStatement("
             $searchPath
             set client_encoding to $charset;
-            set statement_timeout=$dsn->timeout; 
+            set statement_timeout={$this->dsn->timeout}; 
             set time zone '+00:00';");
 
         return $session;

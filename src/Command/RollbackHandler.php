@@ -8,7 +8,7 @@ use Cinch\History\ChangeStatus;
 use Cinch\History\DeploymentTag;
 use Exception;
 
-class RollbackHandler extends DeploymentHandler
+class RollbackHandler extends DeployHandler
 {
     /**
      * @throws Exception

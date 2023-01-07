@@ -11,7 +11,7 @@ abstract class Handler
     /** @var Task[] */
     private array $tasks = [];
     protected readonly LoggerInterface $logger;
-    private readonly EventDispatcherInterface $dispatcher;
+    protected readonly EventDispatcherInterface $dispatcher;
 
     public function setLogger(LoggerInterface $logger): void
     {

@@ -17,10 +17,22 @@ class Session extends Connection
 
     private readonly Platform $platform;
 
+    /**
+     * @throws Exception
+     */
     public function __construct(array $params, Driver $driver, ?Configuration $config = null, ?EventManager $eventManager = null)
     {
         $this->setPlatform($params);
+
         parent::__construct($params, $driver, $config, $eventManager);
+
+        try {
+            $this->platform->initSession($this);
+        }
+        catch (Exception $e) {
+            $this->close();
+            throw $e;
+        }
     }
 
     public function getPlatform(): Platform

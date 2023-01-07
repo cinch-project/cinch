@@ -2,7 +2,6 @@
 
 namespace Cinch\Database\Platform;
 
-use Cinch\Database\DatabaseDsn;
 use Cinch\Database\Platform;
 use Cinch\Database\Session;
 use Cinch\Database\UnsupportedVersionException;
@@ -34,28 +33,28 @@ class MySql extends Platform
         return $dt->format($this->dateTimeFormat);
     }
 
-    public function addParams(DatabaseDsn $dsn, array $params): array
+    public function addParams(array $params): array
     {
         $params['driverOptions'][PDO::ATTR_EMULATE_PREPARES] = 1;
-        $params['driverOptions'][PDO::ATTR_TIMEOUT] = $dsn->connectTimeout;
+        $params['driverOptions'][PDO::ATTR_TIMEOUT] = $this->dsn->connectTimeout;
 
         $count = count($params['driverOptions']);
 
-        if ($dsn->sslca)
-            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_CA] = $dsn->sslca;
+        if ($this->dsn->sslca)
+            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_CA] = $this->dsn->sslca;
 
-        if ($dsn->sslcert)
-            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_CERT] = $dsn->sslcert;
+        if ($this->dsn->sslcert)
+            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_CERT] = $this->dsn->sslcert;
 
-        if ($dsn->sslkey)
-            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_KEY] = $dsn->sslkey;
+        if ($this->dsn->sslkey)
+            $params['driverOptions'][PDO::MYSQL_ATTR_SSL_KEY] = $this->dsn->sslkey;
 
         $params['driverOptions'][PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = count($params['driverOptions']) != $count;
 
         return $params;
     }
 
-    public function initSession(Session $session, DatabaseDsn $dsn): Session
+    public function initSession(Session $session): Session
     {
         $version = $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
         [$version, $minVersion, $this->name] = $this->parseVersion($version);
@@ -70,11 +69,11 @@ class MySql extends Platform
         if ($this->version < $minVersion)
             throw new UnsupportedVersionException($this->name, $this->version, $minVersion);
 
-        $charset = $session->quoteString($dsn->charset);
+        $charset = $session->quoteString($this->dsn->charset);
         $session->executeStatement("
             set autocommit = 1;
             set character set $charset;
-            set session max_execution_time=$dsn->timeout; 
+            set session max_execution_time={$this->dsn->timeout}; 
             set session time_zone = '+00:00';");
 
         return $session;

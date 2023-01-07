@@ -165,7 +165,7 @@ class Application extends BaseApplication
         $command->setLogger($this->logger);
         $command->setProjectDir($projectDir);
         $command->setCommandBus($container->get(CommandBus::class));
-        $container->get(EventDispatcherInterface::class)->addSubscriber($command);
+        $container->get(EventDispatcherInterface::class)->addSubscriber(new EventSubscriber($this->logger));
     }
 
     private function configureMemoryLimit(): void
