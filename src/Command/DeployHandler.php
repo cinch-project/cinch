@@ -2,7 +2,6 @@
 
 namespace Cinch\Command;
 
-use Cinch\Command\Event\BeforeDeploy;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
 use Cinch\History\ChangeStatus;
@@ -13,25 +12,25 @@ use Cinch\History\HistoryFactory;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
-use Cinch\Project\HookEvent;
-use Cinch\Project\Project;
 use Cinch\Project\ProjectRepository;
 use Exception;
+use Twig\Environment as Twig;
 
 abstract class DeployHandler extends Handler
 {
-    private readonly Project $project;
-    protected MigrationStore $migrationStore;
-    protected History $history;
-    private Session $target;
-    private Deployment $deployment;
+    protected readonly MigrationStore $migrationStore;
+    protected readonly History $history;
+    private readonly Session $target;
+    private readonly Deployment $deployment;
+    private readonly HookManager $hookManager;
     private readonly bool $isSingleTransactionMode;
 
     public function __construct(
         private readonly SessionFactory $sessionFactory,
         private readonly MigrationStoreFactory $migrationStoreFactory,
         private readonly HistoryFactory $historyFactory,
-        private readonly ProjectRepository $projectRepository)
+        private readonly ProjectRepository $projectRepository,
+        private readonly Twig $twig)
     {
     }
 
@@ -39,16 +38,19 @@ abstract class DeployHandler extends Handler
      * @throws Exception
      */
     protected function prepare(Deploy $deploy): void
-    {;
-        $this->project = $this->projectRepository->get($deploy->projectId);
-        $environment = $this->project->getEnvironmentMap()->get($deploy->envName);
+    {
+        $project = $this->projectRepository->get($deploy->projectId);
+        $environment = $project->getEnvironmentMap()->get($deploy->envName);
 
         $this->target = $this->sessionFactory->create($environment->targetDsn);
-        $this->migrationStore = $this->migrationStoreFactory->create($this->project->getMigrationStoreDsn());
+        $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
         $this->history = $this->historyFactory->create($environment);
-        $this->isSingleTransactionMode = $this->project->isSingleTransactionMode();
+        $this->isSingleTransactionMode = $project->isSingleTransactionMode();
+
         $this->deployment = $this->history->createDeployment($deploy->command, $deploy->tag,
             $deploy->deployer, $deploy->isDryRun, $this->isSingleTransactionMode);
+
+        $this->hookManager = new HookManager($this->deployment, $project, $this->target, $this->logger, $this->twig);
     }
 
     /**
@@ -56,13 +58,7 @@ abstract class DeployHandler extends Handler
      */
     protected function deploy(): void
     {
-        $this->dispatcher->dispatch(new BeforeDeploy(
-            $this->deployment->getCommand(),
-            $this->project,
-            $this->target,
-            $this->deployment->getTag(),
-            $this->deployment->isDryRun()
-        ));
+        $this->hookManager->beforeDeploy();
 
         $error = null;
         $this->deployment->open();
@@ -97,13 +93,7 @@ abstract class DeployHandler extends Handler
                 $this->deployment->close();
         }
 
-        $this->dispatcher->dispatch(new AfterDeploy(
-            $this->deployment->getCommand(),
-            $this->project,
-            $this->target,
-            $this->deployment->getTag(),
-            $this->deployment->isDryRun()
-        ));
+        $this->hookManager->afterDeploy();
     }
 
     /**

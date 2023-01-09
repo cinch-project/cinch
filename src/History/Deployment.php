@@ -34,6 +34,16 @@ class Deployment
         $this->session = $schema->session();
     }
 
+    public function getDeployer(): Author
+    {
+        return $this->deployer;
+    }
+
+    public function getApplication(): string
+    {
+        return $this->application;
+    }
+
     public function getTag(): DeploymentTag|null
     {
         return $this->tag;

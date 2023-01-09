@@ -2,8 +2,7 @@
 
 namespace Cinch\Console;
 
-use Cinch\Command\Task;
-
+use Cinch\Command\Event;
 use Symfony\Component\Console\Terminal;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -19,12 +18,12 @@ class EventSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            Task\StartedEvent::class => 'onTaskStarted',
-            Task\EndedEvent::class => 'onTaskEnded',
+            Event\TaskStarted::class => 'onTaskStarted',
+            Event\TaskEnded::class => 'onTaskEnded'
         ];
     }
 
-    public function onTaskStarted(Task\StartedEvent $task): void
+    public function onTaskStarted(Event\TaskStarted $task): void
     {
         static $nameWidth = 32;
 
@@ -45,7 +44,7 @@ class EventSubscriber implements EventSubscriberInterface
         $this->logger->info($message, options: ConsoleLogger::RAW);
     }
 
-    public function onTaskEnded(Task\EndedEvent $task): void
+    public function onTaskEnded(Event\TaskEnded $task): void
     {
         $elapsed = $task->elapsedSeconds;
 

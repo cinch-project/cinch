@@ -20,16 +20,16 @@ use Symfony\Component\Finder\SplFileInfo;
 
 class Local extends Adapter
 {
-    public static function fromDsn(StoreDsn $dsn, string $defaultBaseDir): self
+    public static function fromDsn(StoreDsn $dsn, string $basePath): self
     {
         Assert::equals($dsn->driver, 'fs', "expected fs dsn");
         $dir = $dsn->storeDir;
 
         if (Path::isRelative($dir)) {
-            Assert::notEmpty($defaultBaseDir, 'migration store requires baseDir for relative URIs');
-            if (Path::isRelative($defaultBaseDir))
-                throw new AssertException("baseDir must be absolute, found '$defaultBaseDir'");
-            $dir = Path::makeAbsolute($dir, $defaultBaseDir);
+            Assert::notEmpty($basePath, 'migration store requires baseDir for relative URIs');
+            if (Path::isRelative($basePath))
+                throw new AssertException("baseDir must be absolute, found '$basePath'");
+            $dir = Path::makeAbsolute($dir, $basePath);
         }
 
         return new self(Assert::directory($dir, 'migration store directory'));

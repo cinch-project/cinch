@@ -1,10 +1,10 @@
 <?php
 
-namespace Cinch\Command\Task;
+namespace Cinch\Command\Event;
 
 use Symfony\Contracts\EventDispatcher\Event;
 
-class StartedEvent extends Event
+class TaskStarted extends Event
 {
     /**
      * @param int $id task id, should always be sequential starting at 1.

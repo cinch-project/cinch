@@ -7,10 +7,10 @@ environments:
     sales:
         deploy_timeout: 10           # default=10
         target: 'pgsql://user:pass@127.0.0.1/sales'
-        history: 
+        history:
             dsn: 'mssql://user:pass@127.0.0.1/history' # default=target_dsn
             schema: ''               # default=cinch_project
             table_prefix: ''         # default=''
             create_schema: true      # default=true
-hooks: {}
+hooks: []
 ```

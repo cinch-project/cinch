@@ -1,10 +1,10 @@
 <?php
 
-namespace Cinch\Command\Task;
+namespace Cinch\Command\Event;
 
 use Symfony\Contracts\EventDispatcher\Event;
 
-class EndedEvent extends Event
+class TaskEnded extends Event
 {
     /**
      * @param bool $success

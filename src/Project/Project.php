@@ -3,12 +3,20 @@
 namespace Cinch\Project;
 
 use Cinch\Common\Environment;
+use Cinch\Component\Assert\AssertException;
+use Cinch\Hook\Hook;
 use Cinch\MigrationStore\StoreDsn;
 use Exception;
 
 class Project
 {
     /**
+     * @param ProjectId $id
+     * @param ProjectName $name
+     * @param StoreDsn $migrationStoreDsn
+     * @param EnvironmentMap $envMap
+     * @param Hook[] $hooks
+     * @param bool $isSingleTransactionMode
      * @throws Exception
      */
     public function __construct(
@@ -19,13 +27,15 @@ class Project
         private array $hooks = [],
         private readonly bool $isSingleTransactionMode = true)
     {
+        foreach ($this->hooks as $i => $h)
+            if (!($h instanceof Hook))
+                throw new AssertException("hooks[$i] is not an instance of " . Hook::class);
     }
 
     /** Indicates if all migrations within a deployment, should be wrapped within a single transaction. When this
      * is false, each migration uses a separate transaction, meaning if a migration script fails, any previously
      * committed changes remain. The default is true. When using a database without transactional DDL support,
      * like mysql/mariadb and oracle, it is recommended to set this to false when any migration contains DDL.
-     * @return bool
      */
     public function isSingleTransactionMode(): bool
     {
@@ -78,17 +88,6 @@ class Project
     public function getHooks(): array
     {
         return $this->hooks;
-    }
-
-    /**
-     * @param HookEvent[] $events
-     * @return Hook[]
-     */
-    public function getHooksByEvents(array|HookEvent $events): array
-    {
-        if (!is_array($events))
-            $events = (array) $events;
-        return array_filter($this->hooks, fn(Hook $h) => in_array($h->event, $events));
     }
 
     public function snapshot(): array

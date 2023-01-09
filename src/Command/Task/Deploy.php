@@ -35,10 +35,10 @@ class Deploy extends Task
     protected function doRun(): void
     {
         $addedChange = false;
-        $isSingleTransactionMode = $this->deployment->isSingleTransactionMode();
+        $needTransaction = !$this->deployment->isSingleTransactionMode();
 
         try {
-            if (!$isSingleTransactionMode)
+            if ($needTransaction)
                 $this->target->beginTransaction();
 
             if (!$this->deployment->isDryRun()) {
@@ -48,11 +48,11 @@ class Deploy extends Task
 
             $addedChange = $this->addChange($this->status, $this->migration);
 
-            if (!$isSingleTransactionMode)
+            if ($needTransaction)
                 $this->target->commit();
         }
         catch (Exception $e) {
-            if (!$isSingleTransactionMode) {
+            if ($needTransaction) {
                 silent_call($this->target->rollBack(...));
                 if ($addedChange)
                     silent_call($this->deployment->removeChange(...), $this->migration->getPath());

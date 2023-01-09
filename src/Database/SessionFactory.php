@@ -25,10 +25,11 @@ class SessionFactory
         if ($driver == 'mssql')
             $driver = 'sqlsrv';
 
-        $params = [
+        /** @var Session $session */
+        $session = DriverManager::getConnection($platform->addParams([
             'cinch.platform' => $platform,
             'driver' => "pdo_$driver",
-            'wrapperClass' => Session::class, // allows us to extend Doctrine's built-in Connection
+            'wrapperClass' => Session::class, // extend Doctrine's built-in Connection
             'dbname' => $dsn->dbname,
             'user' => $dsn->user,
             'password' => $dsn->password,
@@ -38,10 +39,8 @@ class SessionFactory
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
             ]
-        ];
+        ]));
 
-        /** @var Session $session */
-        $session = DriverManager::getConnection($platform->addParams($params));
         return $session;
     }
 }

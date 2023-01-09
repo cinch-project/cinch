@@ -2,8 +2,6 @@
 
 namespace Cinch\Command;
 
-use Cinch\Command\Task\EndedEvent;
-use Cinch\Command\Task\StartedEvent;
 use Cinch\Component\Assert\Assert;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -72,7 +70,7 @@ abstract class Task
      */
     private function execute(bool $isUndo): void
     {
-        $this->dispatcher->dispatch(new StartedEvent($this->id, $this->name, $this->description, $isUndo));
+        $this->dispatcher->dispatch(new Event\TaskStarted($this->id, $this->name, $this->description, $isUndo));
 
         try {
             $startTime = hrtime(true);
@@ -88,7 +86,7 @@ abstract class Task
         }
         finally {
             $elapsed = (hrtime(true) - $startTime) / 1e9;
-            $this->dispatcher->dispatch(new EndedEvent($this->success, $elapsed));
+            $this->dispatcher->dispatch(new Event\TaskEnded($this->success, $elapsed));
         }
     }
 }

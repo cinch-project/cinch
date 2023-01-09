@@ -5,6 +5,7 @@ namespace Cinch\Project;
 use Cinch\Common\Environment;
 use Cinch\Component\Assert\Assert;
 use Cinch\Database\DatabaseDsn;
+use Cinch\Hook;
 use Cinch\LastErrorException;
 use Cinch\MigrationStore\StoreDsn;
 use Exception;
@@ -38,7 +39,7 @@ class YamlProjectRepository implements ProjectRepository
             $name,
             new StoreDsn(Assert::objectProp($state, 'migration_store', "migration_store")),
             $this->createEnvironmentMap($state, $name),
-            $this->createHooks($state),
+            $this->createHooks($state, $id->value),
             Assert::ifPropSet($state, 'single_transaction', true, 'single_transaction')->bool()->value()
         );
     }
@@ -135,19 +136,25 @@ class YamlProjectRepository implements ProjectRepository
     /**
      * @throws Exception
      */
-    private function createHooks(object $state): array
+    private function createHooks(object $state, string $projectDir): array
     {
         $hooks = [];
-        $rawHooks = Assert::ifProp($state, 'hooks', (object) [], 'hooks')->object()->value();
+        $rawHooks = Assert::ifProp($state, 'hooks', [], 'hooks')->array()->value();
 
-        foreach ($rawHooks as $name => $hook) {
-            $path = "hooks.$name";
-            $hooks[$name] = new Hook(
-                new HookScript(Assert::stringProp($hook, 'script', "$path.script")),
-                HookEvent::from(Assert::stringProp($hook, 'event', "$path.event")),
-                Assert::ifProp($hook, 'timeout', Hook::DEFAULT_TIMEOUT, "$path.timeout")->int()->value(),
-                $hook->rollback ?? true,
-                (array) ($hook->arguments ?? [])
+        foreach ($rawHooks as $i => $hook) {
+            $path = "hooks[$i]";
+
+            $events = Assert::prop($hook, 'events', "$path.events");
+            if (is_string($events))
+                $events = [$events];
+
+            $hooks[] = new Hook\Hook(
+                new Hook\Action(Assert::stringProp($hook, 'action', "$path.action"), $projectDir),
+                array_map(fn($e) => Hook\Event::from($e), Assert::that($events, 'events')->array()->notEmpty()->value()),
+                Assert::ifProp($hook, 'timeout', Hook\Hook::DEFAULT_TIMEOUT, "$path.timeout")->int()->value(),
+                Assert::ifProp($hook, 'fail_on_error', true, "$path.fail_on_error")->bool()->value(),
+                Assert::ifProp($hook, 'arguments', [], "$path.arguments")->array()->value(),
+                Assert::ifProp($hook, 'headers', (object) [], "$path.arguments")->object()->value()
             );
         }
 
