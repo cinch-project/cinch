@@ -99,7 +99,7 @@ function system_user(): string
     if (PHP_OS_FAMILY == 'Windows') {
         /* one of these should always exist */
         if (($user = getenv('USERPROFILE')) || ($user = getenv('HOMEPATH')))
-            return basename($user);
+            return basename(str_replace('\\', '/', $user));
 
         /* in some odd IE restart cases, this could be unset. */
         if (($user = getenv('USERNAME')))

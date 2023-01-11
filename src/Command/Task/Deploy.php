@@ -15,6 +15,8 @@ use Exception;
 
 class Deploy extends Task
 {
+    private Change|null $change = null;
+
     /**
      * @throws Exception
      */
@@ -34,19 +36,20 @@ class Deploy extends Task
 
     protected function doRun(): void
     {
-        $addedChange = false;
         $needTransaction = !$this->deployment->isSingleTransactionMode();
 
-        try {
-            if ($needTransaction)
-                $this->target->beginTransaction();
+        if ($needTransaction)
+            $this->target->beginTransaction();
 
+        try {
             if (!$this->deployment->isDryRun()) {
                 $command = $this->deployment->getCommand()->value;
                 $this->migration->getScript()->$command($this->target);
             }
 
-            $addedChange = $this->addChange($this->status, $this->migration);
+            $change = $this->createChange();
+            $this->deployment->addChange($change);
+            $this->change = $change;
 
             if ($needTransaction)
                 $this->target->commit();
@@ -54,7 +57,7 @@ class Deploy extends Task
         catch (Exception $e) {
             if ($needTransaction) {
                 silent_call($this->target->rollBack(...));
-                if ($addedChange)
+                if ($this->change)
                     silent_call($this->deployment->removeChange(...), $this->migration->getPath());
             }
 
@@ -69,23 +72,32 @@ class Deploy extends Task
     /**
      * @throws Exception
      */
-    private function addChange(ChangeStatus $status, Migration $migration): bool
+    public function getChange(): Change
     {
-        $script = $migration->getScript();
+        /* when change is null, create a temp one (deployedAt is wrong since it has not been deployed yet).
+         * This happens for BEFORE hook events (expected). Once deployed, change will be valid/not-null
+         * (AFTER hook events). Note: CINCH_CHANGE_DEPLOYED_AT ENV variable is not exposed to BEFORE hooks.
+         */
+        return $this->change ?? $this->createChange();
+    }
 
-        $this->deployment->addChange(new Change(
-            $migration->getPath(),
+    /**
+     * @throws Exception
+     */
+    private function createChange(): Change
+    {
+        $script = $this->migration->getScript();
+        return new Change(
+            $this->migration->getPath(),
             $this->deployment->getTag(),
             $script->getMigratePolicy(),
-            $status,
+            $this->status,
             $script->getAuthor(),
-            $migration->getChecksum(),
+            $this->migration->getChecksum(),
             $script->getDescription(),
             $script->getLabels(),
             $script->getAuthoredAt(),
             new DateTimeImmutable(timezone: new DateTimeZone('UTC'))
-        ));
-
-        return true;
+        );
     }
 }

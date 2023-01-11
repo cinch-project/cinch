@@ -13,7 +13,7 @@ class Hook
      * @param Action $action
      * @param Event[] $events must contain at least one event
      * @param int $timeout
-     * @param bool $failOnError
+     * @param bool $abortOnError
      * @param array $arguments
      * @param array $headers
      */
@@ -21,7 +21,7 @@ class Hook
         public readonly Action $action,
         public readonly array $events,
         public readonly int $timeout,
-        public readonly bool $failOnError,
+        public readonly bool $abortOnError,
         public readonly array $arguments,
         public readonly array $headers)
     {
@@ -37,7 +37,7 @@ class Hook
             'action' => (string) $this->action,
             'events' => array_map(fn($e) => $e->value, $this->events),
             'timeout' => $this->timeout,
-            'fail_on_error' => $this->failOnError,
+            'abort_on_error' => $this->abortOnError,
             'arguments' => (object) $this->arguments
         ];
     }
@@ -46,8 +46,8 @@ class Hook
     {
         foreach ($this->arguments as $i => $a)
             if (!(is_string($a) || is_int($a) || is_float($a)))
-                throw new AssertException(sprintf("hook.arguments[$i]: value must be string|int|float, " .
-                    "found '%s'", get_debug_type($a)));
+                throw new AssertException(sprintf("hook.arguments[%d]: value must be string|int|float, " .
+                    "found '%s'", $i, get_debug_type($a)));
     }
 
     private function assertHeaders(): void
@@ -55,8 +55,8 @@ class Hook
         foreach ($this->headers as $name => $value) {
             Assert::that($name, 'headers')->string()->notEmpty();
             if (!(is_string($value) || is_int($value) || is_float($value)))
-                throw new AssertException(sprintf("hook.headers.$name: value must be string|int|float, " .
-                    "found '%s'", get_debug_type($value)));
+                throw new AssertException(sprintf("hook.headers.%s: value must be string|int|float, " .
+                    "found '%s'", $name, get_debug_type($value)));
         }
     }
 }

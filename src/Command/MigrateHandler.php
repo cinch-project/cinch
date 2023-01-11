@@ -28,6 +28,11 @@ class MigrateHandler extends DeployHandler
         $afterTasks = [];
         $count = $c->options->getCount();
 
+        /* each iteration is a single migration, but could include multiple tasks (hooks). this keeps track of
+         * before, once and after "migration" only counts: 0=before, 1=once, 2=after.
+         */
+        $migrationCounts = [0, 0, 0];
+
         if (!$changes)
             $migrations = [];
         else if ($paths)
@@ -47,16 +52,19 @@ class MigrateHandler extends DeployHandler
              * scripts that will ultimately be skipped.
              */
             $migratePolicy = $migration->getScript()->getMigratePolicy();
-            $task = $this->createDeployTask($migration, $status);
+            $tasks = $this->createDeployTasks($migration, $status); // includes DeployHook tasks
 
             if ($migratePolicy->isBefore()) {
-                $beforeTasks[] = $task;
+                $migrationCounts[0]++;
+                array_push($beforeTasks, ...$tasks);
             }
             else if ($migratePolicy->isAfter()) {
-                $afterTasks[] = $task;
+                $migrationCounts[2]++;
+                array_push($afterTasks, ...$tasks);
             }
             else {
-                $onceTasks[] = $task;
+                $migrationCounts[1]++;
+                array_push($onceTasks, ...$tasks);
                 if ($count !== null && --$count == 0) // limit to once, doesn't apply to before|after
                     break;
             }
@@ -71,13 +79,13 @@ class MigrateHandler extends DeployHandler
         foreach ($afterTasks as $task)
             $this->addTask($task);
 
-        if ($this->getTaskCount() == 0) {
+        if (array_sum($migrationCounts) == 0) {
             $this->logger->info("nothing to migrate");
             return;
         }
 
         $this->logger->notice(sprintf("found %d before, %d new, %d after eligible migrations out of %d",
-            count($beforeTasks), count($onceTasks), count($afterTasks), count($migrations)));
+            $migrationCounts[0], $migrationCounts[1], $migrationCounts[2], count($migrations)));
 
         unset($migrations, $beforeTasks, $onceTasks, $afterTasks, $changes);
         $this->deploy();

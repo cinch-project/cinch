@@ -2,13 +2,16 @@
 
 namespace Cinch\Command;
 
+use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
 use Cinch\History\ChangeStatus;
 use Cinch\History\Deployment;
+use Cinch\History\DeploymentCommand;
 use Cinch\History\DeploymentError;
 use Cinch\History\History;
 use Cinch\History\HistoryFactory;
+use Cinch\Hook;
 use Cinch\MigrationStore\Migration;
 use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
@@ -22,7 +25,7 @@ abstract class DeployHandler extends Handler
     protected readonly History $history;
     private readonly Session $target;
     private readonly Deployment $deployment;
-    private readonly HookManager $hookManager;
+    private readonly HookRunner $hookRunner;
     private readonly bool $isSingleTransactionMode;
 
     public function __construct(
@@ -41,16 +44,17 @@ abstract class DeployHandler extends Handler
     {
         $project = $this->projectRepository->get($deploy->projectId);
         $environment = $project->getEnvironmentMap()->get($deploy->envName);
-
-        $this->target = $this->sessionFactory->create($environment->targetDsn);
-        $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
-        $this->history = $this->historyFactory->create($environment);
         $this->isSingleTransactionMode = $project->isSingleTransactionMode();
 
+        $this->target = $this->sessionFactory->create($environment->targetDsn);
         $this->deployment = $this->history->createDeployment($deploy->command, $deploy->tag,
             $deploy->deployer, $deploy->isDryRun, $this->isSingleTransactionMode);
 
-        $this->hookManager = new HookManager($this->deployment, $project, $this->target, $this->logger, $this->twig);
+        $this->hookRunner = new HookRunner($this->deployment, $project, $this->target, $this->logger, $this->twig);
+        $this->hookRunner->run(Hook\Event::AFTER_CONNECT);
+
+        $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
+        $this->history = $this->historyFactory->create($environment);
     }
 
     /**
@@ -58,7 +62,8 @@ abstract class DeployHandler extends Handler
      */
     protected function deploy(): void
     {
-        $this->hookManager->beforeDeploy();
+        $isMigrate = $this->deployment->getCommand() == DeploymentCommand::MIGRATE;
+        $this->hookRunner->run($isMigrate ? Hook\Event::BEFORE_MIGRATE : Hook\Event::BEFORE_ROLLBACK);
 
         $error = null;
         $this->deployment->open();
@@ -93,14 +98,52 @@ abstract class DeployHandler extends Handler
                 $this->deployment->close();
         }
 
-        $this->hookManager->afterDeploy();
+        $this->hookRunner->run($isMigrate ? Hook\Event::AFTER_MIGRATE : Hook\Event::AFTER_ROLLBACK);
+    }
+
+    /**
+     * @returns Task[]
+     * @throws Exception
+     */
+    protected function createDeployTasks(Migration $migration, ChangeStatus $status): array
+    {
+        $tasks = [];
+        $policy = $migration->getScript()->getMigratePolicy();
+        $deploy = new Task\Deploy($migration, $status, $this->target, $this->deployment);
+
+        /* BEFORE hooks */
+        $event = $this->getEvent($policy, isBefore: true);
+        foreach ($this->hookRunner->getHooksForEvent($event) as $hook)
+            $tasks[] = new Task\DeployHook($hook, $event, $deploy, $this->hookRunner);
+
+        /* actual deploy task */
+        $tasks[] = $deploy;
+
+        /* AFTER hooks */
+        $event = $this->getEvent($policy, isBefore: false);
+        foreach ($this->hookRunner->getHooksForEvent($event) as $hook)
+            $tasks[] = new Task\DeployHook($hook, $event, $deploy, $this->hookRunner);
+
+        return $tasks;
     }
 
     /**
      * @throws Exception
      */
-    protected function createDeployTask(Migration $migration, ChangeStatus $status): Task\Deploy
+    private function getEvent(MigratePolicy $policy, bool $isBefore): Hook\Event
     {
-        return new Task\Deploy($migration, $status, $this->target, $this->deployment);
+        if ($this->deployment->getCommand() == DeploymentCommand::MIGRATE) {
+            if ($policy->isOnChange())
+                $event = $isBefore ? Hook\Event::BEFORE_ONCHANGE_MIGRATE : Hook\Event::AFTER_ONCHANGE_MIGRATE;
+            else if ($policy->isAlways())
+                $event = $isBefore ? Hook\Event::BEFORE_ALWAYS_MIGRATE : Hook\Event::AFTER_ALWAYS_MIGRATE;
+            else
+                $event = $isBefore ? Hook\Event::BEFORE_ONCE_MIGRATE : Hook\Event::AFTER_ONCE_MIGRATE;
+        }
+        else {
+            $event = $isBefore ? Hook\Event::BEFORE_EACH_ROLLBACK : Hook\Event::AFTER_EACH_ROLLBACK; // only supports ONCE migrations
+        }
+
+        return $event;
     }
 }

@@ -3,7 +3,6 @@
 namespace Cinch\Command;
 
 use Cinch\Common\MigratePolicy;
-use Cinch\Console\ConsoleLogger;
 use Cinch\History\ChangeStatus;
 use Cinch\History\DeploymentTag;
 use Exception;
@@ -17,23 +16,28 @@ class RollbackHandler extends DeployHandler
     {
         $this->prepare($c);
         $changes = $this->getChanges($c->rollbackBy);
+        $changeCount = 0;
 
         foreach ($changes as $change) {
             $migration = $this->migrationStore->get($change->path);
 
-            if (!$change->checksum->equals($migration->getChecksum()))
+            if (!$change->checksum->equals($migration->getChecksum())) {
                 $this->logger->error("'$migration' cannot be rollbacked, it has changed since the " .
                     "last deployment on {date}", ['date' => $change->deployedAt]);
-            else
-                $this->addTask($this->createDeployTask($migration, ChangeStatus::ROLLBACKED));
+            }
+            else {
+                $changeCount++;
+                foreach ($this->createDeployTasks($migration, ChangeStatus::ROLLBACKED) as $task)
+                    $this->addTask($task);
+            }
         }
 
-        if ($this->getTaskCount() == 0) {
+        if ($changeCount == 0) {
             $this->logger->info("nothing to roll back");
             return;
         }
 
-        $this->logger->notice(sprintf('found %d changes for rollback out of %d', $this->getTaskCount(), count($changes)));
+        $this->logger->notice(sprintf('found %d changes for rollback out of %d', $changeCount, count($changes)));
 
         unset($changes);
         $this->deploy();

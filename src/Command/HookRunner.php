@@ -3,8 +3,8 @@
 namespace Cinch\Command;
 
 use Cinch\Database\Session;
+use Cinch\History\Change;
 use Cinch\History\Deployment;
-use Cinch\History\DeploymentCommand;
 use Cinch\Hook\ActionType;
 use Cinch\Hook\Event;
 use Cinch\Hook\Handler as HookHandler;
@@ -18,10 +18,8 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 use Twig\Environment as Twig;
 
-class HookManager
+class HookRunner
 {
-    private readonly array $eventMap;
-
     public function __construct(
         private readonly Deployment $deployment,
         private readonly Project $project,
@@ -29,86 +27,62 @@ class HookManager
         private readonly LoggerInterface $logger,
         private readonly Twig $twig)
     {
-        $migrate = $this->deployment->getCommand() == DeploymentCommand::MIGRATE;
+    }
 
-        $this->eventMap = [
-            'before-deploy' => $migrate ? Event::BEFORE_MIGRATE : Event::AFTER_ROLLBACK,
-            'before-each-deploy' => $migrate ? Event::BEFORE_EACH_MIGRATE : Event::AFTER_EACH_ROLLBACK,
-            'after-deploy' => $migrate ? Event::AFTER_MIGRATE : Event::AFTER_ROLLBACK,
-            'after-each-deploy' => $migrate ? Event::BEFORE_EACH_MIGRATE : Event::AFTER_EACH_ROLLBACK,
-        ];
+    /**
+     * @param Event $event
+     * @return Hook[]
+     */
+    public function getHooksForEvent(Event $event): array
+    {
+        return array_filter($this->project->getHooks(), fn($h) => in_array($event, $h->events));
+    }
+
+    /** Run all hooks registered with the given event.
+     * @throws Exception
+     */
+    public function run(Event $event, Change|null $change = null): void
+    {
+        foreach ($this->getHooksForEvent($event) as $hook)
+            $this->runHook($hook, $event, $change);
     }
 
     /**
      * @throws Exception
      */
-    public function beforeConnect(): void
+    public function runHook(Hook $hook, Event $event, Change|null $change): void
     {
-        $this->invoke(Event::BEFORE_CONNECT);
+        if ($this->deployment->isDryRun())
+            return;
+
+        [$exitCode, $error, $timeout] = match ($hook->action->getType()) {
+            ActionType::HTTP => $this->runHttpHook($hook, $event, $change),
+            ActionType::SQL => $this->runSqlHook($hook, $event, $change),
+            ActionType::PHP => $this->runPhpHook($hook, $event, $change),
+            ActionType::SCRIPT => $this->runScriptHook($hook, $event, $change)
+        };
+
+        if ($timeout)
+            $message = sprintf("%s hook '%s' timed out after %d seconds",
+                $event->value, $hook->action, $hook->timeout);
+        else if ($exitCode)
+            $message = sprintf("%s hook '%s' failed with exitcode %d%s",
+                $event->value, $hook->action, $exitCode, $error ? " - $error" : '');
+        else
+            $message = '';
+
+        if ($message)
+            $hook->abortOnError ? throw new Exception($message) : $this->logger->error($message);
     }
 
-    /**
-     * @throws Exception
-     */
-    public function afterConnect(): void
-    {
-        $this->invoke(Event::AFTER_CONNECT);
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function beforeDeploy(): void
-    {
-        $this->invoke('before-deploy');
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function afterDeploy(): void
-    {
-        $this->invoke('after-deploy');
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function invoke(string|Event $event): void
-    {
-        if (is_string($event))
-            $event = $this->eventMap[$event];
-
-        foreach (array_filter($this->project->getHooks(), fn($h) => in_array($event, $h->events)) as $hook) {
-            [$exitCode, $error, $timeout] = match ($hook->action->getType()) {
-                ActionType::HTTP => $this->invokeHttp($hook, $event),
-                ActionType::SQL => $this->invokeSql($hook, $event),
-                ActionType::PHP => $this->invokePhp($hook, $event),
-                ActionType::SCRIPT => $this->invokeScript($hook, $event)
-            };
-
-            if ($timeout)
-                $message = sprintf("%s hook '%s' timed out after %d seconds",
-                    $event->value, $hook->action, $hook->timeout);
-            else if ($exitCode)
-                $message = sprintf("%s hook '%s' failed with exitcode %d%s",
-                    $event->value, $hook->action, $exitCode, $error ? " - $error" : '');
-            else
-                $message = '';
-
-            if ($message)
-                $hook->failOnError ? throw new Exception($message) : $this->logger->error($message);
-        }
-    }
-
-    private function invokeSql(Hook $hook, Event $event): array
+    private function runSqlHook(Hook $hook, Event $event, Change|null $change): array
     {
         try {
             $path = $hook->action->getPath();
             $sql = $this->twig->createTemplate(slurp($path), basename($path))->render([
                 ...getenv(),
-                ...$this->getEnvironment($hook, $event),
-                ...$hook->action->getVariables()
+                ...$this->envVars($hook, $event, $change),
+                ...$hook->action->getVariables() // uri query params -> "sql:/home/foo/a.sql?name=value"
             ]);
 
             $this->target->executeStatement($sql);
@@ -119,7 +93,7 @@ class HookManager
         }
     }
 
-    private function invokePhp(Hook $hook, Event $event): array
+    private function runPhpHook(Hook $hook, Event $event, Change|null $change): array
     {
         try {
             $handler = require $hook->action->getPath();
@@ -135,7 +109,8 @@ class HookManager
         try {
             $error = '';
             $exitCode = $handler->handle($event, new HandlerContext(
-                $hook,
+                $hook, // hook.action.getVariables available - "php:/home/foo/a.php?name=value"
+                $change,
                 $this->target,
                 $this->project->getId(),
                 $this->project->getName(),
@@ -155,17 +130,22 @@ class HookManager
         return [$exitCode, $error, false];
     }
 
-    private function invokeScript(Hook $hook, Event $event): array
+    private function runScriptHook(Hook $hook, Event $event, Change|null $change): array
     {
         $error = '';
         $path = $hook->action->getPath();
+
+        /* variables become ENV vars: my_var=1 -> CINCH_my_var=1 */
+        $variables = [];
+        foreach ($hook->action->getVariables() as $name => $value)
+            $variables['CINCH_' . $name] = $value;
 
         $process = @proc_open(
             [$path, ...$hook->arguments],
             [2 => ['pipe', 'w']], // stderr
             $pipes,
             basename($path),
-            [...getenv(), ...$this->getEnvironment($hook, $event)],
+            [...getenv(), ...$this->envVars($hook, $event, $change), ...$variables],
             ['bypass_shell']
         );
 
@@ -180,7 +160,7 @@ class HookManager
         $timeout = false;
         $expiry = hrtime(true) + ($hook->timeout * 1e9);
 
-        /* consume: unfortunately, can't use stream_select() on pipes returned by proc_open, because it is
+        /* unfortunately, can't use stream_select() on pipes returned by proc_open, because it is
          * completely broken on Windows [sighs]. Instead, manually poll with tiny sleeps.
          */
         while (true) {
@@ -214,7 +194,7 @@ class HookManager
         return [proc_close($process), $error, $timeout];
     }
 
-    private function invokeHttp(Hook $hook, Event $event): array
+    private function runHttpHook(Hook $hook, Event $event, Change|null $change): array
     {
         try {
             $headers = [
@@ -227,14 +207,14 @@ class HookManager
                     $headers[$name] = $value;
 
             $env = [];
-            foreach ($this->getEnvironment($hook, $event) as $name => $value)
+            foreach ($this->envVars($hook, $event, $change) as $name => $value)
                 $env[strtolower(substr($name, 6))] = $value; // remove CINCH_ prefix and lowercase
 
-            /* note: URL (hook.action) can contain ?query params */
+            /* variables contained within URL (hook.action) query params */
             (new Client)->post($hook->action->getPath(), [
                 'timeout' => $hook->timeout,
                 'headers' => $headers,
-                'json' => $env // body is {"hook_event": "before-migrate", "deployer": "foo", ...}
+                'json' => $env // body -> {"hook_event": "before-once-migrate", "deployer": "foo", ...}
             ]);
 
             return [0, '', false];
@@ -245,12 +225,12 @@ class HookManager
         }
     }
 
-    private function getEnvironment(Hook $hook, Event $event): array
+    private function envVars(Hook $hook, Event $event, Change|null $change): array
     {
-        return [
+        $env = [
             'CINCH_HOOK_EVENT' => $event->value,
             'CINCH_HOOK_TIMEOUT' => $hook->timeout,
-            'CINCH_HOOK_FAIL_ON_ERROR' => $hook->failOnError,
+            'CINCH_HOOK_ABORT_ON_ERROR' => $hook->abortOnError,
             'CINCH_DEPLOYMENT_TAG' => $this->deployment->getTag()->value,
             'CINCH_DEPLOYMENT_COMMAND' => $this->deployment->getCommand()->value,
             'CINCH_DEPLOYER' => $this->deployment->getDeployer()->value,
@@ -261,5 +241,20 @@ class HookManager
             'CINCH_PROJECT_ID' => $this->project->getId()->value,
             'CINCH_PROJECT_NAME' => $this->project->getName()->value
         ];
+
+        if ($change) {
+            $env['CINCH_CHANGE_PATH'] = $change->path->value;
+            $env['CINCH_CHANGE_MIGRATE_POLICY'] = $change->migratePolicy->value;
+            $env['CINCH_CHANGE_STATUS'] = $change->status->value;
+            $env['CINCH_CHANGE_AUTHOR'] = $change->author->value;
+            $env['CINCH_CHANGE_CHECKSUM'] = $change->checksum->value;
+            $env['CINCH_CHANGE_DESCRIPTION'] = $change->description->value;
+            $env['CINCH_CHANGE_LABELS'] = $change->labels->snapshot() ?? '';
+            $env['CINCH_CHANGE_AUTHORED_AT'] = $change->authoredAt->format('Y-m-d\TH:i:s.uP');
+            if ($event->isAfter())
+                $env['CINCH_CHANGE_DEPLOYED_AT'] = $change->deployedAt->format('Y-m-d\TH:i:s.uP');
+        }
+
+        return $env;
     }
 }

@@ -3,6 +3,7 @@
 namespace Cinch\Hook;
 
 use Cinch\Component\Assert\Assert;
+use Cinch\Component\Assert\AssertException;
 use GuzzleHttp\Psr7\Uri;
 use Symfony\Component\Filesystem\Path;
 
@@ -14,28 +15,31 @@ class Action
 
     public function __construct(private readonly string $action, string $basePath = '')
     {
+        $variables = [];
         $uri = new Uri($this->action);
-        $scheme = strtolower($uri->getScheme() ?: 'script');
 
-        if ($scheme == 'http') {
-            $this->variables = [];
-            $this->path = $this->action;
+        if (($scheme = strtolower($uri->getScheme())) === 'https')
+            $scheme = 'http';
+
+        $this->type = $scheme ? ActionType::from($scheme) : ActionType::SCRIPT; // scripts are schemeless URIs
+
+        if ($this->type == ActionType::HTTP) {
+            $path = $this->action; // variables sent as is in URL query params
         }
         else {
-            $path = Assert::notEmpty($uri->getPath(), 'hook.action');
+            $path = Assert::notEmpty($uri->getPath(), 'hook action path');
+
             if ($basePath)
                 $path = Path::makeAbsolute($path, $basePath);
-            $this->path = Assert::executable($path, 'hook.action');
 
-            if ($scheme == 'handler')
-                $scheme = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            if ($this->type == ActionType::SCRIPT)
+                Assert::executable($path, 'hook script action');
 
-            $q = [];
-            parse_str($uri->getQuery(), $q);
-            $this->variables = $q;
+            $variables = $this->assertVariables($uri);
         }
 
-        $this->type = ActionType::from($scheme);
+        $this->path = $path;
+        $this->variables = $variables;
     }
 
     public function getType(): ActionType
@@ -61,5 +65,20 @@ class Action
     public function __toString(): string
     {
         return $this->action;
+    }
+
+    private function assertVariables(Uri $uri): array
+    {
+        $variables = [];
+        parse_str($uri->getQuery(), $variables);
+
+        foreach ($variables as $name => $value) {
+            Assert::that($name, 'action variable name')->string()->regex('~^[a-zA-Z_]\w*$~');
+            if (!(is_string($value) || is_int($value) || is_float($value)))
+                throw new AssertException(sprintf("action.variable.%s: value must be string|int|float, " .
+                    "found '%s'", $name, get_debug_type($value)));
+        }
+
+        return $variables;
     }
 }
