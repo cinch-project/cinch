@@ -95,7 +95,7 @@ abstract class Dsn
 
     private function parseParameters(string $dsn): array
     {
-        /* example: "name=value name = value name='a va\'lue'" */
+        /* example: "name=value name = value name='va\'lue'" */
         static $pattern = "~([a-zA-Z_]+)\s*=\s*('[^'\\\]*'|\S+)~";
 
         if (preg_match_all($pattern, $dsn, $matches, PREG_SET_ORDER) === false)
@@ -115,7 +115,7 @@ abstract class Dsn
             $v = (string) $v;
 
         if (is_string($v) && strcspn($v, " \t") != strlen($v))
-            $v = sprintf("'%s'", str_replace(["\\", "'"], ["\\\\", "\'"], $v));
+            $v = sprintf("'%s'", str_replace(["\\", "'"], ["\\\\", "\\'"], $v));
 
         return $v;
     }
