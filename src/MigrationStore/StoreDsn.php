@@ -56,7 +56,7 @@ class StoreDsn extends Dsn
 
         $params = parent::getParameters();
 
-        /* part of OO model only, these are composed of parameters */
+        /* part of OO model only, these are composed of other parameters */
         unset($params['basePath'], $params['baseUri']);
 
         /* add driver-specific parameters: if not used by driver, they will be null */

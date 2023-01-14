@@ -59,7 +59,7 @@ class Assert
         if ($value instanceof Stringable)
             $value = (string) $value;
         else if ($value instanceof DateTimeInterface)
-            $value = $value->format('Y-m-d H:i:s.uO');
+            $value = $value->format(DateTimeInterface::RFC3339);
 
         if (is_string($value)) {
             if (strlen($value) > 64)

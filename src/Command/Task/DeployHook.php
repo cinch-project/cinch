@@ -2,7 +2,6 @@
 
 namespace Cinch\Command\Task;
 
-use Cinch\Command\HookRunner;
 use Cinch\Command\Task;
 use Cinch\Hook;
 
@@ -11,8 +10,8 @@ class DeployHook extends Task
     public function __construct(
         private readonly Hook\Hook $hook,
         private readonly Hook\Event $event,
-        private readonly Deploy $deployTask,
-        private readonly HookRunner $hookRunner)
+        private readonly Deploy|null $deployTask,
+        private readonly Hook\Runner $hookRunner)
     {
         $action = $this->hook->action;
         parent::__construct(
@@ -23,7 +22,7 @@ class DeployHook extends Task
 
     protected function doRun(): void
     {
-        $this->hookRunner->runHook($this->hook, $this->event, $this->deployTask->getChange());
+        $this->hookRunner->runHook($this->hook, $this->event, $this->deployTask?->getChange());
     }
 
     protected function doUndo(): void
