@@ -48,12 +48,12 @@ class Application extends BaseApplication
         $this->configureMemoryLimit();
     }
 
-    /** $input and $output are ignored.
+    /**
      * @throws Exception
      */
     public function run(InputInterface $input = null, OutputInterface $output = null): int
     {
-        return parent::run($this->input, $this->logger->getOutput());
+        return parent::run($input ?? $this->input, $output ?? $this->logger->getOutput());
     }
 
     /** Loads environment variables from .env.local if it exists, otherwise .env.prod.
