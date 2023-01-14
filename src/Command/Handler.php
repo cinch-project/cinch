@@ -34,11 +34,6 @@ abstract class Handler
         return $this;
     }
 
-    protected function getTaskCount(): int
-    {
-        return count($this->tasks);
-    }
-
     /**
      * @throws Exception
      */

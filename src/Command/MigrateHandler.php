@@ -29,7 +29,7 @@ class MigrateHandler extends DeployHandler
         $count = $c->options->getCount();
 
         /* each iteration is a single migration, but could include multiple tasks (hooks). this keeps track of
-         * before, once and after "migration" only counts: 0=before, 1=once, 2=after.
+         * before, once and after "migration" only (non-hook) counts: 0=before, 1=once, 2=after.
          */
         $migrationCounts = [0, 0, 0];
 
@@ -52,7 +52,7 @@ class MigrateHandler extends DeployHandler
              * scripts that will ultimately be skipped.
              */
             $migratePolicy = $migration->getScript()->getMigratePolicy();
-            $tasks = $this->createDeployTasks($migration, $status); // includes DeployHook tasks
+            $tasks = $this->createDeployTasks($migration, $status); // includes before/after DeployHook tasks
 
             if ($migratePolicy->isBefore()) {
                 $migrationCounts[0]++;

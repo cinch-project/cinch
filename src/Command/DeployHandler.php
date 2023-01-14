@@ -2,6 +2,7 @@
 
 namespace Cinch\Command;
 
+use Cinch\Command\Task\DeployHook;
 use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
@@ -25,7 +26,7 @@ abstract class DeployHandler extends Handler
     protected readonly History $history;
     private readonly Session $target;
     private readonly Deployment $deployment;
-    private readonly HookRunner $hookRunner;
+    private readonly Hook\Runner $hookRunner;
     private readonly bool $isSingleTransactionMode;
 
     public function __construct(
@@ -44,17 +45,25 @@ abstract class DeployHandler extends Handler
     {
         $project = $this->projectRepository->get($deploy->projectId);
         $environment = $project->getEnvironmentMap()->get($deploy->envName);
-        $this->isSingleTransactionMode = $project->isSingleTransactionMode();
 
+        $this->isSingleTransactionMode = $project->isSingleTransactionMode();
+        $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
+        $this->history = $this->historyFactory->create($environment);
         $this->target = $this->sessionFactory->create($environment->targetDsn);
         $this->deployment = $this->history->createDeployment($deploy->command, $deploy->tag,
             $deploy->deployer, $deploy->isDryRun, $this->isSingleTransactionMode);
 
-        $this->hookRunner = new HookRunner($this->deployment, $project, $this->target, $this->logger, $this->twig);
+        /* not ran as a task. after target database connect. event designed so one can configure db session. In
+         * most cases, script hooks are not used since you have no access to target: normally php or sql hooks.
+         */
+        $this->hookRunner = new Hook\Runner($this->deployment, $project, $this->target, $this->logger, $this->twig);
         $this->hookRunner->run(Hook\Event::AFTER_CONNECT);
 
-        $this->migrationStore = $this->migrationStoreFactory->create($project->getMigrationStoreDsn());
-        $this->history = $this->historyFactory->create($environment);
+        /* add before deploy tasks */
+        $isMigrate = $this->deployment->getCommand() == DeploymentCommand::MIGRATE;
+        $event = $isMigrate ? Hook\Event::BEFORE_MIGRATE : Hook\Event::BEFORE_ROLLBACK;
+        foreach ($this->hookRunner->getHooksForEvent($event) as $hook)
+            $this->addTask(new DeployHook($hook, $event, null, $this->hookRunner));
     }
 
     /**
@@ -62,9 +71,6 @@ abstract class DeployHandler extends Handler
      */
     protected function deploy(): void
     {
-        $isMigrate = $this->deployment->getCommand() == DeploymentCommand::MIGRATE;
-        $this->hookRunner->run($isMigrate ? Hook\Event::BEFORE_MIGRATE : Hook\Event::BEFORE_ROLLBACK);
-
         $error = null;
         $this->deployment->open();
 
@@ -77,6 +83,12 @@ abstract class DeployHandler extends Handler
                 throw $e;
             }
         }
+
+        /* append after deploy tasks. derived class should have added their tasks already */
+        $isMigrate = $this->deployment->getCommand() == DeploymentCommand::MIGRATE;
+        $event = $isMigrate ? Hook\Event::AFTER_MIGRATE : Hook\Event::AFTER_ROLLBACK;
+        foreach ($this->hookRunner->getHooksForEvent($event) as $hook)
+            $this->addTask(new DeployHook($hook, $event, null, $this->hookRunner));
 
         try {
             $this->runTasks();
@@ -97,8 +109,6 @@ abstract class DeployHandler extends Handler
             else
                 $this->deployment->close();
         }
-
-        $this->hookRunner->run($isMigrate ? Hook\Event::AFTER_MIGRATE : Hook\Event::AFTER_ROLLBACK);
     }
 
     /**
