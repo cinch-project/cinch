@@ -122,6 +122,7 @@ abstract class Dsn
 
     private function unescapeParameterValue(string $v): string
     {
-        return $v[0] == "'" ? str_replace(["\\\\", "\\'"], ['\\', "'"], substr($v, 1, -1)) : $v;
+        $quoted = strlen($v) > 1 && str_starts_with($v, "'") && str_ends_with($v, "'");
+        return $quoted ? str_replace(["\\\\", "\\'"], ['\\', "'"], substr($v, 1, -1)) : $v;
     }
 }
