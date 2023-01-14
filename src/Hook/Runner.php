@@ -1,15 +1,10 @@
 <?php
 
-namespace Cinch\Command;
+namespace Cinch\Hook;
 
 use Cinch\Database\Session;
 use Cinch\History\Change;
 use Cinch\History\Deployment;
-use Cinch\Hook\ActionType;
-use Cinch\Hook\Event;
-use Cinch\Hook\Handler as HookHandler;
-use Cinch\Hook\HandlerContext;
-use Cinch\Hook\Hook;
 use Cinch\Project\Project;
 use Exception;
 use GuzzleHttp\Client;
@@ -18,7 +13,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 use Twig\Environment as Twig;
 
-class HookRunner
+class Runner
 {
     public function __construct(
         private readonly Deployment $deployment,
@@ -102,8 +97,8 @@ class HookRunner
             return [min(max($e->getCode(), 1), 255), $e->getMessage(), false];
         }
 
-        if (!($handler instanceof HookHandler))
-            return [1, "php handler must implement " . HookHandler::class, false];
+        if (!($handler instanceof Handler))
+            return [1, "php handler must implement " . Handler::class, false];
 
         /* note: hook.timeout is the handler's responsibility */
         try {
@@ -132,7 +127,6 @@ class HookRunner
 
     private function runScriptHook(Hook $hook, Event $event, Change|null $change): array
     {
-        $error = '';
         $path = $hook->action->getPath();
 
         /* variables become ENV vars: my_var=1 -> CINCH_my_var=1 */
@@ -142,7 +136,7 @@ class HookRunner
 
         $process = @proc_open(
             [$path, ...$hook->arguments],
-            [2 => ['pipe', 'w']], // stderr
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], // stdout, stderr
             $pipes,
             basename($path),
             [...getenv(), ...$this->envVars($hook, $event, $change), ...$variables],
@@ -152,46 +146,31 @@ class HookRunner
         if ($process === false)
             return [1, error_get_last()['message'], false];
 
-        /* make non-blocking */
-        $stderr = $pipes[2];
-        stream_set_blocking($stderr, false);
-
         /* track runtime for timeouts */
         $timeout = false;
         $expiry = hrtime(true) + ($hook->timeout * 1e9);
 
         /* unfortunately, can't use stream_select() on pipes returned by proc_open, because it is
-         * completely broken on Windows [sighs]. Instead, manually poll with tiny sleeps.
+         * completely broken on Windows [sighs]. Instead, manually poll status with tiny sleeps.
          */
-        while (true) {
-            /* collect stderr output */
-            if ($stderr) {
-                if (feof($stderr)) {
-                    fclose($stderr);
-                    $stderr = null;
-                }
-                else if (($s = fread($stderr, 8192)) !== false) {
-                    $error .= $s; // $s can be empty since $stderr is non-blocking
-                }
-            }
-
-            /* poll */
-            if (!proc_get_status($process)['running'])
-                break;
-
-            /* check timeout */
+        while (($status = proc_get_status($process))['running']) {
             if (hrtime(true) >= $expiry) {
                 $timeout = true;
                 break;
             }
 
-            usleep(5 * 1000); // 5ms
+            usleep(5 * 1000);
         }
 
-        if ($stderr)
-            fclose($stderr);
+        /* read stderr pipe contents */
+        $error = stream_get_contents($pipes[2]) ?: '';
+        fclose($pipes[1]);  // stdout only captured to avoid outputting to console
+        fclose($pipes[2]);
 
-        return [proc_close($process), $error, $timeout];
+        /* timeout exits loop while script is running, need to proc_close. Otherwise, it is already closed */
+        $exitCode = $timeout ? proc_close($process) : $status['exitcode'];
+
+        return [$exitCode, $error, $timeout];
     }
 
     private function runHttpHook(Hook $hook, Event $event, Change|null $change): array
