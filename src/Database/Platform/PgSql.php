@@ -38,7 +38,7 @@ class PgSql extends Platform
 
         $charset = $session->quoteString($this->dsn->charset);
 
-        if ($searchPath = ($dsn->searchPath ?? '')) {
+        if ($searchPath = ($this->dsn->searchPath ?? '')) {
             $schemas = preg_split('~\s*,\s*~', $searchPath, flags: PREG_SPLIT_NO_EMPTY);
             $schemas = implode(',', array_map(fn($s) => $session->quoteIdentifier($s), $schemas));
             $searchPath = "set search_path to $schemas;";
