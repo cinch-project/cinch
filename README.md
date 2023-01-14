@@ -1,4 +1,8 @@
+# Cinch Database Migration System
 
+Please see documentation: https://www.cinch.live
+
+<!--
 ```yaml
 migration_store: file://.           # default=file:/.
 single_transaction: true            # default=true - group migrations within a single transaction
@@ -14,3 +18,4 @@ environments:
             create_schema: true      # default=true
 hooks: []
 ```
+-->
