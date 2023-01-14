@@ -38,7 +38,7 @@ This will deploy the next <info><number></> eligible migrations. They are select
 policy of the migration store's directory configuration. 
 
 <code-comment># limit to the first 4 eligible migrations</>
-<code>cinch migrate project 4 --tag=hotfix-72631<</>
+<code>cinch migrate project 4 --tag=hotfix-72631</>
 HELP
             );
     }
