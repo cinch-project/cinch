@@ -26,16 +26,17 @@ class DatabaseDsn extends Dsn
         parent::setParameters($params);
 
         [$user, $port, $charset, $host] = $this->getDefaults();
+
         $this->dbname = Assert::thatKey($params, 'dbname', 'dbname')->notEmpty()->value();
-        $this->user = $params['user'] ?? $user;
-        $this->password = $params['password'] ?? null;
-        $this->host = $params['host'] ?? $host;
+        $this->user = Assert::ifKey($params, 'user', $user, 'user')->string()->notEmpty()->value();
+        $this->password = Assert::ifKey($params, 'password', null, 'password')->stringOrNull()->value();
+        $this->host = Assert::ifKey($params, 'host', $host, 'host')->hostOrIp()->value();
         $this->port = $params['port'] ?? $port;
-        $this->charset = $params['charset'] ?? $charset;
+        $this->charset = Assert::ifKey($params, 'charset', $charset, 'charset')->string()->notEmpty()->value();
 
         if ($this->driver == 'pgsql') {
-            $this->sslmode = $params['sslmode'] ?? null;
-            $this->searchPath = $params['search_path'] ?? null;
+            $this->sslmode = Assert::ifKey($params, 'sslmode', null, 'sslmode')->stringOrNull()->value();
+            $this->searchPath = Assert::ifKey($params, 'search_path', null, 'search_path')->stringOrNull()->value();
         }
         else {
             $this->sslmode = $this->searchPath = null;
