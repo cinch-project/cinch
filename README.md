@@ -1,6 +1,4 @@
-# Cinch Database Migration System
-
-Please see documentation: https://www.cinch.live
+<p align="center"><a title="documentation" href="https://www.cinch.live" target="_blank"><img src="https://raw.githubusercontent.com/cinch-project/.github/master/highres-name-web.png" width="275"></a></p>
 
 <!--
 
