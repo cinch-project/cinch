@@ -1,4 +1,4 @@
-<p align="center"><a title="documentation" href="https://www.cinch.live" target="_blank"><img src="https://raw.githubusercontent.com/cinch-project/.github/master/highres-name-web.png" width="275"></a></p>
+<p align="center"><a title="documentation" href="https://www.cinch.live" target="_blank"><img src="https://raw.githubusercontent.com/cinch-project/docs/master/logo/highres-name-web.png" width="275"></a></p>
 
 <!--
 
