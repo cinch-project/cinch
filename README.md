@@ -1,5 +1,9 @@
 <p align="center"><a title="documentation" href="https://www.cinch.live" target="_blank"><img src="https://raw.githubusercontent.com/cinch-project/docs/master/assets/images/logo-highres-name-web.png" width="275"></a></p>
 
+# Warning
+Cinch is in development. It is not ready for production.
+
+
 <!--
 
 ```yaml
