@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate:script', 'Migrate one or more migration scripts')]
+#[AsCommand('migrate:script', 'Migrates one or more migration scripts')]
 class MigrateScript extends Command
 {
     /**

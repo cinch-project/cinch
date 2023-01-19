@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('env:add', 'Add an environment')]
+#[AsCommand('env:add', 'Adds an environment')]
 class EnvAdd extends Command
 {
     use AddsEnvironment;
@@ -42,6 +42,7 @@ class EnvAdd extends Command
             ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
             ->addTargetArgument()
-            ->addEnvironmentOptions();
+            ->addEnvironmentOptions()
+            ->setHelp('');
     }
 }

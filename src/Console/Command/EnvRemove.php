@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('env:remove', 'Remove an environment')]
+#[AsCommand('env:remove', 'Removes an environment')]
 class EnvRemove extends Command
 {
     /**
@@ -41,6 +41,7 @@ class EnvRemove extends Command
         $this
             ->addProjectArgument()
             ->addArgument('name', InputArgument::REQUIRED, 'Environment name')
-            ->addOption('delete-history', 'D', InputOption::VALUE_NONE, 'Delete history');
+            ->addOption('delete-history', 'D', InputOption::VALUE_NONE, 'Delete history')
+            ->setHelp('');
     }
 }

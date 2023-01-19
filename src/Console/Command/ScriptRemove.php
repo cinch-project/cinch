@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('script:remove', 'Remove a migration script')]
+#[AsCommand('script:remove', 'Removes a migration script')]
 class ScriptRemove extends Command
 {
     /**

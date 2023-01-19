@@ -188,6 +188,22 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         return is_int($value) ? $value : Assert::digit($value, $name);
     }
 
+    public function setHelp(string $help): static
+    {
+        $name = str_replace(':', '-', $this->getName());
+        $url = "https://cinch.live/cli/commands/$name.html";
+
+        if ($help) {
+            if (str_ends_with($help, "\n"))
+                $help .= "\n";
+            else
+                $help .= "\n\n";
+        }
+
+        /* if terminal supports links, <href> symfony tag will work, otherwise $url will display */
+        return parent::setHelp("$help<href=\"$url\">$url</>");
+    }
+
     public function getSubscribedSignals(): array
     {
         return [SIGTERM, SIGINT];

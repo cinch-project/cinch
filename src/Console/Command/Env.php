@@ -10,7 +10,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('env', 'List all environments')]
+#[AsCommand('env', 'Lists all environments')]
 class Env extends Command
 {
     /**
@@ -51,6 +51,6 @@ class Env extends Command
 
     public function configure()
     {
-        $this->addProjectArgument();
+        $this->addProjectArgument()->setHelp('');
     }
 }

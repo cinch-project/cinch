@@ -13,7 +13,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('create', 'Create a project')]
+#[AsCommand('create', 'Creates a project')]
 class Create extends Command
 {
     use AddsEnvironment;
@@ -52,6 +52,7 @@ class Create extends Command
             ->addTargetArgument()
             ->addEnvironmentOptions()
             ->addOptionByName('migration-store')
-            ->addOptionByName('env', 'Sets the project\'s default environment [default: $projectName]');
+            ->addOptionByName('env', 'Sets the project\'s default environment [default: $projectName]')
+            ->setHelp('');
     }
 }

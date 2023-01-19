@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('rollback:date', 'Roll back to a specific date')]
+#[AsCommand('rollback:date', 'Rolls back to a specific date')]
 class RollbackDate extends Command
 {
     /**

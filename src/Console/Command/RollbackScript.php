@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('rollback:script', 'Roll back one or more migration scripts')]
+#[AsCommand('rollback:script', 'Rolls back one or more migration scripts')]
 class RollbackScript extends Command
 {
     /**
