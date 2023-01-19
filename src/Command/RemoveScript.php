@@ -5,7 +5,7 @@ namespace Cinch\Command;
 use Cinch\Common\StorePath;
 use Cinch\Project\ProjectId;
 
-class RemoveMigration
+class RemoveScript
 {
     public function __construct(
         public readonly ProjectId $projectId,

@@ -6,7 +6,7 @@ use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class AddMigrationHandler extends Handler
+class AddScriptHandler extends Handler
 {
     public function __construct(
         private readonly MigrationStoreFactory $migrationStoreFactory,
@@ -17,9 +17,9 @@ class AddMigrationHandler extends Handler
     /**
      * @throws Exception
      */
-    public function handle(AddMigration $c): void
+    public function handle(AddScript $c): void
     {
         $dsn = $this->projectRepository->get($c->projectId)->getMigrationStoreDsn();
-        $this->addTask(new Task\AddMigration($dsn, $c, $this->migrationStoreFactory))->runTasks();
+        $this->addTask(new Task\AddScript($dsn, $c, $this->migrationStoreFactory))->runTasks();
     }
 }

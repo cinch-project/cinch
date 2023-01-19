@@ -8,7 +8,7 @@ use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
 
-class RemoveMigrationHandler extends Handler
+class RemoveScriptHandler extends Handler
 {
     public function __construct(
         private readonly MigrationStoreFactory $migrationStoreFactory,
@@ -20,7 +20,7 @@ class RemoveMigrationHandler extends Handler
     /**
      * @throws Exception
      */
-    public function handle(RemoveMigration $c): void
+    public function handle(RemoveScript $c): void
     {
         $project = $this->projectRepository->get($c->projectId);
 
@@ -32,7 +32,7 @@ class RemoveMigrationHandler extends Handler
         /** @var Change $change */
         if ($change = array_shift($changes))
             throw new \RuntimeException(sprintf(
-                "cannot remove migration '%s': last deployed '%s', status '%s', policy '%s', tag '%s'",
+                "cannot remove migration script '%s': last deployed '%s', status '%s', policy '%s', tag '%s'",
                 $c->path,
                 $change->deployedAt->format('Y-m-d H:i:s.uP'),
                 $change->status->value,
@@ -41,6 +41,6 @@ class RemoveMigrationHandler extends Handler
             ));
 
         $dsn = $project->getMigrationStoreDsn();
-        $this->addTask(new Task\RemoveMigration($dsn, $c->path, $this->migrationStoreFactory))->runTasks();
+        $this->addTask(new Task\RemoveScript($dsn, $c->path, $this->migrationStoreFactory))->runTasks();
     }
 }

@@ -10,7 +10,7 @@ use Cinch\Common\StorePath;
 use Cinch\Project\ProjectId;
 use DateTimeInterface;
 
-class AddMigration
+class AddScript
 {
     public function __construct(
         public readonly ProjectId $projectId,
