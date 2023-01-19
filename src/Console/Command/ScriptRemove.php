@@ -36,8 +36,8 @@ class ScriptRemove extends Command
             ->addArgument('path', InputArgument::REQUIRED, 'Migration store path (relative to store root)')
             ->addOptionByName('env')
             ->setHelp(<<<HELP
-This command cannot remove migration scripts that have already been deployed. For scripts with an 'always' 
-or 'onchange' migrate policy, add them to the directory exclude list within the migration store config file. 
+This command cannot remove migration scripts that have already been deployed. To stop 'always' or 'onchange'  
+scripts from running, add them to the directory exclude list within the migration store config file. 
 HELP
             );
     }
