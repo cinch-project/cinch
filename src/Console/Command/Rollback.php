@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('rollback', 'Rolls back to previous deployment or optional tag')]
+#[AsCommand('rollback', 'Rolls back to the previous deployment or optional tag')]
 class Rollback extends Command
 {
     /**

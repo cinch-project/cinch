@@ -9,7 +9,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migrate', 'Migrates all eligible migrations')]
+#[AsCommand('migrate', 'Migrates all eligible migration scripts')]
 class Migrate extends Command
 {
     /**
