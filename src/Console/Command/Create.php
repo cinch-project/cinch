@@ -30,7 +30,7 @@ class Create extends Command
         $project = new Project(
             $this->projectId,
             new ProjectName($projectName),
-            new StoreDsn($input->getOption('migration-store')),
+            new StoreDsn($input->getOption('store')),
             new EnvironmentMap($envName, [$envName => $environment])
         );
 
@@ -51,7 +51,7 @@ class Create extends Command
             ->addProjectArgument()
             ->addTargetArgument()
             ->addEnvironmentOptions()
-            ->addOptionByName('migration-store')
+            ->addOptionByName('store')
             ->addOptionByName('env', 'Sets the project\'s default environment [default: $projectName]')
             ->setHelp('');
     }
