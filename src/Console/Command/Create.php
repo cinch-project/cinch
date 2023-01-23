@@ -9,6 +9,7 @@ use Cinch\MigrationStore\StoreDsn;
 use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectName;
+use DateTimeZone;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -32,6 +33,7 @@ class Create extends Command
         $project = new Project(
             new ProjectName($projectName),
             new Description($input->getOption('description') ?? "$projectName project"),
+            new DateTimeZone($input->getOption('time-zone') ?? system_time_zone()),
             new StoreDsn($input->getOption('store')),
             new EnvironmentMap($envName, [$envName => $environment])
         );
@@ -52,7 +54,7 @@ class Create extends Command
         $this
             ->addProjectArgument()
             ->addTargetArgument()
-            ->addOption('description', 'd', InputOption::VALUE_REQUIRED, 'project description <comment>[default: "$project project"]</>')
+            ->addOption('description', 'd', InputOption::VALUE_REQUIRED, 'Project description <comment>[default: "$project project"]</>')
             ->addEnvironmentOptions()
             ->addOptionByName('store')
             ->addOptionByName('env', 'Sets the project\'s default environment <comment>[default: $project]</>')

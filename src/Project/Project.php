@@ -7,6 +7,7 @@ use Cinch\Common\Environment;
 use Cinch\Component\Assert\AssertException;
 use Cinch\Hook\Hook;
 use Cinch\MigrationStore\StoreDsn;
+use DateTimeZone;
 use Exception;
 
 class Project
@@ -14,14 +15,16 @@ class Project
     /**
      * @param ProjectName $name
      * @param Description $description
+     * @param DateTimeZone $timeZone
      * @param StoreDsn $migrationStoreDsn
      * @param EnvironmentMap $envMap
-     * @param Hook $hooks
+     * @param array $hooks
      * @param bool $isSingleTransactionMode
      */
     public function __construct(
         private readonly ProjectName $name,
         private Description $description,
+        private DateTimeZone $timeZone,
         private StoreDsn $migrationStoreDsn,
         private EnvironmentMap $envMap,
         private array $hooks = [],
@@ -71,12 +74,14 @@ class Project
         return $this->name;
     }
 
-    /**
-     * @return Description
-     */
     public function getDescription(): Description
     {
         return $this->description;
+    }
+
+    public function getTimeZone(): DateTimeZone
+    {
+        return $this->timeZone;
     }
 
     public function getMigrationStoreDsn(): StoreDsn
@@ -101,6 +106,7 @@ class Project
         return [
             'name' => $this->name->value,
             'description' => $this->description->value,
+            'time_zone' => $this->timeZone->getName(),
             'migration_store' => $this->migrationStoreDsn->snapshot(),
             'single_transaction' => $this->isSingleTransactionMode,
             'environments' => $this->envMap->snapshot(),

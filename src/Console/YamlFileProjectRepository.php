@@ -13,6 +13,7 @@ use Cinch\Project\EnvironmentMap;
 use Cinch\Project\Project;
 use Cinch\Project\ProjectName;
 use Cinch\Project\ProjectRepository;
+use DateTimeZone;
 use Exception;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
@@ -45,6 +46,7 @@ class YamlFileProjectRepository implements ProjectRepository
         return new Project(
             $name,
             new Description(Assert::stringProp($state, 'description', 'project description')),
+            new DateTimeZone(Assert::stringProp($state, 'time_zone', 'project time zone')),
             new StoreDsn(Assert::objectProp($state, 'migration_store', "migration_store")),
             $this->createEnvironmentMap($state, $name),
             $this->createHooks($state),
@@ -79,8 +81,11 @@ class YamlFileProjectRepository implements ProjectRepository
      */
     public function update(Project $project): void
     {
+        static $flags = Yaml::DUMP_OBJECT_AS_MAP | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE;
+
         $this->assertProjectName($project->getName());
-        $state = Yaml::dump($project->snapshot(), 100, flags: Yaml::DUMP_OBJECT_AS_MAP);
+
+        $state = Yaml::dump($project->snapshot(), 100, flags: $flags);
         if (@file_put_contents($this->projectFile, $state) === false)
             throw new LastErrorException();
     }
