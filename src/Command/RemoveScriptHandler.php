@@ -22,7 +22,7 @@ class RemoveScriptHandler extends Handler
      */
     public function handle(RemoveScript $c): void
     {
-        $project = $this->projectRepository->get($c->projectId);
+        $project = $this->projectRepository->get($c->projectName);
 
         $changes = $this->historyFactory
             ->create($project->getEnvironmentMap()->get($c->envName))

@@ -22,6 +22,6 @@ class AddProject extends Task
 
     protected function doUndo(): void
     {
-        $this->projectRepository->remove($this->project->getId());
+        $this->projectRepository->remove($this->project->getName());
     }
 }

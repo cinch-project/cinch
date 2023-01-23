@@ -19,7 +19,7 @@ class Env extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var Project $project */
-        $project = $this->executeQuery(new GetProject($this->projectId));
+        $project = $this->executeQuery(new GetProject($this->projectName));
         $map = $project->getEnvironmentMap();
         $default = $map->getDefaultName();
 

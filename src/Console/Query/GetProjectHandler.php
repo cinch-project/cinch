@@ -13,6 +13,6 @@ class GetProjectHandler extends QueryHandler
 
     public function handle(GetProject $getProject): Project
     {
-        return $this->projectRepository->get($getProject->projectId);
+        return $this->projectRepository->get($getProject->projectName);
     }
 }

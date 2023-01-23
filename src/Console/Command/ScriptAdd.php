@@ -28,7 +28,7 @@ class ScriptAdd extends Command
     {
         $path = new StorePath($input->getArgument('path'));
         $this->executeCommand(new AddScript(
-            $this->projectId,
+            $this->projectName,
             $path,
             MigratePolicy::from($input->getOption('migrate-policy')),
             new Author($input->getOption('author') ?: system_user()),

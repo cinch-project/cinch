@@ -22,7 +22,7 @@ class ScriptRemove extends Command
         $path = new StorePath($input->getArgument('path'));
 
         $this->executeCommand(
-            new RemoveScript($this->projectId, $this->envName, $path),
+            new RemoveScript($this->projectName, $this->envName, $path),
             "Removing migration script '$path'"
         );
 

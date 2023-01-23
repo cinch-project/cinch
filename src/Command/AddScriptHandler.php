@@ -19,7 +19,7 @@ class AddScriptHandler extends Handler
      */
     public function handle(AddScript $c): void
     {
-        $dsn = $this->projectRepository->get($c->projectId)->getMigrationStoreDsn();
+        $dsn = $this->projectRepository->get($c->projectName)->getMigrationStoreDsn();
         $this->addTask(new Task\AddScript($dsn, $c, $this->migrationStoreFactory))->runTasks();
     }
 }

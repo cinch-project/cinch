@@ -10,36 +10,38 @@ use Cinch\LastErrorException;
 use Cinch\MigrationStore\StoreDsn;
 use Exception;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Yaml\Yaml;
 
-class YamlProjectRepository implements ProjectRepository
+class YamlFileProjectRepository implements ProjectRepository
 {
-    const DEFAULT_CONFIG_FILE = 'project.yml';
+    private readonly string $projectDir;
 
-    public function __construct(private readonly string $configFile = self::DEFAULT_CONFIG_FILE)
+    public function __construct(private readonly string $projectFile)
     {
+        $this->projectDir = dirname($this->projectFile);
     }
 
     /**
      * @throws Exception
      */
-    public function get(ProjectId $id): Project
+    public function get(ProjectName $name): Project
     {
-        $file = Path::join($id, $this->configFile);
+        $this->assertProjectName($name);
 
-        if (!file_exists($file))
-            throw new Exception("project '$id' does not exist");
+        if (!file_exists($this->projectFile))
+            throw new Exception("project '$this->projectDir' does not exist");
 
-        $name = new ProjectName(basename($id));
-        $state = Yaml::parseFile($file, Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE | Yaml::PARSE_OBJECT_FOR_MAP);
+        $state = Yaml::parseFile($this->projectFile, Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE | Yaml::PARSE_OBJECT_FOR_MAP);
+
+        /* make sure project file has same name as $name argument */
+        $stateName = new ProjectName(Assert::stringProp($state, 'name', 'project name'));
+        Assert::equals($stateName->value, $name->value, 'project name');
 
         return new Project(
-            $id,
             $name,
             new StoreDsn(Assert::objectProp($state, 'migration_store', "migration_store")),
             $this->createEnvironmentMap($state, $name),
-            $this->createHooks($state, $id->value),
+            $this->createHooks($state),
             Assert::ifPropSet($state, 'single_transaction', true, 'single_transaction')->bool()->value()
         );
     }
@@ -49,18 +51,19 @@ class YamlProjectRepository implements ProjectRepository
      */
     public function add(Project $project): void
     {
-        $projectDir = $project->getId()->value;
-        if (file_exists($projectDir))
-            throw new Exception("project '{$project->getId()}' already exists");
+        $this->assertProjectName($project->getName());
+
+        if (file_exists($this->projectDir))
+            throw new Exception("project '$this->projectDir' already exists");
 
         /* create project directory */
-        (new Filesystem())->mkdir($projectDir);
+        (new Filesystem())->mkdir($this->projectDir);
 
         try {
             $this->update($project);
         }
         catch (Exception $e) {
-            silent_call($this->remove(...), $project->getId());
+            silent_call($this->remove(...), $this->projectDir);
             throw $e;
         }
     }
@@ -70,15 +73,21 @@ class YamlProjectRepository implements ProjectRepository
      */
     public function update(Project $project): void
     {
+        $this->assertProjectName($project->getName());
         $state = Yaml::dump($project->snapshot(), 100, flags: Yaml::DUMP_OBJECT_AS_MAP);
-        $file = Path::join($project->getId(), $this->configFile);
-        if (@file_put_contents($file, $state) === false)
+        if (@file_put_contents($this->projectFile, $state) === false)
             throw new LastErrorException();
     }
 
-    public function remove(ProjectId $id): void
+    public function remove(ProjectName $name): void
     {
-        (new Filesystem())->remove($id->value);
+        $this->assertProjectName($name);
+        (new Filesystem())->remove($this->projectFile);
+    }
+
+    private function assertProjectName(ProjectName $name): void
+    {
+        Assert::equals(basename($this->projectDir), $name->value, 'project name');
     }
 
     /**
@@ -136,7 +145,7 @@ class YamlProjectRepository implements ProjectRepository
     /**
      * @throws Exception
      */
-    private function createHooks(object $state, string $projectDir): array
+    private function createHooks(object $state): array
     {
         $hooks = [];
         $rawHooks = Assert::ifProp($state, 'hooks', [], 'hooks')->array()->value();
@@ -149,7 +158,7 @@ class YamlProjectRepository implements ProjectRepository
                 $events = [$events];
 
             $hooks[] = new Hook\Hook(
-                new Hook\Action(Assert::stringProp($hook, 'action', "$path.action"), $projectDir),
+                new Hook\Action(Assert::stringProp($hook, 'action', "$path.action"), $this->projectDir),
                 array_map(fn($e) => Hook\Event::from($e), Assert::that($events, 'events')->array()->notEmpty()->value()),
                 Assert::ifProp($hook, 'timeout', Hook\Hook::DEFAULT_TIMEOUT, "$path.timeout")->int()->value(),
                 Assert::ifProp($hook, 'abort_on_error', true, "$path.abort_on_error")->bool()->value(),

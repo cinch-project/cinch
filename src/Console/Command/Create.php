@@ -28,7 +28,6 @@ class Create extends Command
         $envName = $this->envName ?: $projectName;
 
         $project = new Project(
-            $this->projectId,
             new ProjectName($projectName),
             new StoreDsn($input->getOption('store')),
             new EnvironmentMap($envName, [$envName => $environment])

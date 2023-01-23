@@ -21,7 +21,7 @@ class AddEnvironmentHandler extends Handler
      */
     public function handle(AddEnvironment $c): void
     {
-        $project = $this->projectRepository->get($c->projectId);
+        $project = $this->projectRepository->get($c->projectName);
 
         $this->addTask(new Task\AddEnvironment($project, $c->newName, $c->newEnvironment))
             ->addTask(new Task\TestTarget($c->newEnvironment->targetDsn, $this->sessionFactory))

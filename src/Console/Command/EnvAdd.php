@@ -23,7 +23,7 @@ class EnvAdd extends Command
         $newEnvName = $input->getArgument('name');
 
         $this->executeCommand(
-            new AddEnvironment($this->projectId, $newEnvName, $this->getEnvironmentFromInput($input)),
+            new AddEnvironment($this->projectName, $newEnvName, $this->getEnvironmentFromInput($input)),
             "Adding environment '$newEnvName' to project '" . $input->getArgument('project') . "'"
         );
 

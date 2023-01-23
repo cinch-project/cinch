@@ -19,7 +19,7 @@ class RemoveEnvironmentHandler extends Handler
      */
     public function handle(RemoveEnvironment $c): void
     {
-        $project = $this->projectRepository->get($c->projectId);
+        $project = $this->projectRepository->get($c->projectName);
 
         $this->addTask(new Task\RemoveEnvironment($project, $c->name))
             ->addTask(new Task\UpdateProject($project, $this->projectRepository));

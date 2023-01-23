@@ -11,7 +11,6 @@ use Exception;
 class Project
 {
     /**
-     * @param ProjectId $id
      * @param ProjectName $name
      * @param StoreDsn $migrationStoreDsn
      * @param EnvironmentMap $envMap
@@ -20,7 +19,6 @@ class Project
      * @throws Exception
      */
     public function __construct(
-        private readonly ProjectId $id,
         private readonly ProjectName $name,
         private StoreDsn $migrationStoreDsn,
         private EnvironmentMap $envMap,
@@ -66,12 +64,6 @@ class Project
         $this->envMap = $this->envMap->remove($name);
     }
 
-
-    public function getId(): ProjectId
-    {
-        return $this->id;
-    }
-
     public function getName(): ProjectName
     {
         return $this->name;
@@ -93,14 +85,15 @@ class Project
     public function snapshot(): array
     {
         $hooks = [];
-        foreach ($this->hooks as $name => $hook)
-            $hooks[$name] = $hook->snapshot();
+        foreach ($this->hooks as $hook)
+            $hooks[] = $hook->snapshot();
 
         return [
+            'name' => $this->name->value,
             'migration_store' => $this->migrationStoreDsn->snapshot(),
             'single_transaction' => $this->isSingleTransactionMode,
             'environments' => $this->envMap->snapshot(),
-            'hooks' => (object) $hooks
+            'hooks' => $hooks
         ];
     }
 }

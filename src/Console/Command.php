@@ -9,7 +9,7 @@ use Cinch\Command\RollbackBy;
 use Cinch\Common\Author;
 use Cinch\Component\Assert\Assert;
 use Cinch\History\DeploymentTag;
-use Cinch\Project\ProjectId;
+use Cinch\Project\ProjectName;
 use DateTime;
 use DateTimeZone;
 use Exception;
@@ -34,7 +34,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         'dry-run' => [null, InputOption::VALUE_NONE, 'Performs all actions and logging without executing [default: off]'],
     ];
 
-    protected readonly ProjectId $projectId;
+    protected readonly ProjectName $projectName;
     protected readonly string $envName;
     protected readonly ConsoleLogger $logger;
     private readonly CommandBus $commandBus;
@@ -49,9 +49,9 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         $this->isDryRun = $input->hasOption('dry-run') && $input->getOption('dry-run') === true;
     }
 
-    public function setProjectDir(string $projectDir): void
+    public function setProjectName(ProjectName $projectName): void
     {
-        $this->projectId = new ProjectId($projectDir);
+        $this->projectName = $projectName;
     }
 
     public function setCommandBus(CommandBus $commandBus): void
@@ -70,7 +70,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     protected function executeMigrate(InputInterface $input, MigrateOptions $options, string $title = ''): void
     {
         $this->executeCommand(new Migrate(
-            $this->projectId,
+            $this->projectName,
             new DeploymentTag($input->getOption('tag')),
             new Author($input->getOption('deployer') ?: system_user()),
             $options,
@@ -85,7 +85,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
     protected function executeRollback(InputInterface $input, RollbackBy $rollbackBy, string $title = ''): void
     {
         $this->executeCommand(new Rollback(
-            $this->projectId,
+            $this->projectName,
             new DeploymentTag($input->getOption('tag')),
             new Author($input->getOption('deployer') ?: system_user()),
             $rollbackBy,

@@ -42,7 +42,7 @@ abstract class DeployHandler extends Handler
      */
     protected function prepare(Deploy $deploy): void
     {
-        $project = $this->projectRepository->get($deploy->projectId);
+        $project = $this->projectRepository->get($deploy->projectName);
         $environment = $project->getEnvironmentMap()->get($deploy->envName);
 
         $this->isSingleTransactionMode = $project->isSingleTransactionMode();

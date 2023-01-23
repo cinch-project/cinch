@@ -23,7 +23,7 @@ class EnvRemove extends Command
         $deleteHistory = $input->getOption('delete-history');
 
         $this->executeCommand(
-            new RemoveEnvironment($this->projectId, $name, $deleteHistory),
+            new RemoveEnvironment($this->projectName, $name, $deleteHistory),
             "Removing environment $name " . ($deleteHistory ? 'and deleting history' : '')
         );
 

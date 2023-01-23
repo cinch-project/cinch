@@ -107,7 +107,6 @@ class Runner
                 $hook, // hook.action.getVariables available - "php:/home/foo/a.php?name=value"
                 $change,
                 $this->target,
-                $this->project->getId(),
                 $this->project->getName(),
                 $this->deployment->getTag(),
                 $this->deployment->getCommand(),
@@ -217,7 +216,6 @@ class Runner
             'CINCH_TARGET_DSN' => $this->target->getPlatform()->getDsn()->toString(secure: false),
             'CINCH_DRY_RUN' => $this->deployment->isDryRun(),
             'CINCH_SINGLE_TRANSACTION' => $this->deployment->isSingleTransactionMode(),
-            'CINCH_PROJECT_ID' => $this->project->getId()->value,
             'CINCH_PROJECT_NAME' => $this->project->getName()->value
         ];
 

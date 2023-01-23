@@ -7,13 +7,13 @@ use Cinch\Common\Description;
 use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\StorePath;
-use Cinch\Project\ProjectId;
+use Cinch\Project\ProjectName;
 use DateTimeInterface;
 
 class AddScript
 {
     public function __construct(
-        public readonly ProjectId $projectId,
+        public readonly ProjectName $projectName,
         public readonly StorePath $path,
         public readonly MigratePolicy $migratePolicy,
         public readonly Author $author,
