@@ -3,6 +3,7 @@
 namespace Cinch\Console\Command;
 
 use Cinch\Command\CreateProject;
+use Cinch\Common\Description;
 use Cinch\Console\Command;
 use Cinch\MigrationStore\StoreDsn;
 use Cinch\Project\EnvironmentMap;
@@ -11,6 +12,7 @@ use Cinch\Project\ProjectName;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand('create', 'Creates a project')]
@@ -29,6 +31,7 @@ class Create extends Command
 
         $project = new Project(
             new ProjectName($projectName),
+            new Description($input->getOption('description') ?? "$projectName project"),
             new StoreDsn($input->getOption('store')),
             new EnvironmentMap($envName, [$envName => $environment])
         );
@@ -49,9 +52,10 @@ class Create extends Command
         $this
             ->addProjectArgument()
             ->addTargetArgument()
+            ->addOption('description', 'd', InputOption::VALUE_REQUIRED, 'project description <comment>[default: "$project project"]</>')
             ->addEnvironmentOptions()
             ->addOptionByName('store')
-            ->addOptionByName('env', 'Sets the project\'s default environment [default: $projectName]')
+            ->addOptionByName('env', 'Sets the project\'s default environment <comment>[default: $project]</>')
             ->setHelp('');
     }
 }

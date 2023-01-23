@@ -2,6 +2,7 @@
 
 namespace Cinch\Project;
 
+use Cinch\Common\Description;
 use Cinch\Common\Environment;
 use Cinch\Component\Assert\AssertException;
 use Cinch\Hook\Hook;
@@ -12,14 +13,15 @@ class Project
 {
     /**
      * @param ProjectName $name
+     * @param Description $description
      * @param StoreDsn $migrationStoreDsn
      * @param EnvironmentMap $envMap
-     * @param Hook[] $hooks
+     * @param Hook $hooks
      * @param bool $isSingleTransactionMode
-     * @throws Exception
      */
     public function __construct(
         private readonly ProjectName $name,
+        private Description $description,
         private StoreDsn $migrationStoreDsn,
         private EnvironmentMap $envMap,
         private array $hooks = [],
@@ -69,6 +71,14 @@ class Project
         return $this->name;
     }
 
+    /**
+     * @return Description
+     */
+    public function getDescription(): Description
+    {
+        return $this->description;
+    }
+
     public function getMigrationStoreDsn(): StoreDsn
     {
         return $this->migrationStoreDsn;
@@ -90,6 +100,7 @@ class Project
 
         return [
             'name' => $this->name->value,
+            'description' => $this->description->value,
             'migration_store' => $this->migrationStoreDsn->snapshot(),
             'single_transaction' => $this->isSingleTransactionMode,
             'environments' => $this->envMap->snapshot(),

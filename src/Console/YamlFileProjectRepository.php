@@ -2,6 +2,7 @@
 
 namespace Cinch\Console;
 
+use Cinch\Common\Description;
 use Cinch\Common\Environment;
 use Cinch\Component\Assert\Assert;
 use Cinch\Database\DatabaseDsn;
@@ -43,6 +44,7 @@ class YamlFileProjectRepository implements ProjectRepository
 
         return new Project(
             $name,
+            new Description(Assert::stringProp($state, 'description', 'project description')),
             new StoreDsn(Assert::objectProp($state, 'migration_store', "migration_store")),
             $this->createEnvironmentMap($state, $name),
             $this->createHooks($state),
