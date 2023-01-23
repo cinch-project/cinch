@@ -34,7 +34,7 @@ services:
 
     Cinch\Database\SessionFactory: ~
     Cinch\Project\ProjectRepository:
-        class: Cinch\Project\YamlFileProjectRepository
+        class: Cinch\Console\YamlFileProjectRepository
         arguments:
             - '%project.dir%/project.yml'
 

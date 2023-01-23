@@ -1,6 +1,6 @@
 <?php
 
-namespace Cinch\Project;
+namespace Cinch\Console;
 
 use Cinch\Common\Environment;
 use Cinch\Component\Assert\Assert;
@@ -8,6 +8,10 @@ use Cinch\Database\DatabaseDsn;
 use Cinch\Hook;
 use Cinch\LastErrorException;
 use Cinch\MigrationStore\StoreDsn;
+use Cinch\Project\EnvironmentMap;
+use Cinch\Project\Project;
+use Cinch\Project\ProjectName;
+use Cinch\Project\ProjectRepository;
 use Exception;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
