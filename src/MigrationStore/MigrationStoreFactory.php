@@ -25,12 +25,12 @@ class MigrationStoreFactory
      */
     public function create(StoreDsn $dsn): MigrationStore
     {
-        $adapter = match ($dsn->driver) {
+        $adapter = match ($dsn->adapter) {
             'fs' => Adapter\Local::fromDsn($dsn, $this->projectDir),
             'github' => Adapter\GitHub::fromDsn($dsn, $this->userAgent),
             'gitlab' => Adapter\GitLab::fromDsn($dsn, $this->userAgent),
             'azure' => Adapter\Azure::fromDsn($dsn, $this->userAgent),
-            default => throw new RuntimeException("unsupported migration store adapter '$dsn->driver'")
+            default => throw new RuntimeException("unsupported migration store adapter '$dsn->adapter'")
         };
 
         return new MigrationStore($adapter, $this->scriptLoader, $this->twig, $this->logger, $this->resourceDir);

@@ -160,7 +160,7 @@ class Azure extends Git
      */
     public static function fromDsn(StoreDsn $dsn, string $userAgent): static
     {
-        Assert::equals($dsn->driver, 'azure', "expected azure dsn");
+        Assert::equals($dsn->adapter, 'azure', "expected azure dsn");
         return parent::fromDsn($dsn, $userAgent);
     }
 }

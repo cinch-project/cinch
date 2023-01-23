@@ -23,7 +23,7 @@ class StoreDsn extends Dsn
 
     public function getAuthorization(): string
     {
-        return match ($this->driver) {
+        return match ($this->adapter) {
             // azure expects user:token, we don't need user but the colon must still be present
             'azure' => 'Basic ' . base64_encode(':' . $this->token),
             'github', 'gitlab' => "Bearer $this->token",
@@ -35,31 +35,31 @@ class StoreDsn extends Dsn
     {
         parent::setParameters($params);
 
-        $setDriverParameters = 'set' . ucfirst($this->driver) . 'Parameters';
+        $setDriverParameters = 'set' . ucfirst($this->adapter) . 'Parameters';
         if (!method_exists($this, $setDriverParameters))
-            throw new AssertException("unknown migration store driver '$this->driver'");
+            throw new AssertException("unknown migration store adapter '$this->adapter'");
 
-        /* all drivers require storeDir */
-        $this->storeDir = Assert::thatKey($params, 'store_dir', "$this->driver store_dir")->notEmpty()->value();
+        /* all adapters require storeDir */
+        $this->storeDir = Assert::thatKey($params, 'store_dir', "$this->adapter store_dir")->notEmpty()->value();
 
-        /* all git drivers require branch */
-        if ($this->driver != 'fs')
-            $this->branch = Assert::thatKey($params, 'branch', "$this->driver branch")->notEmpty()->value();
+        /* all git adapters require branch */
+        if ($this->adapter != 'fs')
+            $this->branch = Assert::thatKey($params, 'branch', "$this->adapter branch")->notEmpty()->value();
 
         $this->$setDriverParameters($params);
     }
 
     protected function getParameters(): array
     {
-        if ($this->driver == 'fs')
-            return ['driver' => 'fs', 'store_dir' => $this->storeDir];
+        if ($this->adapter == 'fs')
+            return ['adapter' => 'fs', 'store_dir' => $this->storeDir];
 
         $params = parent::getParameters();
 
         /* part of OO model only, these are composed of other parameters */
         unset($params['basePath'], $params['baseUri']);
 
-        /* add driver-specific parameters: if not used by driver, they will be null */
+        /* add adapter-specific parameters: if not used by adapter, they will be null */
         foreach ($this->parameters as $name => $value)
             if ($value !== null)
                 $params[$name] = $value;
@@ -104,6 +104,6 @@ class StoreDsn extends Dsn
 
     private function getToken(array $params, string $envName): string
     {
-        return Assert::ifKey($params, 'token', getenv($envName) ?: '', "$this->driver token")->notEmpty()->value();
+        return Assert::ifKey($params, 'token', getenv($envName) ?: '', "$this->adapter token")->notEmpty()->value();
     }
 }

@@ -1,5 +1,5 @@
 {% if schema.creator %}
-    {% if db.name == 'mssql' %}
+    {% if db.name == 'sqlsrv' %}
         exec ('create schema {{ schema.name }}');
     {% else %}
         create schema {{ schema.name }};
@@ -41,10 +41,10 @@
     {% set json = 'text' %}
     {% set bool = 'integer' %}
     {% set datetime = 'text' %} {# stored in ISO 8601 format #}
-{% elseif db.name == 'mssql' %}
+{% elseif db.name == 'sqlsrv' %}
     {% set length = 'len' %}
     {% set restrict = 'no action' %}
-    {# path(512) is 1024 bytes (USC2), mssql PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}
+    {# path(512) is 1024 bytes (USC2), sqlsrv PKEY is limited to 900 bytes, unique allows up to 1700 bytes #}
     {% set path_pkindex = 'unique' %}
     {% set collate_ascii = 'collate Latin1_General_100_BIN' %}
     {% set collate_utf8ci = 'collate Latin1_General_100_CI_AI' %}

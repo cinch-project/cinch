@@ -15,7 +15,7 @@ abstract class Dsn
     /** query/request timeout in milliseconds */
     const DEFAULT_TIMEOUT = 15000;
 
-    public readonly string $driver;
+    public readonly string $adapter;
     public readonly int $connectTimeout;
     public readonly int $timeout;
     public readonly string|null $sslca;
@@ -42,12 +42,12 @@ abstract class Dsn
 
     protected function setParameters(array $params): void
     {
-        $this->driver = Assert::thatKey($params, 'driver', 'dsn driver')->regex('~^[a-z\-]{1,32}$~')->value();
-        $this->connectTimeout = Assert::ifKey($params, 'connect_timeout', self::DEFAULT_CONNECT_TIMEOUT, "$this->driver connect_timeout")->int()->greaterThan(0)->value();
-        $this->timeout = Assert::ifKey($params, 'timeout', self::DEFAULT_TIMEOUT, "$this->driver timeout")->int()->greaterThan(0)->value();
-        $this->sslca = isset($params['sslca']) ? Assert::file($params['sslca'], "$this->driver sslca") : null;
-        $this->sslcert = isset($params['sslcert']) ? Assert::file($params['sslcert'], "$this->driver sslcert") : null;
-        $this->sslkey = isset($params['sslkey']) ? Assert::file($params['sslkey'], "$this->driver sslkey") : null;
+        $this->adapter = Assert::thatKey($params, 'adapter', 'dsn adapter')->regex('~^[a-z\-]{1,32}$~')->value();
+        $this->connectTimeout = Assert::ifKey($params, 'connect_timeout', self::DEFAULT_CONNECT_TIMEOUT, "$this->adapter connect_timeout")->int()->greaterThan(0)->value();
+        $this->timeout = Assert::ifKey($params, 'timeout', self::DEFAULT_TIMEOUT, "$this->adapter timeout")->int()->greaterThan(0)->value();
+        $this->sslca = isset($params['sslca']) ? Assert::file($params['sslca'], "$this->adapter sslca") : null;
+        $this->sslcert = isset($params['sslcert']) ? Assert::file($params['sslcert'], "$this->adapter sslcert") : null;
+        $this->sslkey = isset($params['sslkey']) ? Assert::file($params['sslkey'], "$this->adapter sslkey") : null;
     }
 
     public function snapshot(): array

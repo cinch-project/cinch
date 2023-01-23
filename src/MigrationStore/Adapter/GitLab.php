@@ -114,7 +114,7 @@ class GitLab extends Git
      */
     public static function fromDsn(StoreDsn $dsn, string $userAgent): static
     {
-        Assert::equals($dsn->driver, 'gitlab', "expected gitlab dsn");
+        Assert::equals($dsn->adapter, 'gitlab', "expected gitlab dsn");
         return parent::fromDsn($dsn, $userAgent);
     }
 }

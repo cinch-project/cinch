@@ -108,7 +108,7 @@ class GitHub extends Git
      */
     public static function fromDsn(StoreDsn $dsn, string $userAgent): static
     {
-        Assert::equals($dsn->driver, 'github', "expected github dsn");
+        Assert::equals($dsn->adapter, 'github', "expected github dsn");
         return parent::fromDsn($dsn, $userAgent);
     }
 }

@@ -9,7 +9,7 @@ use Exception;
 use PDO;
 use RuntimeException;
 
-class MsSql extends Platform
+class SqlSrv extends Platform
 {
     public function addParams(array $params): array
     {

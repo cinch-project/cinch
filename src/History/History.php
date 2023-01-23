@@ -211,11 +211,11 @@ class History
 
         /* varchar column: {{ 'name'|nvarchar(255) }}
          *     others: name varchar(255)
-         *     mssql: name nvarchar(255) (uses national varying character UCS2|UTF-16)
+         *     sqlsrv: name nvarchar(255) (uses national varying character UCS2|UTF-16)
          *     sqlite: name text constraint "'name' value too long for varchar(255)" check (length(name) between 0 and 255)
          */
         $this->twig->addFilter(new TwigFilter('nvarchar', function (string $name, int $len) {
-            $type = $this->session->getPlatform()->getName() == 'mssql' ? 'nvarchar' : 'varchar';
+            $type = $this->session->getPlatform()->getName() == 'sqlsrv' ? 'nvarchar' : 'varchar';
             return $this->renderCharacterDefinition($name, $type, $len);
         }));
     }

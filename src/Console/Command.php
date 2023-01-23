@@ -30,7 +30,7 @@ abstract class Command extends BaseCommand implements SignalableCommandInterface
         'env' => [null, InputOption::VALUE_REQUIRED, 'Sets the environment <comment>[default: project:environments.default]</>'],
         'tag' => [null, InputOption::VALUE_REQUIRED, 'Tag assigned to deployment <comment>[default: ULID]</>'],
         'deployer' => [null, InputOption::VALUE_REQUIRED, 'User or application performing deployment <comment>[default: current user]</>'],
-        'store' => ['S', InputOption::VALUE_REQUIRED, 'Migration Store DSN', 'driver=fs store_dir=.'],
+        'store' => ['S', InputOption::VALUE_REQUIRED, 'Migration Store DSN', 'adapter=fs store_dir=.'],
         'dry-run' => [null, InputOption::VALUE_NONE, 'Performs all actions and logging without executing <comment>[default: off]</>'],
     ];
 

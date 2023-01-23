@@ -24,7 +24,7 @@ class Environment
         /* these options are not supported in sqlite, it has a 'main' schema and you cannot create more. You
          * would have to attach another db file.
          */
-        if ($this->historyDsn->driver == 'sqlite') {
+        if ($this->historyDsn->adapter == 'sqlite') {
             $schema = 'main';
             $autoCreate = false;
         }

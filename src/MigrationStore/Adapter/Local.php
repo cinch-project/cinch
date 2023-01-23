@@ -22,7 +22,7 @@ class Local extends Adapter
 {
     public static function fromDsn(StoreDsn $dsn, string $basePath): self
     {
-        Assert::equals($dsn->driver, 'fs', "expected fs dsn");
+        Assert::equals($dsn->adapter, 'fs', "expected fs dsn");
         $dir = $dsn->storeDir;
 
         if (Path::isRelative($dir)) {

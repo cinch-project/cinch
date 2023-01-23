@@ -34,7 +34,7 @@ class DatabaseDsn extends Dsn
         $this->port = $params['port'] ?? $port;
         $this->charset = Assert::ifKey($params, 'charset', $charset, 'charset')->string()->notEmpty()->value();
 
-        if ($this->driver == 'pgsql') {
+        if ($this->adapter == 'pgsql') {
             $this->sslmode = Assert::ifKey($params, 'sslmode', null, 'sslmode')->stringOrNull()->value();
             $this->searchPath = Assert::ifKey($params, 'search_path', null, 'search_path')->stringOrNull()->value();
         }
@@ -46,12 +46,12 @@ class DatabaseDsn extends Dsn
     protected function getDefaults(): array
     {
         $localhost = '127.0.0.1';
-        return match ($this->driver) {
-            'mssql' => ['sa', 1443, null, $localhost],
+        return match ($this->adapter) {
+            'sqlsrv' => ['sa', 1443, null, $localhost],
             'pgsql' => ['postgres', 5432, 'UTF8', $localhost],
             'mysql' => ['root', 3306, 'utf8mb4', $localhost],
             'sqlite' => [null, null, null, null],
-            default => throw new AssertException("unknown database driver '$this->driver'")
+            default => throw new AssertException("unknown database adapter '$this->adapter'")
         };
     }
 }

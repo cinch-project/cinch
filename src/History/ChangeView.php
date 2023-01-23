@@ -103,7 +103,7 @@ class ChangeView
         $change = $this->schema->table('change');
 
         /* sql server performed terribly using the LEFT JOIN technique. */
-        if ($this->session->getPlatform()->getName() == 'mssql') {
+        if ($this->session->getPlatform()->getName() == 'sqlsrv') {
             $wherePolicyStatus = $this->wherePolicyStatus($policies, $statuses, $params);
 
             $query = "
