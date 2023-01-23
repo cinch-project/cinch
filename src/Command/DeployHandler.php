@@ -2,7 +2,6 @@
 
 namespace Cinch\Command;
 
-use Cinch\Command\Task\DeployHook;
 use Cinch\Common\MigratePolicy;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
@@ -63,7 +62,7 @@ abstract class DeployHandler extends Handler
         $isMigrate = $this->deployment->getCommand() == DeploymentCommand::MIGRATE;
         $event = $isMigrate ? Hook\Event::BEFORE_MIGRATE : Hook\Event::BEFORE_ROLLBACK;
         foreach ($this->hookRunner->getHooksForEvent($event) as $hook)
-            $this->addTask(new DeployHook($hook, $event, null, $this->hookRunner));
+            $this->addTask(new Task\DeployHook($hook, $event, null, $this->hookRunner));
     }
 
     /**
@@ -88,7 +87,7 @@ abstract class DeployHandler extends Handler
         $isMigrate = $this->deployment->getCommand() == DeploymentCommand::MIGRATE;
         $event = $isMigrate ? Hook\Event::AFTER_MIGRATE : Hook\Event::AFTER_ROLLBACK;
         foreach ($this->hookRunner->getHooksForEvent($event) as $hook)
-            $this->addTask(new DeployHook($hook, $event, null, $this->hookRunner));
+            $this->addTask(new Task\DeployHook($hook, $event, null, $this->hookRunner));
 
         try {
             $this->runTasks();
