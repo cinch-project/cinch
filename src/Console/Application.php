@@ -90,8 +90,8 @@ class Application extends BaseApplication
 
         $definition->setArguments($default->getArguments());
         $definition->setOptions([
-            new InputOption('working-dir', 'w', InputOption::VALUE_REQUIRED, 'Sets the working directory [default: pwd]'),
-            new InputOption('time-zone', 'z', InputOption::VALUE_REQUIRED, 'Sets the time zone for logging and display [default: system]'),
+            new InputOption('working-dir', 'w', InputOption::VALUE_REQUIRED, 'Sets the working directory <comment>[default: current directory]</>'),
+            new InputOption('time-zone', 'z', InputOption::VALUE_REQUIRED, 'Sets the time zone for logging and display <comment>[default: system]</>'),
             ...array_filter($default->getOptions(), fn($o) => $o->getName() != 'no-interaction')
         ]);
 

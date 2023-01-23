@@ -18,8 +18,8 @@ trait AddsEnvironment
     protected function addEnvironmentOptions(): static
     {
         return $this
-            ->addOption('history', 'H', InputOption::VALUE_REQUIRED, 'History database DSN [default: target]')
-            ->addOption('schema', 's', InputOption::VALUE_REQUIRED, 'History schema name [default: cinch_$projectName]')
+            ->addOption('history', 'H', InputOption::VALUE_REQUIRED, 'History database DSN <comment>[default: $target]</>')
+            ->addOption('schema', 's', InputOption::VALUE_REQUIRED, 'History schema name <comment>[default: "cinch_$project"]</>')
             ->addOption('table-prefix', null, InputOption::VALUE_REQUIRED, "History table name prefix", '')
             ->addOption('deploy-timeout', null, InputOption::VALUE_REQUIRED, 'Timeout seconds for a deploy lock', Environment::DEFAULT_DEPLOY_TIMEOUT)
             ->addOption('auto-create', 'a', InputOption::VALUE_REQUIRED, 'Auto-create history schema if it does not exist', Environment::DEFAULT_AUTO_CREATE);
