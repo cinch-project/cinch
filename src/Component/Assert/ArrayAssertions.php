@@ -111,7 +111,7 @@ trait ArrayAssertions
         if (array_key_exists($key, static::array($array, $message)))
             return static::string($array[$key], $message);
 
-        static::fail($message, 'array does not contain key %s', static::strval($key));
+        static::fail($message, 'array does not contain string key %s', static::strval($key));
     }
 
     /** Asserts that an array key exists with a int value.
@@ -124,7 +124,7 @@ trait ArrayAssertions
         if (array_key_exists($key, static::array($array, $message)))
             return static::int($array[$key], $message);
 
-        static::fail($message, 'array does not contain key %s', static::strval($key));
+        static::fail($message, 'array does not contain int key %s', static::strval($key));
     }
 
     /** Asserts that an array key exists with a float value.
@@ -137,7 +137,7 @@ trait ArrayAssertions
         if (array_key_exists($key, static::array($array, $message)))
             return static::float($array[$key], $message);
 
-        static::fail($message, 'array does not contain key %s', static::strval($key));
+        static::fail($message, 'array does not contain float key %s', static::strval($key));
     }
 
     /** Asserts that an array key exists with a bool value.
@@ -150,7 +150,7 @@ trait ArrayAssertions
         if (array_key_exists($key, static::array($array, $message)))
             return static::bool($array[$key], $message);
 
-        static::fail($message, 'array does not contain key %s', static::strval($key));
+        static::fail($message, 'array does not contain bool key %s', static::strval($key));
     }
 
     /** Asserts that an array key exists with a array value.
@@ -163,7 +163,7 @@ trait ArrayAssertions
         if (array_key_exists($key, static::array($array, $message)))
             return static::array($array[$key], $message);
 
-        static::fail($message, 'array does not contain key %s', static::strval($key));
+        static::fail($message, 'array does not contain array key %s', static::strval($key));
     }
 
     /** Asserts that an array key exists with a object value.
@@ -176,7 +176,7 @@ trait ArrayAssertions
         if (array_key_exists($key, static::array($array, $message)))
             return static::object($array[$key], $message);
 
-        static::fail($message, 'array does not contain key %s', static::strval($key));
+        static::fail($message, 'array does not contain object key %s', static::strval($key));
     }
 
     /** Asserts that an array contains a value.

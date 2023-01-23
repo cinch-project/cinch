@@ -69,7 +69,7 @@ trait ObjectAssertions
         if (property_exists(static::object($object, $message), $property))
             return $object->$property;
 
-        static::fail($message, 'array %s does not contain key %s',
+        static::fail($message, 'object %s does not contain property %s',
             static::strval($object), static::strval($property));
     }
 
@@ -84,7 +84,7 @@ trait ObjectAssertions
         if (isset($object->$property))
             return $object->$property;
 
-        static::fail($message, 'array %s does not contain key %s or it is null',
+        static::fail($message, 'object %s does not contain property %s or it is null',
             static::strval($object), static::strval($property));
     }
 
@@ -97,7 +97,7 @@ trait ObjectAssertions
         if (property_exists(static::object($object, $message), $property))
             return static::string($object->$property, $message);
 
-        static::fail($message, 'array %s does not contain key %s',
+        static::fail($message, 'object %s does not contain string property %s',
             static::strval($object), static::strval($property));
     }
 
@@ -110,7 +110,7 @@ trait ObjectAssertions
         if (property_exists(static::object($object, $message), $property))
             return static::int($object->$property, $message);
 
-        static::fail($message, 'array %s does not contain key %s',
+        static::fail($message, 'object %s does not contain int property %s',
             static::strval($object), static::strval($property));
     }
 
@@ -123,7 +123,7 @@ trait ObjectAssertions
         if (property_exists(static::object($object, $message), $property))
             return static::float($object->$property, $message);
 
-        static::fail($message, 'array %s does not contain key %s',
+        static::fail($message, 'object %s does not contain float property %s',
             static::strval($object), static::strval($property));
     }
 
@@ -136,7 +136,7 @@ trait ObjectAssertions
         if (property_exists(static::object($object, $message), $property))
             return static::bool($object->$property, $message);
 
-        static::fail($message, 'array %s does not contain key %s',
+        static::fail($message, 'object %s does not contain bool property %s',
             static::strval($object), static::strval($property));
     }
 
@@ -149,7 +149,7 @@ trait ObjectAssertions
         if (property_exists(static::object($object, $message), $property))
             return static::array($object->$property, $message);
 
-        static::fail($message, 'array %s does not contain key %s',
+        static::fail($message, 'object %s does not contain array property %s',
             static::strval($object), static::strval($property));
     }
 
@@ -162,7 +162,7 @@ trait ObjectAssertions
         if (property_exists(static::object($object, $message), $property))
             return static::object($object->$property, $message);
 
-        static::fail($message, 'array %s does not contain key %s',
+        static::fail($message, 'object %s does not contain object property %s',
             static::strval($object), static::strval($property));
     }
 }

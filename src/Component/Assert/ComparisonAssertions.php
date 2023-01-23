@@ -61,7 +61,7 @@ trait ComparisonAssertions
         if ($value === $value2)
             return $value;
 
-        static::fail($message, "value %s is not > %s", static::strval($value), static::strval($value2));
+        static::fail($message, "value %s does not equal %s", static::strval($value), static::strval($value2));
     }
 
     /** Asserts that a value is between given minimum and maximum.
