@@ -14,7 +14,7 @@ class SessionFactory
      */
     public function create(DatabaseDsn $dsn): Session
     {
-        $platform = match ($driver = $dsn->adapter) {
+        $platform = match ($dsn->adapter) {
             'pgsql' => new Platform\PgSql($dsn),
             'mysql' => new Platform\MySql($dsn),
             'sqlsrv' => new Platform\SqlSrv($dsn),
@@ -25,7 +25,7 @@ class SessionFactory
         /** @var Session $session */
         $session = DriverManager::getConnection($platform->addParams([
             'cinch.platform' => $platform,
-            'driver' => "pdo_$driver",
+            'driver' => "pdo_$dsn->adapter",
             'wrapperClass' => Session::class, // extend Doctrine's built-in Connection
             'dbname' => $dsn->dbname,
             'user' => $dsn->user,
