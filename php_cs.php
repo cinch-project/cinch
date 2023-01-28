@@ -1,7 +1,8 @@
 <?php
 
 $finder = PhpCsFixer\Finder::create()
-    ->in('src');
+    ->exclude(['vendor', 'resources', 'docker', 'config'])
+    ->in(__DIR__);
 
 $config = new PhpCsFixer\Config();
 return $config->setRiskyAllowed(false)->setRules([
@@ -9,7 +10,7 @@ return $config->setRiskyAllowed(false)->setRules([
     'elseif' => false,
     'braces' => false, // should not be required with control_structure_braces set to false
     'control_structure_braces' => false,
-    'method_argument_space' => false,
+    'method_argument_space' => ['on_multiline' => 'ignore'],
     'strict_param' => false,
     'array_syntax' => ['syntax' => 'short'],
 ])->setFinder($finder);
