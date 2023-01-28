@@ -13,12 +13,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ConsoleLogger implements LoggerInterface
 {
-    const UNDERLINE = 0x01;
-    const BOLD = 0x02;
-    const REVERSE = 0x04;
-    const NEWLINE = 0x08;
+    public const UNDERLINE = 0x01;
+    public const BOLD = 0x02;
+    public const REVERSE = 0x04;
+    public const NEWLINE = 0x08;
     /** Raw output, no formatting is automatically applied */
-    const RAW = 0x10;
+    public const RAW = 0x10;
 
     protected const styleMap = [
         'raw' => ['header' => '', 'message' => ''],

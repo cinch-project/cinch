@@ -2,6 +2,8 @@
 
 namespace Cinch\History;
 
-class SchemaConflictException extends \DomainException
+use DomainException;
+
+class SchemaConflictException extends DomainException
 {
 }

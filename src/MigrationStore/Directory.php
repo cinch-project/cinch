@@ -11,11 +11,11 @@ use Exception;
 class Directory
 {
     /** recursively search directory - yaml 'recursive: true' */
-    const RECURSIVE = 0x01;
+    public const RECURSIVE = 0x01;
     /** raise error if directory is empty after filtering - yaml 'error_if_empty: true' */
-    const ERROR_IF_EMPTY = 0x02;
+    public const ERROR_IF_EMPTY = 0x02;
     /** replace environment variables when processing SQL scripts - yaml 'environment: true' */
-    const ENVIRONMENT = 0x04;
+    public const ENVIRONMENT = 0x04;
 
     /** @var Migration[] */
     private array $migrations = [];
@@ -118,4 +118,3 @@ class Directory
         return new Migration($file, $this->scriptLoader, $this->variables, $this->flags);
     }
 }
-

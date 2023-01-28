@@ -7,7 +7,7 @@ use Symfony\Component\Filesystem\Path;
 
 abstract class Adapter
 {
-    const FILE_PATTERN = '~^[^.].*\.(?:sql|php)$~i';
+    public const FILE_PATTERN = '~^[^.].*\.(?:sql|php)$~i';
 
     public function __construct(protected readonly string $storeDir)
     {
@@ -18,23 +18,23 @@ abstract class Adapter
      * @return File[]
      * @throws Exception
      */
-    public abstract function getFiles(int $flags = 0): array;
+    abstract public function getFiles(int $flags = 0): array;
 
     /** Adds (commits) a file.
      * @param string $path
      * @param string $content
      * @param string $message
      */
-    public abstract function addFile(string $path, string $content, string $message): void;
+    abstract public function addFile(string $path, string $content, string $message): void;
 
-    public abstract function deleteFile(string $path, string $message): void;
+    abstract public function deleteFile(string $path, string $message): void;
 
     /**
      * @param string $path
      * @return File
      * @throws Exception
      */
-    public abstract function getFile(string $path): File;
+    abstract public function getFile(string $path): File;
 
     /** Gets the contents of a file.
      * @throws Exception

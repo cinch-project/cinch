@@ -11,9 +11,9 @@ use Stringable;
 abstract class Dsn
 {
     /** connect timeout in seconds */
-    const DEFAULT_CONNECT_TIMEOUT = 10;
+    public const DEFAULT_CONNECT_TIMEOUT = 10;
     /** query/request timeout in milliseconds */
-    const DEFAULT_TIMEOUT = 15000;
+    public const DEFAULT_TIMEOUT = 15000;
 
     public readonly string $adapter;
     public readonly int $connectTimeout;

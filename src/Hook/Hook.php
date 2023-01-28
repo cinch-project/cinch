@@ -7,7 +7,7 @@ use Cinch\Component\Assert\AssertException;
 
 class Hook
 {
-    const DEFAULT_TIMEOUT = 5;
+    public const DEFAULT_TIMEOUT = 5;
 
     /**
      * @param Action $action
@@ -35,7 +35,7 @@ class Hook
     {
         return [
             'action' => (string) $this->action,
-            'events' => array_map(fn($e) => $e->value, $this->events),
+            'events' => array_map(fn ($e) => $e->value, $this->events),
             'timeout' => $this->timeout,
             'abort_on_error' => $this->abortOnError,
             'arguments' => (object) $this->arguments

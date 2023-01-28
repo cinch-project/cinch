@@ -9,10 +9,10 @@ use DateTimeInterface;
 
 class RollbackBy
 {
-    const TAG = 'tag';
-    const DATE = 'date';
-    const COUNT = 'count';
-    const SCRIPT = 'script';
+    public const TAG = 'tag';
+    public const DATE = 'date';
+    public const COUNT = 'count';
+    public const SCRIPT = 'script';
 
     public static function tag(DeploymentTag|null $tag): self
     {

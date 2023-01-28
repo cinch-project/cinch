@@ -92,7 +92,7 @@ class Application extends BaseApplication
         $definition->setOptions([
             new InputOption('working-dir', 'w', InputOption::VALUE_REQUIRED, 'Sets the working directory <comment>[default: current directory]</>'),
             new InputOption('time-zone', 'z', InputOption::VALUE_REQUIRED, 'Sets the display time zone <comment>[default: project:time_zone]</>'),
-            ...array_filter($default->getOptions(), fn($o) => $o->getName() != 'no-interaction')
+            ...array_filter($default->getOptions(), fn ($o) => $o->getName() != 'no-interaction')
         ]);
 
         return $definition;

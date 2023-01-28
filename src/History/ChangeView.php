@@ -151,7 +151,7 @@ class ChangeView
      */
     private function restoreChanges(Result $r): array
     {
-        return array_map(fn(array $row) => Change::restore($row), $r->fetchAllAssociative());
+        return array_map(fn (array $row) => Change::restore($row), $r->fetchAllAssociative());
     }
 
     /**

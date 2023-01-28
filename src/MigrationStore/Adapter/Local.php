@@ -38,7 +38,7 @@ class Local extends Adapter
     public function getFiles(int $flags = 0): array
     {
         $files = [];
-        $finder = (new Finder)->in($this->storeDir)->name(self::FILE_PATTERN)->files()->ignoreUnreadableDirs();
+        $finder = (new Finder())->in($this->storeDir)->name(self::FILE_PATTERN)->files()->ignoreUnreadableDirs();
 
         if ($flags & MigrationStore::FOLLOW_LINKS)
             $finder->followLinks();

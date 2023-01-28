@@ -7,12 +7,12 @@ use Stringable;
 
 class Assert
 {
-    use TypeAssertions,
-        StringAssertions,
-        ComparisonAssertions,
-        FilesystemAssertions,
-        ArrayAssertions,
-        ObjectAssertions;
+    use TypeAssertions;
+    use StringAssertions;
+    use ComparisonAssertions;
+    use FilesystemAssertions;
+    use ArrayAssertions;
+    use ObjectAssertions;
 
     protected static AssertFactory $assertFactory;
 

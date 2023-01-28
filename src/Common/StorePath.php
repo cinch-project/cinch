@@ -8,7 +8,7 @@ use Symfony\Component\Filesystem\Path;
 
 class StorePath extends SingleValue
 {
-    const MAX_LENGTH = 512;
+    public const MAX_LENGTH = 512;
 
     private readonly bool $isSql;
 

@@ -9,9 +9,9 @@ use RuntimeException;
 
 class Schema
 {
-    const EXISTS = 0x01;  // schema exists
-    const CREATOR = 0x02; // cinch owns schema (created it)
-    const OBJECTS = 0x04; // cinch schema objects exist
+    public const EXISTS = 0x01;  // schema exists
+    public const CREATOR = 0x02; // cinch owns schema (created it)
+    public const OBJECTS = 0x04; // cinch schema objects exist
     private const STATE_MASK = 7;
 
     private const TABLES = ['cinch', 'deployment', 'change'];

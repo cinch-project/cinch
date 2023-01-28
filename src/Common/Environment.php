@@ -6,9 +6,9 @@ use Cinch\Database\DatabaseDsn;
 
 class Environment
 {
-    const DEFAULT_SCHEMA_FORMAT = 'cinch_%s';
-    const DEFAULT_DEPLOY_TIMEOUT = 10;
-    const DEFAULT_AUTO_CREATE = true;
+    public const DEFAULT_SCHEMA_FORMAT = 'cinch_%s';
+    public const DEFAULT_DEPLOY_TIMEOUT = 10;
+    public const DEFAULT_AUTO_CREATE = true;
 
     public readonly string $schema;
     public readonly bool $autoCreate;

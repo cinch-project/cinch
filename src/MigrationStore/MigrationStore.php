@@ -20,9 +20,9 @@ use Twig\Environment as Twig;
 
 class MigrationStore
 {
-    const CONFIG_FILE = 'store.yml';
+    public const CONFIG_FILE = 'store.yml';
     /** (local filesystem only) follow symbolic links - yaml 'follow_links: true' */
-    const FOLLOW_LINKS = 0x1000;
+    public const FOLLOW_LINKS = 0x1000;
     private const PARSE_FLAGS = Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE | Yaml::PARSE_OBJECT_FOR_MAP;
 
     /** @var Directory[] */

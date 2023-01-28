@@ -9,7 +9,7 @@ use Exception;
 
 abstract class Platform
 {
-    const DATETIME_FORMAT = 'Y-m-d H:i:s.uP';
+    public const DATETIME_FORMAT = 'Y-m-d H:i:s.uP';
 
     protected float $version;
     protected string $name;
@@ -62,13 +62,13 @@ abstract class Platform
      * @param array $params current parameters
      * @return array updated version of $params
      */
-    public abstract function addParams(array $params): array;
+    abstract public function addParams(array $params): array;
 
     /** Initializes a session just after connecting. All platforms should perform version checking.
      * @param Session $session
      * @throws Exception|UnsupportedVersionException
      */
-    public abstract function initSession(Session $session): Session;
+    abstract public function initSession(Session $session): Session;
 
     /** Locks a session. This is an application (advisory) lock, not a table lock.
      * @param Session $session
@@ -77,12 +77,12 @@ abstract class Platform
      * @return bool true if lock was acquired and false if not
      * @throws Exception error occurred
      */
-    public abstract function lockSession(Session $session, string $name, int $timeout): bool;
+    abstract public function lockSession(Session $session, string $name, int $timeout): bool;
 
     /** Unlocks a session.
      * @param Session $session
      * @param string $name
      * @throws Exception
      */
-    public abstract function unlockSession(Session $session, string $name): void;
+    abstract public function unlockSession(Session $session, string $name): void;
 }

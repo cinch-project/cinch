@@ -41,12 +41,12 @@ abstract class Task
     /** Runs the task.
      * @throws Exception
      */
-    protected abstract function doRun(): void;
+    abstract protected function doRun(): void;
 
     /** Rolls back the task.
      * @throws Exception
      */
-    protected abstract function doUndo(): void;
+    abstract protected function doUndo(): void;
 
     /**
      * @throws Exception

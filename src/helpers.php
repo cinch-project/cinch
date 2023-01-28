@@ -1,4 +1,5 @@
 <?php
+
 // avoid function_exists checks so we "actually" see redefinition errors
 
 function silent_call(callable $c, ...$args): mixed

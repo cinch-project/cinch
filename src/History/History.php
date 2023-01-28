@@ -81,9 +81,9 @@ class History
                 'release_date' => $Q($version->releaseDate->format('Y-m-d')),
                 'created_at' => $Q($this->session->getPlatform()->formatDateTime())
             ],
-            'commands' => array_map(fn($e) => $e->value, DeploymentCommand::cases()),
-            'statuses' => array_map(fn($e) => $e->value, ChangeStatus::cases()),
-            'migrate_policies' => array_map(fn($e) => $e->value, MigratePolicy::cases()),
+            'commands' => array_map(fn ($e) => $e->value, DeploymentCommand::cases()),
+            'statuses' => array_map(fn ($e) => $e->value, ChangeStatus::cases()),
+            'migrate_policies' => array_map(fn ($e) => $e->value, MigratePolicy::cases()),
             ...$this->schema->objects()
         ]);
 

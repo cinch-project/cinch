@@ -17,7 +17,7 @@ class DeploymentError implements JsonSerializable
 
         /* replace each trace path with a relative path */
         foreach ($trace as &$t)
-            $t = preg_replace_callback('~^#\d+ (/.+)\(\d+\)~', fn($m) => Path::makeRelative($m[1], $base), $t);
+            $t = preg_replace_callback('~^#\d+ (/.+)\(\d+\)~', fn ($m) => Path::makeRelative($m[1], $base), $t);
 
         return new static(
             $e->getMessage() ?: '[no message provided]',

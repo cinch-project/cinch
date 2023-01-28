@@ -30,7 +30,7 @@ class Runner
      */
     public function getHooksForEvent(Event $event): array
     {
-        return array_filter($this->project->getHooks(), fn($h) => in_array($event, $h->events));
+        return array_filter($this->project->getHooks(), fn ($h) => in_array($event, $h->events));
     }
 
     /** Run all hooks registered with the given event.
@@ -189,7 +189,7 @@ class Runner
                 $env[strtolower(substr($name, 6))] = $value; // remove CINCH_ prefix and lowercase
 
             /* variables contained within URL (hook.action) query params */
-            (new Client)->post($hook->action->getPath(), [
+            (new Client())->post($hook->action->getPath(), [
                 'timeout' => $hook->timeout,
                 'headers' => $headers,
                 'json' => $env // body -> {"hook_event": "before-once-migrate", "deployer": "foo", ...}

@@ -13,11 +13,12 @@ use RuntimeException;
 
 class GitHub extends Git
 {
-    const RAW = 'application/vnd.github.raw';
-    const JSON = 'application/vnd.github+json';
+    public const RAW = 'application/vnd.github.raw';
+    public const JSON = 'application/vnd.github+json';
 
     /**
      * @param int $flags
+     * @return array
      * @throws GuzzleException
      */
     public function getFiles(int $flags = 0): array

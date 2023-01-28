@@ -170,7 +170,7 @@ class YamlFileProjectRepository implements ProjectRepository
 
             $hooks[] = new Hook\Hook(
                 new Hook\Action(Assert::stringProp($hook, 'action', "$path.action"), $this->projectDir),
-                array_map(fn($e) => Hook\Event::from($e), Assert::that($events, 'events')->array()->notEmpty()->value()),
+                array_map(fn ($e) => Hook\Event::from($e), Assert::that($events, 'events')->array()->notEmpty()->value()),
                 Assert::ifProp($hook, 'timeout', Hook\Hook::DEFAULT_TIMEOUT, "$path.timeout")->int()->value(),
                 Assert::ifProp($hook, 'abort_on_error', true, "$path.abort_on_error")->bool()->value(),
                 Assert::ifProp($hook, 'arguments', [], "$path.arguments")->array()->value(),

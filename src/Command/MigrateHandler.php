@@ -36,7 +36,7 @@ class MigrateHandler extends DeployHandler
         if (!$changes)
             $migrations = [];
         else if ($paths)
-            $migrations = array_map(fn($p) => $this->migrationStore->get($p), $paths);
+            $migrations = array_map(fn ($p) => $this->migrationStore->get($p), $paths);
         else
             $migrations = $this->migrationStore->all();
 

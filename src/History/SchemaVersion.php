@@ -11,7 +11,7 @@ use Exception;
 class SchemaVersion
 {
     /* https://ihateregex.io/expr/semver/ */
-    const SEMVER_PATTERN =
+    public const SEMVER_PATTERN =
         '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)' .
         '(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$';
 

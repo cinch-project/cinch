@@ -43,7 +43,7 @@ class ScriptAdd extends Command
     protected function configure()
     {
         $defaultPolicy = MigratePolicy::ONCE->value;
-        $policies = "'" . implode("', '", array_map(fn($v) => $v->value, MigratePolicy::cases())) . "'";
+        $policies = "'" . implode("', '", array_map(fn ($v) => $v->value, MigratePolicy::cases())) . "'";
 
         // cinch add <project> <path> <description> --author= --migrate-policy=
         $this

@@ -26,12 +26,12 @@ abstract class Script
     /**
      * @throws Exception
      */
-    public abstract function migrate(Session $target): void;
+    abstract public function migrate(Session $target): void;
 
     /**
      * @throws Exception
      */
-    public abstract function rollback(Session $target): void;
+    abstract public function rollback(Session $target): void;
 
     public function getVariables(): array
     {
