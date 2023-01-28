@@ -2,7 +2,9 @@
 
 $finder = PhpCsFixer\Finder::create()
     ->exclude(['vendor', 'resources', 'docker', 'config'])
-    ->in(__DIR__);
+    ->notName('php_cs.php')
+    ->name('*.php')
+    ->in('src');
 
 $config = new PhpCsFixer\Config();
 return $config->setRiskyAllowed(false)->setRules([

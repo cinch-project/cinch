@@ -2,9 +2,9 @@ name: PHP CS Fixer
 
 on:
   push:
-    branches: [ "cs-fix-test" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "cs-fix-test" ]
+    branches: [ "master" ]
 
 # permissions:
 #  contents: read
@@ -14,11 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Validate composer.json and composer.lock
         run: composer validate --strict
 
+      - name: Install composer packages
+        run: composer install -qn
+
       - name: Run PHP-CS-Fixer Style
-        run: ./vendor/bin/php-cs-fixer fix --config=./php_cs.php --allow-risky=no
+        run: ./vendor/bin/php-cs-fixer fix --config=./php_cs.php --allow-risky=no && rm -f ./.php-cs-fixer.cache
 
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
