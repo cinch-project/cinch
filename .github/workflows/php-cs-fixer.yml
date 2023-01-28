@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [ "cs-fix-test" ]
 
-permissions:
-  contents: read
+# permissions:
+#  contents: read
 
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
       run: composer validate --strict
 
     - name: Run PHP-CS-Fixer Style
-      run: ./vendor/bin/php-cs-fixer fix --config=php_cs.php --allow-risky=no
+      run: ./vendor/bin/php-cs-fixer fix --config=./php_cs.php --allow-risky=no
 
     - uses: stefanzweifel/git-auto-commit-action@v4
       with:
