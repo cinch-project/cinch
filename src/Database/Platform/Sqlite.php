@@ -20,7 +20,6 @@ class Sqlite extends Platform
     public function addParams(array $params): array
     {
         $params['path'] = $this->dsn->dbname;
-        $params['driverOptions'][PDO::ATTR_EMULATE_PREPARES] = 1;
         return $params;
     }
 
