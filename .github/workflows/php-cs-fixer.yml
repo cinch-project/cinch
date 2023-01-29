@@ -33,7 +33,7 @@ jobs:
           git config user.email achernow@gmail.com          
           git add .
           git commit -m "Apply PHP-CS-Fixer changes"
-          git push
+          git push origin HEAD:action-test
 
 #      - uses: stefanzweifel/git-auto-commit-action@v4
 #        with:
