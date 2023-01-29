@@ -31,7 +31,8 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3",
-        "symfony/var-dumper": "^6.0"
+        "symfony/var-dumper": "^6.0",
+        "code-lts/doctum": "^5.5"
     },
     "autoload": {
         "psr-4": {
