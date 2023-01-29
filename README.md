@@ -5,6 +5,7 @@ Cinch is in development. It is not ready for production.
 
 <!--
 
+
 ```yaml
 migration_store: file://.           # default=file:/.
 single_transaction: true            # default=true - group migrations within a single transaction
