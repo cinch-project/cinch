@@ -1,8 +1,8 @@
 name: PHP CS Fixer
 
 on:
-  push:
-    branches: [ "action-test" ]
+#  push:
+#    branches: [ "action-test" ]
   pull_request:
     branches: [ "action-test" ]
 
@@ -29,12 +29,13 @@ jobs:
       - name: Push Changes
         run: |
           date > generated.txt
-          git config user.name andrewchernow
-          git config user.email achernow@gmail.com
           git add .
           git commit -m "Apply PHP-CS-Fixer changes"
           git push
-          
+
+#          git config user.name andrewchernow
+#          git config user.email achernow@gmail.com
+
 #      - uses: stefanzweifel/git-auto-commit-action@v4
 #        with:
 #          commit_message: Apply PHP-CS-Fixer changes
