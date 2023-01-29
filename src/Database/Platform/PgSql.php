@@ -12,7 +12,8 @@ class PgSql extends Platform
 {
     public function addParams(array $params): array
     {
-        $params['driverOptions'][PDO::ATTR_EMULATE_PREPARES] = 1;
+        $params['driverOptions'][PDO::ATTR_EMULATE_PREPARES] = 0;
+        $params['driverOptions'][PDO::PGSQL_ATTR_DISABLE_PREPARES] = 1;
         $params['driverOptions'][PDO::ATTR_TIMEOUT] = $this->dsn->connectTimeout;
 
         $params['sslmode'] = $this->dsn->sslmode ?? 'prefer';
