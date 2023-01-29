@@ -125,4 +125,3 @@ class Session
         return false;
     }
 }
-
