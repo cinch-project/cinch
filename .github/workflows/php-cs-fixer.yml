@@ -26,6 +26,7 @@ jobs:
       - name: Run PHP-CS-Fixer Style
         run: ./vendor/bin/php-cs-fixer fix --config=./php_cs.php --allow-risky=no && rm -f ./.php-cs-fixer.cache
 
+      - run: git add .
       - run: git commit --message 'Apply PHP-CS-Fixer changes'
       - run: git push
 #      - uses: stefanzweifel/git-auto-commit-action@v4
