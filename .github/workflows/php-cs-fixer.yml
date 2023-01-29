@@ -2,9 +2,9 @@ name: PHP CS Fixer
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "action-test" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "action-test" ]
 
 # permissions:
 #  contents: read
@@ -13,8 +13,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: git config --global user.email "achernow@gmail.com"
-      - run: git config --global user.name "Andrew Chernow"
       - uses: actions/checkout@v3
       
       - name: Validate composer.json and composer.lock
@@ -24,11 +22,19 @@ jobs:
         run: composer install -qn
 
       - name: Run PHP-CS-Fixer Style
-        run: ./vendor/bin/php-cs-fixer fix --config=./php_cs.php --allow-risky=no && rm -f ./.php-cs-fixer.cache
+        run: |
+          ./vendor/bin/php-cs-fixer fix --config=./php_cs.php --allow-risky=no
+          rm -f ./.php-cs-fixer.cache
 
-      - run: git add .
-      - run: git commit --message 'Apply PHP-CS-Fixer changes'
-      - run: git push
+      - name: Push Changes
+        run: |
+          date > generated.txt
+          git config user.name andrewchernow
+          git config user.email achernow@gmail.com
+          git add .
+          git commit -m "Apply PHP-CS-Fixer changes"
+          git push
+          
 #      - uses: stefanzweifel/git-auto-commit-action@v4
 #        with:
 #          commit_message: Apply PHP-CS-Fixer changes
