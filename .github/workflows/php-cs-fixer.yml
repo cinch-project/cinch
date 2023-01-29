@@ -25,16 +25,17 @@ jobs:
         run: |
           ./vendor/bin/php-cs-fixer fix --config=./php_cs.php --allow-risky=no
           rm -f ./.php-cs-fixer.cache
-
-      - name: Push Changes
-        run: |
           date > generated.txt
-          git config user.name andrewchernow
-          git config user.email achernow@gmail.com          
-          git add .
-          git commit -m "Apply PHP-CS-Fixer changes"
-          git push origin HEAD:action-test
 
-#      - uses: stefanzweifel/git-auto-commit-action@v4
-#        with:
-#          commit_message: Apply PHP-CS-Fixer changes
+#      - name: Push Changes
+#        run: |
+#          date > generated.txt
+#          git config user.name andrewchernow
+#          git config user.email achernow@gmail.com          
+#          git add .
+#          git commit -m "Apply PHP-CS-Fixer changes"
+#          git push origin HEAD:action-test
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Apply PHP-CS-Fixer changes
