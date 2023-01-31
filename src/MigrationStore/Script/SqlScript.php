@@ -6,7 +6,7 @@ use Cinch\Common\Author;
 use Cinch\Common\Description;
 use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
-use Cinch\Database\Session;
+use Cinch\Component\Schema\Builder;
 use DateTimeInterface;
 use Exception;
 
@@ -36,18 +36,18 @@ class SqlScript extends Script
     /**
      * @throws Exception
      */
-    public function migrate(Session $target): void
+    public function migrate(Builder $builder): void
     {
         if ($this->migrate)
-            $target->executeStatement($this->migrate);
+            $builder->getSession()->statement($this->migrate);
     }
 
     /**
      * @throws Exception
      */
-    public function rollback(Session $target): void
+    public function rollback(Builder $builder): void
     {
         if ($this->rollback)
-            $target->executeStatement($this->rollback);
+            $builder->getSession()->statement($this->rollback);
     }
 }

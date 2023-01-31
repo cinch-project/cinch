@@ -23,11 +23,6 @@ class Table
         return $this->name;
     }
 
-    public function getSession(): Session
-    {
-        return $this->session;
-    }
-
     public function varchar(string $name, int $length): ColumnDefinition
     {
         if ($length < 1)

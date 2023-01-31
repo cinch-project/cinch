@@ -2,6 +2,7 @@
 
 namespace Cinch\Database;
 
+use Cinch\Component\Schema;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
@@ -33,6 +34,14 @@ class Session extends Connection
             $this->close();
             throw $e;
         }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function createSchemaBuilder(): Schema\Builder
+    {
+        return new Schema\Builder(new SchemaSession($this));
     }
 
     public function getPlatform(): Platform

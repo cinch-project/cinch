@@ -29,14 +29,11 @@ class Pattern extends Check
      */
     protected function getExpression(Session $session): string
     {
-        $pattern = match ($name = $session->getPlatformName()) {
-            'mysql', 'mariadb' => str_replace('\\', '\\\\', $this->pattern),
-            'pgsql' => $this->pattern,
-            default => throw new RuntimeException("'$name' does not support regular expressions")
-        };
-
         $column = $session->quoteIdentifier($this->columnName);
-        $pattern = $session->quoteString($pattern);
+        $pattern = $session->quoteString(match ($name = $session->getPlatformName()) {
+            'mysql', 'mariadb', 'pgsql' => $this->pattern,
+            default => throw new RuntimeException("'$name' does not support regular expressions")
+        });
 
         if ($name == 'pgsql') {
             $operator = $this->not ? '!~' : '~';

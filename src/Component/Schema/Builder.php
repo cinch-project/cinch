@@ -23,4 +23,10 @@ class Builder
     {
         return new Table($this->session, $name, $options);
     }
+
+    // createTableFrom('target', 'source')
+    // createTable
+    // renameTable
+    // dropTable
+    // alterTable
 }

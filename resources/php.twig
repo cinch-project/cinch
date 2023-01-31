@@ -4,7 +4,7 @@ use Cinch\Common\Author;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\Description;
 use Cinch\Common\Labels;
-use Cinch\Database\Session;
+use Cinch\Component\Schema\Builder;
 use Cinch\MigrationStore\Script\Script;
 
 return new class extends Script {
@@ -19,11 +19,11 @@ return new class extends Script {
         );
     }
 
-    public function migrate(Session $target): void
+    public function migrate(Builder $builder): void
     {
     }
 
-    public function rollback(Session $target): void
+    public function rollback(Builder $builder): void
     {
     }
 };

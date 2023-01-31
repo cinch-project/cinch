@@ -6,7 +6,7 @@ use Cinch\Common\Author;
 use Cinch\Common\Description;
 use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
-use Cinch\Database\Session;
+use Cinch\Component\Schema\Builder;
 use DateTimeInterface;
 use Exception;
 
@@ -26,12 +26,12 @@ abstract class Script
     /**
      * @throws Exception
      */
-    abstract public function migrate(Session $target): void;
+    abstract public function migrate(Builder $builder): void;
 
     /**
      * @throws Exception
      */
-    abstract public function rollback(Session $target): void;
+    abstract public function rollback(Builder $builder): void;
 
     public function getVariables(): array
     {

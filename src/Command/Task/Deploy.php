@@ -43,8 +43,8 @@ class Deploy extends Task
 
         try {
             if (!$this->deployment->isDryRun()) {
-                $command = $this->deployment->getCommand()->value;
-                $this->migration->getScript()->$command($this->target);
+                $command = $this->deployment->getCommand()->value; // migrate or rollback
+                $this->migration->getScript()->$command($this->target->createSchemaBuilder());
             }
 
             $change = $this->createChange();
