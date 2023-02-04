@@ -92,7 +92,7 @@ class Table
      * @param string $name only used when $value is a string
      * @return self
      */
-    public function check(Check|string $value, string $name = ''): self
+    public function check(Check|string $value, string $name = ''): static
     {
         $this->checks[] = is_string($value) ? new Check\Expression($name, $value) : $value;
         return $this;
@@ -123,7 +123,7 @@ class Table
             $this->addColumn(new ColumnDefinition($this, $name, new Type\Integer($type, $isUnsigned)));
     }
 
-    private function addColumn(ColumnDefinition $c): ColumnDefinition
+    protected function addColumn(ColumnDefinition $c): ColumnDefinition
     {
         return $this->columns[$c->getName()] = $c;
     }
@@ -133,77 +133,77 @@ class Table
         return $this->columns[$name] ?? null;
     }
 
-    public function checkBetween(string $column, int|float|string $min, int|float|string $max, string $name = ''): self
+    public function checkBetween(string $column, int|float|string $min, int|float|string $max, string $name = ''): static
     {
         return $this->check(new Check\Between($name, $column, $min, $max, not: false));
     }
 
-    public function checkNotBetween(string $column, int|float|string $min, int|float|string $max, string $name = ''): self
+    public function checkNotBetween(string $column, int|float|string $min, int|float|string $max, string $name = ''): static
     {
         return $this->check(new Check\Between($name, $column, $min, $max, not: true));
     }
 
-    public function checkBetweenLength(string $column, int $min, int $max, string $name = ''): self
+    public function checkBetweenLength(string $column, int $min, int $max, string $name = ''): static
     {
         return $this->check(new Check\BetweenLength($name, $column, $min, $max, not: false));
     }
 
-    public function checkNotBetweenLength(string $column, int $min, int $max, string $name = ''): self
+    public function checkNotBetweenLength(string $column, int $min, int $max, string $name = ''): static
     {
         return $this->check(new Check\BetweenLength($name, $column, $min, $max, not: true));
     }
 
-    public function checkNotEmpty(string $column, string $name = ''): self
+    public function checkNotEmpty(string $column, string $name = ''): static
     {
         return $this->check(new Check\Expression($name, "coalesce($column, '') <> ''"));
     }
 
-    public function checkPattern(string $column, string $pattern, bool $isCaseSensitive = true, string $name = ''): self
+    public function checkPattern(string $column, string $pattern, bool $isCaseSensitive = true, string $name = ''): static
     {
         return $this->check(new Check\Pattern($name, $column, $pattern, $isCaseSensitive, not: false));
     }
 
-    public function checkNotPattern(string $column, string $pattern, bool $isCaseSensitive = true, string $name = ''): self
+    public function checkNotPattern(string $column, string $pattern, bool $isCaseSensitive = true, string $name = ''): static
     {
         return $this->check(new Check\Pattern($name, $column, $pattern, $isCaseSensitive, not: true));
     }
 
-    public function checkIn(string $column, array $values, string $name = ''): self
+    public function checkIn(string $column, array $values, string $name = ''): static
     {
         return $this->check(new Check\In($name, $column, $values, not: false));
     }
 
-    public function checkNotIn(string $column, array $values, string $name = ''): self
+    public function checkNotIn(string $column, array $values, string $name = ''): static
     {
         return $this->check(new Check\In($name, $column, $values, not: true));
     }
 
-    public function checkGreaterThan(string $column, string|int|float $value, string $name = ''): self
+    public function checkGreaterThan(string $column, string|int|float $value, string $name = ''): static
     {
         return $this->check(new Check\Comparison($name, $column, Check\Operator::GT, $value));
     }
 
-    public function checkGreaterThanEquals(string $column, string|int|float $value, string $name = ''): self
+    public function checkGreaterThanEquals(string $column, string|int|float $value, string $name = ''): static
     {
         return $this->check(new Check\Comparison($name, $column, Check\Operator::GE, $value));
     }
 
-    public function checkLessThan(string $column, string|int|float $value, string $name = ''): self
+    public function checkLessThan(string $column, string|int|float $value, string $name = ''): static
     {
         return $this->check(new Check\Comparison($name, $column, Check\Operator::LT, $value));
     }
 
-    public function checkLessThanEquals(string $column, string|int|float $value, string $name = ''): self
+    public function checkLessThanEquals(string $column, string|int|float $value, string $name = ''): static
     {
         return $this->check(new Check\Comparison($name, $column, Check\Operator::LE, $value));
     }
 
-    public function checkEquals(string $column, string|int|float $value, string $name = ''): self
+    public function checkEquals(string $column, string|int|float $value, string $name = ''): static
     {
         return $this->check(new Check\Comparison($name, $column, Check\Operator::EQ, $value));
     }
 
-    public function checkNotEquals(string $column, string|int|float $value, string $name = ''): self
+    public function checkNotEquals(string $column, string|int|float $value, string $name = ''): static
     {
         return $this->check(new Check\Comparison($name, $column, Check\Operator::NE, $value));
     }
