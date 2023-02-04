@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  mysql:
+  mysql-8.0.30:
     image: mysql:oracle
-    container_name: cinch-mysql
+    container_name: cinch-mysql-8.0.30
     environment:
       MYSQL_ROOT_PASSWORD: $DB_PASSWORD
       MYSQL_DATABASE: $DB_NAME
@@ -16,9 +16,24 @@ services:
       - ./docker/server.crt:$MYDATA/server-cert.pem
       - ./docker/root.crt:$MYDATA/ca.pem
 
-  postgres:
+  mysql-5.7.30:
+    image: biarms/mysql:5.7
+    container_name: cinch-mysql-5.7.30
+    environment:
+      MYSQL_ROOT_PASSWORD: $DB_PASSWORD
+      MYSQL_DATABASE: $DB_NAME
+    ports:
+      - "6002:3306"
+    volumes:
+      - mysql-5.7.30:/var/lib/mysql
+      - ./docker/mysql/bootstrap.sql:$DB_BOOTSTRAP
+      - ./docker/server.key:$MYDATA/server-key.pem
+      - ./docker/server.crt:$MYDATA/server-cert.pem
+      - ./docker/root.crt:$MYDATA/ca.pem
+
+  postgres-14.5:
     image: postgres:latest
-    container_name: cinch-postgres
+    container_name: cinch-postgres-14.5
     environment:
       PGDATA:
       POSTGRES_PASSWORD: $DB_PASSWORD
@@ -50,5 +65,6 @@ services:
 
 volumes:
   mysql:
+  mysql-5.7.30:
   pgsql:
   mssql:
