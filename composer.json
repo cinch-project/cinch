@@ -16,7 +16,6 @@
         "symfony/console": "^6.2",
         "symfony/dependency-injection": "^6.2",
         "symfony/config": "^6.2",
-        "ext-pcntl": "*",
         "symfony/finder": "^6.2",
         "symfony/expression-language": "^6.2",
         "doctrine/dbal": "^3.5",
