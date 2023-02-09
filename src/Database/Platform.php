@@ -6,12 +6,13 @@ use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
 use Exception;
+use RuntimeException;
 
 abstract class Platform
 {
     public const DATETIME_FORMAT = 'Y-m-d H:i:s.uP';
 
-    protected float $version;
+    protected string $version;
     protected string $name;
 
     public function __construct(protected readonly DatabaseDsn $dsn)
@@ -38,6 +39,11 @@ abstract class Platform
         return true; /* default, since most have support */
     }
 
+    public function supportsCheckConstraints(): bool
+    {
+        return true;
+    }
+
     /** Formats a platform-aware datetime.
      * @param DateTimeInterface|null $dt
      * @return string
@@ -50,12 +56,18 @@ abstract class Platform
         return $dt->format(self::DATETIME_FORMAT);
     }
 
-    /** Gets the platform version: major.minor only.
-     * @return float
+    /** Gets the platform version: ex. major.minor.patch '4.2.9'
      */
-    public function getVersion(): float
+    public function getVersion(): string
     {
         return $this->version;
+    }
+
+    protected function parseServerVersion(string $version): string
+    {
+        if (!preg_match('~^(\d+\.\d+(?:\.\d+)?)~', $version, $match))
+            throw new RuntimeException("Unknown {$this->getName()} version: $version");
+        return $match[1];
     }
 
     /** Adds platform-specific connection parameters just before connecting.

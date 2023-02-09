@@ -32,9 +32,9 @@ class PgSql extends Platform
 
     public function initSession(Session $session): Session
     {
-        $this->version = (float) $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
+        $this->version = $this->parseServerVersion($session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION));
 
-        if ($this->version < 12.0)
+        if (version_compare($this->version, '12.0', '<'))
             throw new UnsupportedVersionException('PostgreSQL', $this->version, 12.0);
 
         $charset = $session->quoteString($this->dsn->charset);

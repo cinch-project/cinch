@@ -26,10 +26,10 @@ class Sqlite extends Platform
     public function initSession(Session $session): Session
     {
         $this->lockPath = $this->dsn->dbname;
+        $this->version = $this->parseServerVersion($session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION));
 
-        $this->version = (float) $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
-        if ($this->version < 3.9)
-            throw new UnsupportedVersionException('SQLite', $this->version, 3.9);
+        if (version_compare($this->version, '3.9', '<'))
+            throw new UnsupportedVersionException('SQLite', $this->version, '3.9');
 
         $session->executeStatement('pragma foreign_keys = on');
         return $session;

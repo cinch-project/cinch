@@ -35,18 +35,18 @@ class SqlSrv extends Platform
             serverproperty('Edition') from sys.databases where name = ?", [$this->dsn->dbname]);
 
         [$compatLevel, $version, $edition] = $result->fetchNumeric();
-        $this->version = (float) $version;
+        $this->version = $this->parseServerVersion($version);
 
         /* cinch supports:
          *   * SQL Server - minimum version: 2014 (v12.x) released March 18, 2014
          *   * Azure SQL Database (v12.x) - version is totally separate from SQL Server version
          */
-        if ($this->version < 12.0)
-            throw new UnsupportedVersionException($edition, $this->version, 12.0);
+        if (version_compare($this->version, '12.0', '<'))
+            throw new UnsupportedVersionException($edition, $this->version, '12.0');
 
         /* 110 is SQL Server 2014: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-transact-sql-compatibility-level?view=sql-server-ver16 */
         if ($compatLevel < 110)
-            throw new UnsupportedVersionException($edition, $this->version, 12.0,
+            throw new UnsupportedVersionException($edition, $this->version, '12.0',
                 "compatibility_level $compatLevel < 110");
 
         $session->executeStatement('set implicit_transactions = OFF');

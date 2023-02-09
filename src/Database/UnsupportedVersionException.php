@@ -6,7 +6,7 @@ use RuntimeException;
 
 class UnsupportedVersionException extends RuntimeException
 {
-    public function __construct(string $plat, float $version, float $minVersion, string $extra = '')
+    public function __construct(string $plat, string $version, string $minVersion, string $extra = '')
     {
         if ($extra)
             $extra = "($extra)";

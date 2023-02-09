@@ -15,6 +15,7 @@ use RuntimeException;
 class MySql extends Platform
 {
     private readonly string $dateTimeFormat;
+    private readonly bool $supportsCheckConstraints;
 
     public function getName(): string
     {
@@ -24,6 +25,11 @@ class MySql extends Platform
     public function supportsTransactionalDDL(): bool
     {
         return false; /* like oracle, mysql does not support this */
+    }
+
+    public function supportsCheckConstraints(): bool
+    {
+        return $this->supportsCheckConstraints;
     }
 
     public function formatDateTime(DateTimeInterface|null $dt = null): string
@@ -57,17 +63,19 @@ class MySql extends Platform
     public function initSession(Session $session): Session
     {
         $version = $session->getNativeConnection()->getAttribute(PDO::ATTR_SERVER_VERSION);
-        [$version, $minVersion, $this->name] = $this->parseVersion($version);
+        [$this->version, $minVersion] = $this->parseVersion($version);
+
+        if (version_compare($this->version, $minVersion, '<'))
+            throw new UnsupportedVersionException($this->name, $this->version, $minVersion);
+
+        $this->supportsCheckConstraints = $this->name == 'mariadb' ||
+            version_compare($this->version, '8.0.16', '>=');
 
         $format = self::DATETIME_FORMAT;
-        if (version_compare($version, '8.0.19', '<'))
+        if ($this->name == 'mysql' && version_compare($this->version, '8.0.19', '<'))
             $format = substr($format, 0, -1); // time zone offset support added in 8.0.19, remove 'P'
 
         $this->dateTimeFormat = $format;
-        $this->version = (float) $version;
-
-        if ($this->version < $minVersion)
-            throw new UnsupportedVersionException($this->name, $this->version, $minVersion);
 
         $charset = $session->quoteString($this->dsn->charset);
         $session->executeStatement("
@@ -109,11 +117,7 @@ class MySql extends Platform
                 $version = substr($version, 8);
         }
 
-        $name = $mariadb ? 'mariadb' : 'mysql';
-
-        if (!preg_match('~^(\d+\.\d+(?:\.\d+)?)~', $version, $match))
-            throw new RuntimeException("Unknown $name version: $version");
-
-        return [$match[1], $mariadb ? 10.2 : 5.7, $name];
+        $this->name = $mariadb ? 'mariadb' : 'mysql';
+        return [$this->parseServerVersion($version), $mariadb ? '10.3.0' : '5.7.0'];
     }
 }
