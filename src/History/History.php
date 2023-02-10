@@ -5,11 +5,10 @@ namespace Cinch\History;
 use Cinch\Common\Author;
 use Cinch\Common\MigratePolicy;
 use Cinch\Component\Assert\Assert;
+use Cinch\Component\TemplateEngine\TemplateEngine;
 use Cinch\Database\Session;
 use Exception;
 use RuntimeException;
-use Twig\Environment as Twig;
-use Twig\TwigFilter;
 
 class History
 {
@@ -18,17 +17,16 @@ class History
 
     /**
      * @param Schema $schema
-     * @param Twig $twig
+     * @param TemplateEngine $templateEngine
      * @param string $application
      */
     public function __construct(
         private readonly Schema $schema,
-        private readonly Twig $twig,
+        private readonly TemplateEngine $templateEngine,
         private readonly string $application)
     {
         Assert::notEmpty($this->application, 'application');
         $this->session = $this->schema->session();
-        $this->initTwigFilters();
     }
 
     public function getChangeView(): ChangeView
@@ -67,24 +65,19 @@ class History
 
         $Q = $this->session->quoteString(...);
         $version = $this->schema->version();
+        $inList = fn (array $values) => implode(", ", array_map(fn ($v) => $Q($v->value), $values));
 
-        $ddl = $this->twig->render('create-history.twig', [
-            'db' => [
-                'name' => $this->session->getPlatform()->getName(),
-                'version' => $this->session->getPlatform()->getVersion()
-            ],
-            'schema' => [
-                'creator' => !!$creator,
-                'name' => $this->session->quoteIdentifier($this->schema->name()),
-                'version' => $Q($version->version),
-                'description' => $Q($version->description),
-                'release_date' => $Q($version->releaseDate->format('Y-m-d')),
-                'created_at' => $Q($this->session->getPlatform()->formatDateTime())
-            ],
-            'commands' => array_map(fn ($e) => $e->value, DeploymentCommand::cases()),
-            'statuses' => array_map(fn ($e) => $e->value, ChangeStatus::cases()),
-            'migrate_policies' => array_map(fn ($e) => $e->value, MigratePolicy::cases()),
-            ...$this->schema->objects()
+        $ddl = $this->templateEngine->renderTemplate($this->getPlatformTemplate(), [
+            'schema' => $this->session->quoteIdentifier($this->schema->name()),
+            'schema_creator' => !!$creator,
+            'schema_version' => $Q($version->version),
+            'schema_description' => $Q($version->description),
+            'release_date' => $Q($version->releaseDate->format('Y-m-d')),
+            'created_at' => $Q($this->session->getPlatform()->formatDateTime()),
+            'commands' => $inList(DeploymentCommand::cases()),
+            'statuses' => $inList(ChangeStatus::cases()),
+            'migrate_policies' => $inList(MigratePolicy::cases()),
+            ...$this->getPlatformContext()
         ]);
 
         $withinTransaction = $this->beginSchema();
@@ -115,24 +108,74 @@ class History
         $this->deleteHistory(($this->schema->state() & Schema::CREATOR) != 0);
     }
 
+    private function getPlatformTemplate(): string
+    {
+        $p = $this->session->getPlatform();
+
+        $name = match ($name = $p->getName()) {
+            'mariadb' => 'mysql',
+            'mysql' => $p->supportsCheckConstraints() ? 'mysql' : 'mysql-no-checks',
+            default => $name
+        };
+
+        return "create-history/$name.sql";
+    }
+
+    private function getPlatformContext(): array
+    {
+        $context = $this->schema->objects();
+        $name = $this->session->getPlatform()->getName();
+        $version = $this->session->getPlatform()->getVersion();
+
+        if ($name == 'pgsql') {
+            $context['ascii'] = '"C"';
+            $context['utf8ci'] = $context[Schema::COLLATION];
+            $context['semver_pattern'] = SchemaVersion::SEMVER_PATTERN;
+        }
+        else if ($name == 'mysql') {
+            $context['ascii'] = 'binary';
+            $context['utf8ci'] = version_compare($version, '8.0', '<')
+                ? 'utf8mb4_unicode_520_ci' : 'utf8mb4_0900_ai_ci';
+            $context['semver_pattern'] = str_replace('\\', '\\\\', SchemaVersion::SEMVER_PATTERN);
+        }
+        else if ($name == 'mariadb') {
+            $context['ascii'] = 'ascii_nopad_bin';
+            $context['utf8ci'] = version_compare($version, '10.10', '<')
+                ? 'utf8mb4_unicode_520_nopad_ci' : 'uca1400_nopad_ai_ci';
+            $context['semver_pattern'] = str_replace('\\', '\\\\', SchemaVersion::SEMVER_PATTERN);
+        }
+        else if ($name == 'sqlsrv') {
+            $context['ascii'] = 'Latin1_General_100_BIN';
+            $context['utf8ci'] = 'Latin1_General_100_CI_AI';
+        }
+        else if ($name == 'sqlite') {
+            $context['ascii'] = 'binary';
+            $context['utf8ci'] = 'nocase';
+        }
+
+        unset($context[Schema::COLLATION]);
+        return $context;
+    }
+
     /**
      * @throws Exception
      */
     private function deleteHistory(bool $schemaCreator): void
     {
-        $ddl = $this->twig->render('drop-history.twig', [
-            'db' => ['name' => $this->session->getPlatform()->getName()],
-            'schema' => [
-                'creator' => $schemaCreator,
-                'name' => $this->session->quoteIdentifier($this->schema->name()),
-            ],
-            ...$this->schema->objects()
-        ]);
+        $objects = $this->schema->objects();
+        $collation = array_pop($objects);
+        $ddl = array_map(fn ($n) => "drop table if exists $n", $objects);
+
+        if ($this->session->getPlatform()->getName() == 'pgsql')
+            $ddl[] = "drop collation if exists $collation";
+
+        if ($schemaCreator)
+            $ddl[] = 'drop schema ' . $this->session->quoteIdentifier($this->schema->name());
 
         $withinTransaction = $this->beginSchema();
 
         try {
-            $this->session->executeStatement($ddl);
+            $this->session->executeStatement(implode(';', $ddl));
             $this->commitSchema();
             $this->schema->setState($schemaCreator ? 0 : Schema::EXISTS);
         }
@@ -161,72 +204,6 @@ class History
     {
         if ($this->session->getPlatform()->supportsTransactionalDDL())
             $this->session->commit();
-    }
-
-    private function initTwigFilters(): void
-    {
-        /* identifier quoting: {{ 'schema.table'|strip_schema }}
-         *     sqlite: table
-         *     others: schema.table
-         *
-         * sqlite doesn't allow schema-qualified tables for INDEX ON or REFERENCES clauses. It throws
-         * a syntax error on the ".". This only strips for sqlite [sighs]. It does allow schema-qualified
-         * index names: `CREATE INDEX schema.my_index_name ON my_table (column)`. Template handles that.
-         */
-        $this->twig->addFilter(new TwigFilter('strip_schema', function (string $string) {
-            if ($this->session->getPlatform()->getName() == 'sqlite')
-                $string = explode('.', $string, 2)[1];
-            return $string;
-        }));
-
-        /* index names: {{ 'table'|index('created_at_idx') }}
-         *     others: "raw_table_created_at_idx"
-         *     sqlite: "main"."raw_table_created_at_idx"
-         *
-         * This ensures index names contain the "raw" table name, which means they include the table_prefix.
-         * This also ensures sqlite is schema-qualified (this is always 'main'). Without this, you can't
-         * create a second set of history tables in the same schema.
-         */
-        $this->twig->addFilter(new TwigFilter('index', function (string $tableName, string $idxName) {
-            $name = $this->schema->rawTable($tableName) . '_' . $idxName;
-
-            if ($this->session->getPlatform()->getName() == 'sqlite')
-                $name = $this->schema->name() . ".$name";
-
-            return $this->session->quoteIdentifier($name);
-        }));
-
-        /* identifier quoting: {{ 'identifier_name'|quote }} */
-        $this->twig->addFilter(new TwigFilter('quote', function (string $string) {
-            return $this->session->quoteIdentifier($string);
-        }));
-
-        /* varchar column: {{ 'name'|varchar(255) }}
-         *     others: name varchar(255)
-         *     sqlite: name text constraint "'name' value too long for varchar(255)" check (length(name) between 0 and 255)
-         */
-        $this->twig->addFilter(new TwigFilter('varchar', function (string $name, int $len) {
-            return $this->renderCharacterDefinition($name, 'varchar', $len);
-        }));
-
-        /* varchar column: {{ 'name'|nvarchar(255) }}
-         *     others: name varchar(255)
-         *     sqlsrv: name nvarchar(255) (uses national varying character UCS2|UTF-16)
-         *     sqlite: name text constraint "'name' value too long for varchar(255)" check (length(name) between 0 and 255)
-         */
-        $this->twig->addFilter(new TwigFilter('nvarchar', function (string $name, int $len) {
-            $type = $this->session->getPlatform()->getName() == 'sqlsrv' ? 'nvarchar' : 'varchar';
-            return $this->renderCharacterDefinition($name, $type, $len);
-        }));
-    }
-
-    private function renderCharacterDefinition(string $name, string $type, int $len): string
-    {
-        $error = "'$name' value too long for $type($len)";
-        return match ($this->session->getPlatform()->getName()) {
-            'sqlite' => "$name text constraint \"$error\" check (length($name) between 0 and $len)",
-            default => "$name $type($len)"
-        };
     }
 
     private function assertSchema(): void

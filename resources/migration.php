@@ -7,15 +7,15 @@ use Cinch\Common\Labels;
 use Cinch\Component\Schema\Builder;
 use Cinch\MigrationStore\Script\Script;
 
-return new class extends Script {
+return new class () extends Script {
     public function __construct()
     {
         parent::__construct(
-            MigratePolicy::from('{{ migrate_policy }}'),
-            new Author('{{ author }}'),
-            new DateTimeImmutable('{{ authored_at }}'),
-            new Description('{{ description }}'),
-            new Labels({{ labels|json_encode(constant('JSON_UNESCAPED_SLASHES')) }})
+            MigratePolicy::from('${migrate_policy}'),
+            new Author('${author}'),
+            new DateTimeImmutable('${authored_at}'),
+            new Description('${description}'),
+            new Labels(${labels})
         );
     }
 

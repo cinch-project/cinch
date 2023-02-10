@@ -72,8 +72,10 @@ class MySql extends Platform
             version_compare($this->version, '8.0.16', '>=');
 
         $format = self::DATETIME_FORMAT;
-        if ($this->name == 'mysql' && version_compare($this->version, '8.0.19', '<'))
-            $format = substr($format, 0, -1); // time zone offset support added in 8.0.19, remove 'P'
+
+        /* before mysql 8.0.19, time zone offsets were not supported. mariadb still has no support */
+        if ($this->name == 'mariadb' || version_compare($this->version, '8.0.19', '<'))
+            $format = substr($format, 0, -1); // remove PHP's 'P' specifier
 
         $this->dateTimeFormat = $format;
 

@@ -54,18 +54,9 @@ services:
             - '%schema.description%'
             - '%schema.release_date%'
 
-    Twig\Loader\LoaderInterface:
-        class: Twig\Loader\FilesystemLoader
+    Cinch\Component\TemplateEngine\TemplateEngine:
         arguments:
-            - '%twig.template_dir%'
-
-    Twig\Environment:
-        arguments:
-            $options:
-                autoescape: false
-                strict_variables: true
-                auto_reload: '%twig.auto_reload%'
-                debug: '%twig.debug%'
+            - '%cinch.resource_dir%'
 
     Cinch\Console\ContainerHandlerLocator:
         arguments:

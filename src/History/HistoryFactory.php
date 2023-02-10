@@ -3,15 +3,15 @@
 namespace Cinch\History;
 
 use Cinch\Common\Environment;
+use Cinch\Component\TemplateEngine\TemplateEngine;
 use Cinch\Database\SessionFactory;
 use Exception;
-use Twig\Environment as Twig;
 
 class HistoryFactory
 {
     public function __construct(
         private readonly SessionFactory $sessionFactory,
-        private readonly Twig $twig,
+        private readonly TemplateEngine $templateEngine,
         private readonly SchemaVersion $schemaVersion,
         private readonly string $application)
     {
@@ -26,6 +26,6 @@ class HistoryFactory
     {
         $session = $this->sessionFactory->create($environment->historyDsn);
         $schema = new Schema($session, $environment, $this->schemaVersion);
-        return new History($schema, $this->twig, $this->application);
+        return new History($schema, $this->templateEngine, $this->application);
     }
 }

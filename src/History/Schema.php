@@ -14,9 +14,9 @@ class Schema
     public const OBJECTS = 0x04; // cinch schema objects exist
     private const STATE_MASK = 7;
 
-    private const TABLES = ['cinch', 'deployment', 'change'];
+    public const TABLES = ['cinch', 'deployment', 'change'];
     /** postgresql-only non-deterministic collation */
-    private const COLLATION = 'utf8_ci_ai';
+    public const COLLATION = 'utf8_ai_ci';
 
     /** Object names: quoted and schema-qualified. "$schema"."$prefix$name" */
     private readonly array $objects;

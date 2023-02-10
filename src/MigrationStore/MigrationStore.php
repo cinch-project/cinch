@@ -8,6 +8,7 @@ use Cinch\Common\Labels;
 use Cinch\Common\MigratePolicy;
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\Assert;
+use Cinch\Component\TemplateEngine\TemplateEngine;
 use Cinch\MigrationStore\Script\ScriptLoader;
 use DateTimeInterface;
 use Exception;
@@ -16,7 +17,6 @@ use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
 use Symfony\Component\Yaml\Yaml;
-use Twig\Environment as Twig;
 
 class MigrationStore
 {
@@ -34,7 +34,7 @@ class MigrationStore
     public function __construct(
         private readonly Adapter $adapter,
         private readonly ScriptLoader $scriptLoader,
-        private readonly Twig $twig,
+        private readonly TemplateEngine $templateEngine,
         private readonly LoggerInterface $logger,
         private readonly string $resourceDir)
     {
@@ -74,12 +74,26 @@ class MigrationStore
     public function add(StorePath $path, MigratePolicy $migratePolicy, Author $author,
         DateTimeInterface $authoredAt, Description $description, Labels $labels): void
     {
-        $content = $this->twig->render($path->isSql() ? 'sql.twig' : 'php.twig', [
+        if ($path->isSql()) {
+            $lang = 'sql';
+            $labelValue = '';
+
+            foreach ($labels->all() as $v)
+                $labelValue .= " * @label $v\n";
+
+            $labelValue .= ' '; // indent closing comment " */"
+        }
+        else {
+            $lang = 'php';
+            $labelValue = json_encode($labels->all(), JSON_UNESCAPED_SLASHES);
+        }
+
+        $content = $this->templateEngine->renderTemplate("migration.$lang", [
             'migrate_policy' => $migratePolicy->value,
             'author' => $author->value,
             'authored_at' => $authoredAt->format('Y-m-d H:i:sP'),
             'description' => $description->value,
-            'labels' => $labels->all()
+            'labels' => $labelValue
         ]);
 
         $this->adapter->addFile($path->value, $content, 'add migration request');

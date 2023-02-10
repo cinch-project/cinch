@@ -2,6 +2,7 @@
 
 namespace Cinch\Hook;
 
+use Cinch\Component\TemplateEngine\TemplateEngine;
 use Cinch\Database\Session;
 use Cinch\History\Change;
 use Cinch\History\Deployment;
@@ -11,7 +12,6 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use Twig\Environment as Twig;
 
 class Runner
 {
@@ -20,7 +20,7 @@ class Runner
         private readonly Project $project,
         private readonly Session $target,
         private readonly LoggerInterface $logger,
-        private readonly Twig $twig)
+        private readonly TemplateEngine $templateEngine)
     {
     }
 
@@ -74,7 +74,7 @@ class Runner
     {
         try {
             $path = $hook->action->getPath();
-            $sql = $this->twig->createTemplate(slurp($path), basename($path))->render([
+            $sql = $this->templateEngine->renderString(slurp($path), [
                 ...getenv(),
                 ...$this->envVars($hook, $event, $change),
                 ...$hook->action->getVariables() // uri query params -> "sql:/home/foo/a.sql?name=value"

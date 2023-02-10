@@ -4,19 +4,19 @@ namespace Cinch\MigrationStore\Script;
 
 use Cinch\Common\StorePath;
 use Cinch\Component\Assert\AssertException;
+use Cinch\Component\TemplateEngine\TemplateEngine;
 use Cinch\MigrationStore\Directory;
 use Cinch\MigrationStore\File;
 use Cinch\MigrationStore\LocalFile;
 use Exception;
 use RuntimeException;
 use Throwable;
-use Twig\Environment as Twig;
 
 class ScriptLoader
 {
     public function __construct(
         private readonly SqlScriptParser $sqlScriptParser,
-        private readonly Twig $twig)
+        private readonly TemplateEngine $templateEngine)
     {
     }
 
@@ -47,7 +47,7 @@ class ScriptLoader
         if ($environment)
             $variables = [...$variables, ...getenv()];
 
-        $sql = $this->twig->createTemplate($contents)->render($variables);
+        $sql = $this->templateEngine->renderString($contents, $variables);
 
         try {
             return $this->sqlScriptParser->parse($sql);

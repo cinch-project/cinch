@@ -133,9 +133,6 @@ class Application extends BaseApplication
         $container->setParameter('schema.version', getenv('CINCH_SCHEMA_VERSION'));
         $container->setParameter('schema.description', getenv('CINCH_SCHEMA_DESCRIPTION'));
         $container->setParameter('schema.release_date', getenv('CINCH_SCHEMA_RELEASE_DATE'));
-        $container->setParameter('twig.auto_reload', getenv('CINCH_ENV') !== 'prod');
-        $container->setParameter('twig.debug', $this->logger->getOutput()->isDebug());
-        $container->setParameter('twig.template_dir', $resourceDir);
         $container->setParameter('project.dir', $projectDir);
         $container->set(LoggerInterface::class, $this->logger);
 

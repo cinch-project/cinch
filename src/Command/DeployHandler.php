@@ -3,6 +3,7 @@
 namespace Cinch\Command;
 
 use Cinch\Common\MigratePolicy;
+use Cinch\Component\TemplateEngine\TemplateEngine;
 use Cinch\Database\Session;
 use Cinch\Database\SessionFactory;
 use Cinch\History\ChangeStatus;
@@ -17,7 +18,6 @@ use Cinch\MigrationStore\MigrationStore;
 use Cinch\MigrationStore\MigrationStoreFactory;
 use Cinch\Project\ProjectRepository;
 use Exception;
-use Twig\Environment as Twig;
 
 abstract class DeployHandler extends Handler
 {
@@ -33,7 +33,7 @@ abstract class DeployHandler extends Handler
         private readonly MigrationStoreFactory $migrationStoreFactory,
         private readonly HistoryFactory $historyFactory,
         private readonly ProjectRepository $projectRepository,
-        private readonly Twig $twig)
+        private readonly TemplateEngine $templateEngine)
     {
     }
 
@@ -55,7 +55,7 @@ abstract class DeployHandler extends Handler
         /* not ran as a task. after target database connect. event designed so one can configure db session. In
          * most cases, script hooks are not used since you have no access to target: normally php or sql hooks.
          */
-        $this->hookRunner = new Hook\Runner($this->deployment, $project, $this->target, $this->logger, $this->twig);
+        $this->hookRunner = new Hook\Runner($this->deployment, $project, $this->target, $this->logger, $this->templateEngine);
         $this->hookRunner->run(Hook\Event::AFTER_CONNECT);
 
         /* add before deploy tasks */
