@@ -51,12 +51,15 @@ class MigrationNode
             if ($n = ($a->isLeaf() - $b->isLeaf()))
                 return $n;
 
+            $a = $a->name;
+            $b = $b->name;
+
             if ($sortPolicy->isCaseInsensitive()) {
-                $a = mb_convert_case($a->name, MB_CASE_FOLD, 'UTF-8');
-                $b = mb_convert_case($b->name, MB_CASE_FOLD, 'UTF-8');
+                $a = mb_convert_case($a, MB_CASE_FOLD, 'UTF-8');
+                $b = mb_convert_case($b, MB_CASE_FOLD, 'UTF-8');
             }
 
-            return $strcmp($a->name, $b->name);
+            return $strcmp($a, $b);
         });
 
         /* sort grandchildren */
